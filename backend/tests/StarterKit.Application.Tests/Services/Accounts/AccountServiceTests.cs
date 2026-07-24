@@ -288,10 +288,10 @@ public class AccountServiceTests
     {
         Fixture f = CreateFixture();
         Account account = CreateAccount();
+        Account other = CreateAccount(username: "other", email: "taken@example.com");
         f.CurrentUserService.UserId.Returns(account.Id.ToString());
         f.AccountRepo.GetByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(CreateAccount(username: "other", email: "taken@example.com"));
+        RepositoryPredicateStub.StubFirstOrDefault(f.AccountRepo, [account, other]);
         UpdateProfileRequest request = new("Name", null, null, null, "taken@example.com");
 
         await ApplicationAssert.ThrowsWithMessageAsync<ConflictException>(
@@ -302,14 +302,34 @@ public class AccountServiceTests
     }
 
     [Fact]
+    public async Task UpdateCurrentProfileAsync_SameEmailAsOwnAccount_DoesNotThrow()
+    {
+        // Guards the predicate's self-exclusion clause (candidate.Id != account.Id) — without it,
+        // a user keeping their own unchanged email would incorrectly collide with themselves.
+        Fixture f = CreateFixture();
+        Account account = CreateAccount(email: "nva@example.com");
+        Account other = CreateAccount(username: "other", email: "taken@example.com");
+        f.CurrentUserService.UserId.Returns(account.Id.ToString());
+        f.AccountRepo.GetByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+        RepositoryPredicateStub.StubFirstOrDefault(f.AccountRepo, [account, other]);
+        UpdateProfileRequest request = new("New Name", null, null, null, "nva@example.com");
+
+        ProfileDto dto = await f.Service.UpdateCurrentProfileAsync(request, CancellationToken.None);
+
+        Assert.Equal("New Name", dto.Name);
+        Assert.Equal("nva@example.com", dto.Email);
+        f.AccountRepo.Received(1).Update(account);
+        await f.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task UpdateCurrentProfileAsync_Success_PreservesUsernameAndStatus()
     {
         Fixture f = CreateFixture();
         Account account = CreateAccount(username: "keep-username");
         f.CurrentUserService.UserId.Returns(account.Id.ToString());
         f.AccountRepo.GetByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns((Account?)null);
+        RepositoryPredicateStub.StubFirstOrDefault(f.AccountRepo, [account]);
         UpdateProfileRequest request = new("New Name", "0123456789", "Dev", "Address", "new@example.com");
 
         ProfileDto dto = await f.Service.UpdateCurrentProfileAsync(request, CancellationToken.None);
