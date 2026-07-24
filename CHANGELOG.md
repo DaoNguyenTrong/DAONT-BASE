@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Full backend test coverage across all layers: `StarterKit.Application.Tests` now covers every service (Account, ApiKey, AuditLog, File, SystemSettings, in addition to the existing Auth coverage); new `StarterKit.Infrastructure.Tests` project covers JWT/password/cache/storage/timezone/Google/SMTP services plus Testcontainers.PostgreSql-backed repository and cleanup-service tests; new `StarterKit.API.Tests` project adds `WebApplicationFactory` + Testcontainers integration tests across all 8 controllers and cross-cutting middleware.
+- `RateLimiterSettings` config seam for `AuthController`'s rate limiter (production default unchanged).
+
+### Changed
+
+- `GoogleAuthProvider` and `SmtpEmailSender` refactored behind thin interfaces (`IGoogleJwtValidator`, `ISmtpClientFactory`) to enable unit testing — no behavior change.
+
 ### StarterKit baseline
 
 This repo was repurposed from a product-specific codebase into a generic app starter. Baseline state:
