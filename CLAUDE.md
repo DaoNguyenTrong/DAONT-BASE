@@ -28,7 +28,7 @@ Follow this order for every non-trivial task:
 4. **Orient (micro)** — Serena to locate and read specific symbols once the relevant module is known
 5. **Impact check** — run `gitnexus_impact` on every symbol you plan to modify
 6. **Execute** — make changes
-7. **Verify** — run `gitnexus_detect_changes` to confirm scope matches intent, then run the test suite for whichever side you touched (`dotnet test backend/FEEDBACK-HUB.sln --no-restore -m:1` for `backend/`, `bun run --cwd frontend test:run` for `frontend/` — see `commands.md`); it must pass before considering the task done
+7. **Verify** — run `gitnexus_detect_changes` to confirm scope matches intent, then run the test suite for whichever side you touched (`dotnet test backend/StarterKit.sln --no-restore -m:1` for `backend/`, `bun run --cwd frontend test:run` for `frontend/` — see `commands.md`); it must pass before considering the task done
 8. **Log decisions** — record only expensive, non-obvious choices in `.claude/decisions.md`; skip routine ones
 
 ### Tool Selection
@@ -93,7 +93,7 @@ All rule files in `.claude/rules/` are auto-loaded. This table documents when ea
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **FEEDBACK-HUB** (3104 symbols, 6495 relationships, 219 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **DAONT-BASE** (2740 symbols, 5624 relationships, 189 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -116,10 +116,10 @@ This project is indexed by GitNexus as **FEEDBACK-HUB** (3104 symbols, 6495 rela
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/FEEDBACK-HUB/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/FEEDBACK-HUB/clusters` | All functional areas |
-| `gitnexus://repo/FEEDBACK-HUB/processes` | All execution flows |
-| `gitnexus://repo/FEEDBACK-HUB/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/DAONT-BASE/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/DAONT-BASE/clusters` | All functional areas |
+| `gitnexus://repo/DAONT-BASE/processes` | All execution flows |
+| `gitnexus://repo/DAONT-BASE/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 

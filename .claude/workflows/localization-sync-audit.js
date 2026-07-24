@@ -45,14 +45,14 @@ phase('Extract')
 const [resx, consts, fe] = await parallel([
   () =>
     agent(
-      `Read backend/src/FeedbackHub.Application/Resources/Messages.resx and backend/src/FeedbackHub.Application/Resources/Messages.en.resx. ` +
+      `Read backend/src/StarterKit.Application/Resources/Messages.resx and backend/src/StarterKit.Application/Resources/Messages.en.resx. ` +
         `Extract every <data name="..."> entry, EXCLUDING resx boilerplate keys (resmimetype, version, reader, writer, and any "resheader" entries). ` +
         `Return the real message key names found in each file as two separate lists (one per file). Do not guess — only report keys you actually read.`,
       { label: 'backend-resx', phase: 'Extract', effort: 'low', schema: RESX_SCHEMA },
     ),
   () =>
     agent(
-      `Read backend/src/FeedbackHub.Domain/Exceptions/DomainMessages.cs and backend/src/FeedbackHub.Application/Resources/ApplicationMessages.cs. ` +
+      `Read backend/src/StarterKit.Domain/Exceptions/DomainMessages.cs and backend/src/StarterKit.Application/Resources/ApplicationMessages.cs. ` +
         `Each file is a static class of "public const string X = nameof(X);" entries — these are message KEYS (not the localized text itself). ` +
         `Extract the constant names from each file as two separate lists (one per file).`,
       { label: 'backend-consts', phase: 'Extract', effort: 'low', schema: CONSTS_SCHEMA },
@@ -88,7 +88,7 @@ log(
 phase('Report')
 
 const report = await agent(
-  `Viết một báo cáo audit (markdown, tiếng Việt) về đồng bộ vi/en trong dự án FEEDBACK-HUB, dựa trên dữ liệu diff đã tính sẵn dưới đây — ` +
+  `Viết một báo cáo audit (markdown, tiếng Việt) về đồng bộ vi/en trong dự án StarterKit, dựa trên dữ liệu diff đã tính sẵn dưới đây — ` +
     `KHÔNG tự đọc lại file, chỉ dùng đúng dữ liệu này:\n\n` +
     `\`\`\`json\n${JSON.stringify(
       {
@@ -104,7 +104,7 @@ const report = await agent(
     )}\n\`\`\`\n\n` +
     `Cấu trúc report:\n` +
     `1. Tóm tắt (tổng số gap theo từng nhóm)\n` +
-    `2. Backend — Messages.resx: key thiếu ở vi / thiếu ở en (liệt kê tên key, chỉ backend/src/FeedbackHub.Application/Resources/Messages.resx và Messages.en.resx)\n` +
+    `2. Backend — Messages.resx: key thiếu ở vi / thiếu ở en (liệt kê tên key, chỉ backend/src/StarterKit.Application/Resources/Messages.resx và Messages.en.resx)\n` +
     `3. Backend — DomainMessages.cs / ApplicationMessages.cs: const nào KHÔNG có entry tương ứng trong resx (nghĩa là exception này sẽ hiển thị key thô thay vì text) — chỉ rõ file nào chứa const đó\n` +
     `4. Frontend — locales/vi.ts vs en.ts: dotted-path nào thiếu ở bên nào\n` +
     `5. Nếu không có gap ở mục nào, ghi rõ "Không phát hiện lệch" thay vì bỏ qua mục đó\n` +

@@ -6,10 +6,10 @@ Clean Architecture — four layers:
 
 | Layer          | Project                   | Responsibility                                                          |
 |----------------|---------------------------|-------------------------------------------------------------------------|
-| Domain         | `FeedbackHub.Domain`         | Entities, interfaces (`IRepository<T,TId>`), domain exceptions          |
-| Application    | `FeedbackHub.Application`    | Service interfaces & implementations, DTOs, settings, Mapperly mappings |
-| Infrastructure | `FeedbackHub.Infrastructure` | EF Core (PostgreSQL), repositories, JWT, AI services                    |
-| API            | `FeedbackHub.API`            | Controllers, middleware, OpenAPI/Scalar, `Program.cs`                   |
+| Domain         | `StarterKit.Domain`         | Entities, interfaces (`IRepository<T,TId>`), domain exceptions          |
+| Application    | `StarterKit.Application`    | Service interfaces & implementations, DTOs, settings, Mapperly mappings |
+| Infrastructure | `StarterKit.Infrastructure` | EF Core (PostgreSQL), repositories, JWT, AI services                    |
+| API            | `StarterKit.API`            | Controllers, middleware, OpenAPI/Scalar, `Program.cs`                   |
 
 Dependencies flow inward: API → Application → Domain. Infrastructure implements Domain interfaces.
 

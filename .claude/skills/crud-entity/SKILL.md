@@ -28,12 +28,12 @@ Task Progress:
 
 ## Step 1: Entity (Domain)
 
-File: `backend/src/FeedbackHub.Domain/Entities/{EntityName}.cs`
+File: `backend/src/StarterKit.Domain/Entities/{EntityName}.cs`
 
 ```csharp
-using FeedbackHub.Domain.Exceptions;
+using StarterKit.Domain.Exceptions;
 
-namespace FeedbackHub.Domain.Entities;
+namespace StarterKit.Domain.Entities;
 
 // Params record - dùng cho cả Create và Update
 public record {EntityName}Params(
@@ -82,14 +82,14 @@ public sealed class {EntityName} : BaseEntity
 
 ## Step 2: EF Configuration (Infrastructure)
 
-File: `backend/src/FeedbackHub.Infrastructure/Persistence/Configurations/{EntityName}Configuration.cs`
+File: `backend/src/StarterKit.Infrastructure/Persistence/Configurations/{EntityName}Configuration.cs`
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using FeedbackHub.Domain.Entities;
+using StarterKit.Domain.Entities;
 
-namespace FeedbackHub.Infrastructure.Persistence.Configurations;
+namespace StarterKit.Infrastructure.Persistence.Configurations;
 
 public sealed class {EntityName}Configuration : IEntityTypeConfiguration<{EntityName}>
 {
@@ -116,7 +116,7 @@ public sealed class {EntityName}Configuration : IEntityTypeConfiguration<{Entity
 
 ## Step 3: DbContext
 
-File: `backend/src/FeedbackHub.Infrastructure/Persistence/AppDbContext.cs`
+File: `backend/src/StarterKit.Infrastructure/Persistence/AppDbContext.cs`
 
 Add DbSet (expression-bodied, following existing pattern):
 ```csharp
@@ -127,11 +127,11 @@ public DbSet<{EntityName}> {EntityName}s => Set<{EntityName}>();
 
 ## Step 4: DTOs (Application)
 
-Folder: `backend/src/FeedbackHub.Application/Services/{EntityName}s/`
+Folder: `backend/src/StarterKit.Application/Services/{EntityName}s/`
 
 **{EntityName}Dto.cs:**
 ```csharp
-namespace FeedbackHub.Application.Services.{EntityName}s;
+namespace StarterKit.Application.Services.{EntityName}s;
 
 public sealed record {EntityName}Dto(
     int Id,
@@ -145,7 +145,7 @@ public sealed record {EntityName}Dto(
 ```csharp
 using System.ComponentModel.DataAnnotations;
 
-namespace FeedbackHub.Application.Services.{EntityName}s;
+namespace StarterKit.Application.Services.{EntityName}s;
 
 public sealed record Create{EntityName}Request(
     [Required, MaxLength(200)] string Name,
@@ -156,7 +156,7 @@ public sealed record Create{EntityName}Request(
 ```csharp
 using System.ComponentModel.DataAnnotations;
 
-namespace FeedbackHub.Application.Services.{EntityName}s;
+namespace StarterKit.Application.Services.{EntityName}s;
 
 public sealed record Update{EntityName}Request(
     [Required, MaxLength(200)] string Name,
@@ -174,9 +174,9 @@ public sealed record Update{EntityName}Request(
 
 **I{EntityName}Service.cs:**
 ```csharp
-using FeedbackHub.Application.Common.Models;
+using StarterKit.Application.Common.Models;
 
-namespace FeedbackHub.Application.Services.{EntityName}s;
+namespace StarterKit.Application.Services.{EntityName}s;
 
 public interface I{EntityName}Service
 {
@@ -198,14 +198,14 @@ public interface I{EntityName}Service
 
 **{EntityName}Service.cs:**
 ```csharp
-using FeedbackHub.Application.Common.Interfaces;
-using FeedbackHub.Application.Common.Mappings;
-using FeedbackHub.Application.Common.Models;
-using FeedbackHub.Domain.Entities;
-using FeedbackHub.Domain.Exceptions;
-using FeedbackHub.Domain.Interfaces;
+using StarterKit.Application.Common.Interfaces;
+using StarterKit.Application.Common.Mappings;
+using StarterKit.Application.Common.Models;
+using StarterKit.Domain.Entities;
+using StarterKit.Domain.Exceptions;
+using StarterKit.Domain.Interfaces;
 
-namespace FeedbackHub.Application.Services.{EntityName}s;
+namespace StarterKit.Application.Services.{EntityName}s;
 
 public sealed class {EntityName}Service(IUnitOfWork unitOfWork) : I{EntityName}Service
 {
@@ -280,7 +280,7 @@ public sealed class {EntityName}Service(IUnitOfWork unitOfWork) : I{EntityName}S
 
 ## Step 6: Mapping
 
-File: `backend/src/FeedbackHub.Application/Common/Mappings/EntityMapper.cs`
+File: `backend/src/StarterKit.Application/Common/Mappings/EntityMapper.cs`
 
 Add:
 ```csharp
@@ -303,7 +303,7 @@ public static partial {EntityName}Params ToParams(this Update{EntityName}Request
 
 ## Step 7: DI Registration
 
-File: `backend/src/FeedbackHub.Application/DependencyInjection.cs`
+File: `backend/src/StarterKit.Application/DependencyInjection.cs`
 
 Add:
 ```csharp
@@ -314,14 +314,14 @@ services.AddScoped<I{EntityName}Service, {EntityName}Service>();
 
 ## Step 8: Controller (API)
 
-File: `backend/src/FeedbackHub.API/Controllers/{EntityName}sController.cs`
+File: `backend/src/StarterKit.API/Controllers/{EntityName}sController.cs`
 
 ```csharp
 using Microsoft.AspNetCore.Mvc;
-using FeedbackHub.Application.Common.Models;
-using FeedbackHub.Application.Services.{EntityName}s;
+using StarterKit.Application.Common.Models;
+using StarterKit.Application.Services.{EntityName}s;
 
-namespace FeedbackHub.API.Controllers;
+namespace StarterKit.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -381,8 +381,8 @@ public sealed class {EntityName}sController(I{EntityName}Service service) : Cont
 
 ```bash
 dotnet ef migrations add Add{EntityName}Entity \
-  --project backend/src/FeedbackHub.Infrastructure \
-  --startup-project backend/src/FeedbackHub.API
+  --project backend/src/StarterKit.Infrastructure \
+  --startup-project backend/src/StarterKit.API
 ```
 
 ---
@@ -390,8 +390,8 @@ dotnet ef migrations add Add{EntityName}Entity \
 ## Step 10: Verify
 
 ```bash
-dotnet build backend/FEEDBACK-HUB.sln --no-restore -m:1
-dotnet run --project backend/src/FeedbackHub.API
+dotnet build backend/StarterKit.sln --no-restore -m:1
+dotnet run --project backend/src/StarterKit.API
 ```
 
 Test via Swagger: http://localhost:5000/swagger
@@ -402,9 +402,9 @@ Test via Swagger: http://localhost:5000/swagger
 
 If not exists, create:
 
-**backend/src/FeedbackHub.Application/Common/Models/PagedResult.cs:**
+**backend/src/StarterKit.Application/Common/Models/PagedResult.cs:**
 ```csharp
-namespace FeedbackHub.Application.Common.Models;
+namespace StarterKit.Application.Common.Models;
 
 public sealed record PagedResult<T>(
     IReadOnlyList<T> Items,
@@ -418,9 +418,9 @@ public sealed record PagedResult<T>(
 }
 ```
 
-**backend/src/FeedbackHub.Application/Common/Models/PaginationRequest.cs:**
+**backend/src/StarterKit.Application/Common/Models/PaginationRequest.cs:**
 ```csharp
-namespace FeedbackHub.Application.Common.Models;
+namespace StarterKit.Application.Common.Models;
 
 public sealed record PaginationRequest(int PageNumber = 1, int PageSize = 10);
 ```
