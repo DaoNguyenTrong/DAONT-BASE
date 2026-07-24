@@ -29,6 +29,9 @@ coverage
 .eslintcache
 src/typings/
 
+# orval — regenerated from ../shared/openapi/openapi.json via `postinstall` / `bun run codegen`
+src/api/generated/
+
 # Vitest
 __screenshots__/
 

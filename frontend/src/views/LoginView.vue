@@ -40,7 +40,7 @@ async function handleSubmit() {
   isSubmitting.value = true
 
   try {
-    await authApi.login({
+    await useAuthStore().login({
       username: username.value.trim(),
       password: password.value,
       keepLoggedIn: keepLogin.value,

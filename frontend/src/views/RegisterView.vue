@@ -92,7 +92,7 @@ async function handleSubmit() {
 
   const result = await run(
     () =>
-      authApi.register({
+      useAuthStore().register({
         name: form.name.trim(),
         username: form.username.trim(),
         email: form.email.trim(),

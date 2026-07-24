@@ -30,7 +30,7 @@ function handleLogout() {
     rejectLabel: t('common.cancel'),
     accept: async () => {
       try {
-        await authApi.logout()
+        await useAuthStore().logout()
       } finally {
         sidebar.closeMobile()
         await router.replace({ name: 'login' })

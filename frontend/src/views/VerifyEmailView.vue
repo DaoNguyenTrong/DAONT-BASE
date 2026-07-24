@@ -27,7 +27,7 @@ watch(
       return
     }
 
-    const result = await run(() => authApi.verifyEmail({ token }), {
+    const result = await run(() => useAuthStore().verifyEmail({ token }), {
       onCode: {
         EmailVerificationTokenInvalidOrExpired: () => {
           errorMessage.value = t('auth.verifyEmailInvalidToken')

@@ -4,7 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import AppSidebar from '@/layouts/AppSidebar.vue'
 import ProfileDialog from '@/components/ProfileDialog.vue'
-import authApi from '@/api/auth-api'
+import { useAuthStore } from '@/stores/auth'
 import { useSidebarStore } from '@/stores/sidebar-store'
 
 const stub = { template: '<div />' }
@@ -107,8 +107,9 @@ describe('AppSidebar', () => {
   })
 
   it('logs out, closes the mobile drawer, and redirects to login on confirm', async () => {
-    const logoutSpy = vi.spyOn(authApi, 'logout').mockResolvedValue(undefined)
     const { wrapper, router } = await mountSidebar()
+    const auth = useAuthStore()
+    const logoutSpy = vi.spyOn(auth, 'logout').mockResolvedValue(undefined)
     const sidebar = useSidebarStore()
     sidebar.openMobile()
 

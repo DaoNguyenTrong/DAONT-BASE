@@ -29,6 +29,7 @@ export default defineConfig(({ mode }) => {
           'src/stores/**',
           'src/utils/**',
           'src/api/**',
+          '!src/api/generated/**',
           'src/plugins/**',
           'src/lib/**',
         ],
