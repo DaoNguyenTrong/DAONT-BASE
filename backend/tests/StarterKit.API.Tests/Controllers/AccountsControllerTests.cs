@@ -100,6 +100,28 @@ public sealed class AccountsControllerTests(ApiFactoryFixture fixture) : IAsyncL
         Assert.Equal("brand-new-account", dto!.Username);
     }
 
+    [Fact]
+    public async Task Create_BlankName_ReturnsBadRequest()
+    {
+        HttpClient client = await CreateAuthedClientAsync();
+        CreateAccountRequest request = new("", null, null, null, "blank-name-account", "blank-name@example.com", "password123");
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/accounts", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_InvalidEmail_ReturnsBadRequest()
+    {
+        HttpClient client = await CreateAuthedClientAsync();
+        CreateAccountRequest request = new("New Account", null, null, null, "invalid-email-account", "not-an-email", "password123");
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/accounts", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     // KNOWN GAP: unlike AuthService.RegisterAsync, AccountService.CreateAsync does not
     // pre-check username/email uniqueness before insert. A duplicate hits the DB's unique
     // index and surfaces as an unhandled DbUpdateException -> uncaught by ExceptionHandlingMiddleware's
@@ -147,6 +169,22 @@ public sealed class AccountsControllerTests(ApiFactoryFixture fixture) : IAsyncL
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         AccountDto? dto = await response.Content.ReadJsonAsync<AccountDto>();
         Assert.Equal("Updated Name", dto!.Name);
+    }
+
+    [Fact]
+    public async Task Update_BlankUsername_ReturnsBadRequest()
+    {
+        HttpClient client = await CreateAuthedClientAsync();
+        Account account;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            account = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "update-validation-target", email: "update-validation-target@example.com");
+        }
+        UpdateAccountRequest request = new("Updated Name", null, null, null, true, "", "update-validation-target@example.com");
+
+        HttpResponseMessage response = await client.PutAsJsonAsync($"/api/accounts/{account.Id}", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

@@ -119,9 +119,14 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         LoginResponse? body = await response.Content.ReadJsonAsync<LoginResponse>();
         Assert.False(string.IsNullOrWhiteSpace(body!.AccessToken));
         IEnumerable<string> setCookieHeaders = response.Headers.GetValues("Set-Cookie");
-        Assert.Contains(setCookieHeaders, h => h.StartsWith("access_token=", StringComparison.Ordinal)
-            && h.Contains("secure", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(setCookieHeaders, h => h.StartsWith("refresh_token=", StringComparison.Ordinal));
+        string accessTokenCookie = Assert.Single(setCookieHeaders, h => h.StartsWith("access_token=", StringComparison.Ordinal));
+        string refreshTokenCookie = Assert.Single(setCookieHeaders, h => h.StartsWith("refresh_token=", StringComparison.Ordinal));
+        foreach (string cookie in new[] { accessTokenCookie, refreshTokenCookie })
+        {
+            Assert.Contains("secure", cookie, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("samesite=none", cookie, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     // VerifyEmail

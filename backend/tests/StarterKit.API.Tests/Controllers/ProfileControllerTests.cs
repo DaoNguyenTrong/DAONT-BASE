@@ -29,6 +29,32 @@ public sealed class ProfileControllerTests(ApiFactoryFixture fixture) : IAsyncLi
     }
 
     [Fact]
+    public async Task Get_ExpiredToken_ReturnsUnauthorized()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        AppDbContext context = CreateDbContext();
+        Account account = await AuthTestHelper.SeedConfirmedAccountAsync(context);
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintExpiredAccessToken(account));
+
+        HttpResponseMessage response = await client.GetAsync("/api/profile");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_TamperedSignature_ReturnsUnauthorized()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        AppDbContext context = CreateDbContext();
+        Account account = await AuthTestHelper.SeedConfirmedAccountAsync(context);
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintTamperedAccessToken(account));
+
+        HttpResponseMessage response = await client.GetAsync("/api/profile");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Get_Authenticated_ReturnsOwnProfile()
     {
         HttpClient client = fixture.CreateTestClient();
@@ -62,6 +88,23 @@ public sealed class ProfileControllerTests(ApiFactoryFixture fixture) : IAsyncLi
         HttpResponseMessage response = await client.PutAsJsonAsync("/api/profile", request);
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_InvalidEmail_ReturnsBadRequest()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        Account account;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            account = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "profile-validation-user", email: "profile-validation@example.com");
+        }
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(account));
+        UpdateProfileRequest request = new("New Name", null, null, null, "not-an-email");
+
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/profile", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
