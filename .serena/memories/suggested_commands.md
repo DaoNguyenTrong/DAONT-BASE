@@ -15,7 +15,8 @@ dotnet build backend/StarterKit.sln --no-restore -m:1
 # Run API
 dotnet run --project backend/src/StarterKit.API
 
-# Test
+# Test — StarterKit.Infrastructure.Tests and StarterKit.API.Tests use Testcontainers.PostgreSql,
+# so Docker must be running locally (no local Postgres/Mailpit needed — the containers are ephemeral).
 dotnet test backend/StarterKit.sln --no-restore -m:1
 
 # EF Core migrations

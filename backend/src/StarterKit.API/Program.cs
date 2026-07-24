@@ -76,6 +76,9 @@ builder.Services.AddCors(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddOpenApiWithAuth();
 builder.Services.AddAuthorization();
+RateLimiterSettings rateLimiterSettings = builder.Configuration
+    .GetSection(nameof(RateLimiterSettings)).Get<RateLimiterSettings>() ?? new RateLimiterSettings();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -97,8 +100,8 @@ builder.Services.AddRateLimiter(options =>
             partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 5,
-                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = rateLimiterSettings.AuthPermitLimit,
+                Window = TimeSpan.FromMinutes(rateLimiterSettings.AuthWindowMinutes),
                 QueueLimit = 0
             }));
 });

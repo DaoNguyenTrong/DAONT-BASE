@@ -7,7 +7,9 @@ using StarterKit.Domain.Exceptions;
 
 namespace StarterKit.Infrastructure.Services;
 
-public sealed class GoogleAuthProvider(IOptions<ExternalAuthSettings> externalAuthOptions) : IExternalAuthProvider
+internal sealed class GoogleAuthProvider(
+    IOptions<ExternalAuthSettings> externalAuthOptions,
+    IGoogleJwtValidator googleJwtValidator) : IExternalAuthProvider
 {
     private readonly ExternalAuthSettings externalAuthSettings = externalAuthOptions.Value;
 
@@ -24,7 +26,7 @@ public sealed class GoogleAuthProvider(IOptions<ExternalAuthSettings> externalAu
 
         try
         {
-            payload = await GoogleJsonWebSignature.ValidateAsync(credential, settings);
+            payload = await googleJwtValidator.ValidateAsync(credential, settings);
         }
         catch (InvalidJwtException)
         {

@@ -28,6 +28,7 @@ internal static class EmailExtensions
             throw new InvalidOperationException("EmailSettings:FrontendBaseUrl is required.");
 
         services.Configure<EmailSettings>(configuration.GetSection(nameof(EmailSettings)));
+        services.AddScoped<ISmtpClientFactory, SmtpClientFactory>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         return services;
