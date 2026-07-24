@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.0] - 2026-07-24
+
 ### Security
 
 - Bump Microsoft packages from 10.0.8 to 10.0.10 to resolve five high-severity DoS advisories (GHSA-23rf-6693-g89p and related) on transitive `System.Security.Cryptography.Xml`.
