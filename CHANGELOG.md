@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 - Full backend test coverage across all layers: `StarterKit.Application.Tests` now covers every service (Account, ApiKey, AuditLog, File, SystemSettings, in addition to the existing Auth coverage); new `StarterKit.Infrastructure.Tests` project covers JWT/password/cache/storage/timezone/Google/SMTP services plus Testcontainers.PostgreSql-backed repository and cleanup-service tests; new `StarterKit.API.Tests` project adds `WebApplicationFactory` + Testcontainers integration tests across all 8 controllers and cross-cutting middleware.
 - `RateLimiterSettings` config seam for `AuthController`'s rate limiter (production default unchanged).
+- Additional backend test coverage from a follow-up review: expired/tampered JWT rejection, oversized file upload, DataAnnotations validation-400 paths on Accounts/ApiKeys/Profile, auth cookie flag assertions (`HttpOnly`/`SameSite`), `RefreshTokenCleanupService`'s failure-swallowing path, `UserTimeZoneProvider`'s `httpContext.Items` string-id branch, and expanded `Account`/`ApiKey` domain entity cases.
+
+### Fixed
+
+- `GenericRepositoryTests`' `CreatedAt`-ordering test was non-deterministic (audit-field stamping silently overwrote manually-seeded timestamps); fixed to seed a genuine timestamp difference.
+- `AccountServiceTests`' email-collision test used an over-permissive mock that never evaluated the self-exclusion predicate — tightened so the check is actually exercised.
 
 ### Changed
 
