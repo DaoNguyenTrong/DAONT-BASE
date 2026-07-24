@@ -1,61 +1,61 @@
 # StarterKit
 
-Bộ khởi tạo (app starter) cho ứng dụng web mới: .NET 10 Clean Architecture ở backend, Vue 3 + Vite ở frontend. Đã có sẵn phần nền tảng dùng chung cho hầu hết ứng dụng — auth, quản lý tài khoản, API key, audit log, file storage, system settings — để bạn bắt đầu code tính năng nghiệp vụ ngay, không phải dựng lại hạ tầng cơ bản từ đầu.
+An app starter kit for new web applications: .NET 10 Clean Architecture on the backend, Vue 3 + Vite on the frontend. It ships with the shared foundation most applications need — auth, account management, API keys, audit log, file storage, system settings — so you can start writing business features right away instead of rebuilding basic infrastructure from scratch.
 
-Đây **không phải** một sản phẩm hoàn chỉnh — không có tính năng nghiệp vụ nào được cài sẵn. Xoá/thay các phần không cần, thêm domain của bạn lên trên nền này.
+This is **not** a finished product — no business features are baked in. Remove/replace whatever you don't need and add your own domain on top of this foundation.
 
-## Đã có sẵn
+## Already Included
 
-- **Auth**: đăng ký/đăng nhập email + password (JWT access + refresh token, refresh token lưu dạng SHA-256 hash), xác thực email bắt buộc qua SMTP, đăng nhập Google (credential flow), quản lý session (list/revoke theo thiết bị).
-- **Account**: CRUD tài khoản, đổi mật khẩu, profile.
-- **ApiKey**: tạo/quản lý API key cho tài khoản.
-- **AuditLog**: ghi log hành động.
-- **Files**: upload/lưu file (local disk, provider pluggable qua `IStorageProvider`).
-- **SystemSettings**: cấu hình hệ thống dạng key/value.
+- **Auth**: email + password register/login (JWT access + refresh token, refresh token stored as a SHA-256 hash), mandatory email verification via SMTP, Google login (credential flow), session management (list/revoke by device).
+- **Account**: account CRUD, change password, profile.
+- **ApiKey**: create/manage API keys for an account.
+- **AuditLog**: action logging.
+- **Files**: upload/store files (local disk, provider pluggable via `IStorageProvider`).
+- **SystemSettings**: system configuration as key/value pairs.
 
-Không có multi-tenancy — mô hình single-user/single-account. Không có admin role/global role — mọi tài khoản đã đăng nhập đều truy cập ngang hàng các API trên; thêm phân quyền theo nhu cầu ứng dụng cụ thể của bạn.
+No multi-tenancy — single-user/single-account model. No admin role/global role — every logged-in account has equal access to the APIs above; add authorization as your specific application needs.
 
-## Kiến trúc
+## Architecture
 
 ```text
 backend/    .NET 10 API — Domain → Application → Infrastructure → API (src/, tests/, StarterKit.sln)
 frontend/   Vue 3 + Vite dashboard (src/api, src/stores, src/views, ...)
-shared/     docs/ + openapi/ (contract dùng chung, chưa wire codegen)
-plans/      lịch sử plan file của các task đã triển khai (tham khảo pattern, không phải tài liệu sản phẩm)
+shared/     docs/ + openapi/ (shared contract, codegen not wired up yet)
+plans/      history of plan files from implemented tasks (reference for patterns, not product documentation)
 ```
 
-Chi tiết layer/rule cho từng phần xem `CLAUDE.md` / `AGENTS.md` và `.claude/rules/`.
+For layer/rule details for each part, see `CLAUDE.md` / `AGENTS.md` and `.claude/rules/`.
 
-## Tech stack
+## Tech Stack
 
-| Thành phần | Công nghệ                                          |
-| ---------- | --------------------------------------------------- |
-| Backend    | .NET 10, ASP.NET Core, Clean Architecture, EF Core   |
-| Database   | PostgreSQL                                           |
-| Frontend   | Vue 3 + Vite, Pinia, naive-ui, vue-i18n, Tailwind    |
-| Storage    | Local disk hiện tại; pluggable qua `IStorageProvider`|
-| Email      | SMTP (MailKit) — bắt buộc, kể cả ở dev               |
+| Component | Technology                                           |
+| --------- | ----------------------------------------------------- |
+| Backend   | .NET 10, ASP.NET Core, Clean Architecture, EF Core     |
+| Database  | PostgreSQL                                             |
+| Frontend  | Vue 3 + Vite, Pinia, naive-ui, vue-i18n, Tailwind      |
+| Storage   | Local disk currently; pluggable via `IStorageProvider` |
+| Email     | SMTP (MailKit) — required, even in dev                |
 
-## Bắt đầu
+## Getting Started
 
-### 1. Hạ tầng local (Postgres + Mailpit)
+### 1. Local Infrastructure (Postgres + Mailpit)
 
 ```bash
 docker compose up -d
 ```
 
-Email xác thực tài khoản là bắt buộc ngay cả ở môi trường dev — không có seeder/bypass. Dùng Mailpit (`http://localhost:8025`) để xem email xác thực gửi ra khi test đăng ký local, thay vì cần SMTP thật.
+Account verification email is required even in the dev environment — there is no seeder/bypass. Use Mailpit (`http://localhost:8025`) to view the verification email sent out when testing local registration, instead of needing a real SMTP server.
 
 ### 2. Backend (`backend/`)
 
 ```bash
-# Copy config mẫu
+# Copy the sample config
 cp backend/src/StarterKit.API/appsettings.Example.json backend/src/StarterKit.API/appsettings.json
 
-# Build — serialized, parallel build broken trong .NET 10 env này
+# Build — serialized, parallel build is broken in this .NET 10 environment
 dotnet build backend/StarterKit.sln --no-restore -m:1
 
-# Áp dụng migration
+# Apply migrations
 dotnet ef database update --project backend/src/StarterKit.Infrastructure --startup-project backend/src/StarterKit.API
 
 # Run API
@@ -65,7 +65,7 @@ dotnet run --project backend/src/StarterKit.API
 dotnet test backend/StarterKit.sln --no-restore -m:1
 ```
 
-Production: migration tự áp dụng lúc startup qua `Database.MigrateAsync`.
+Production: migrations are applied automatically on startup via `Database.MigrateAsync`.
 
 ### 3. Frontend (`frontend/`)
 
@@ -75,23 +75,23 @@ Package manager: `bun`.
 bun install --cwd frontend
 bun run --cwd frontend dev            # dev server
 bun run --cwd frontend build          # type-check + production build
-bun run --cwd frontend test:run       # unit test (vitest)
+bun run --cwd frontend test:run       # unit tests (vitest)
 bun run --cwd frontend test:e2e:install && bun run --cwd frontend test:e2e   # e2e (playwright)
-bun run --cwd frontend format         # prettier — không có ESLint trong project này
+bun run --cwd frontend format         # prettier — there is no ESLint config in this project
 ```
 
-### 4. Thử luồng đăng ký
+### 4. Try the Registration Flow
 
-`POST /api/auth/register` → mở Mailpit (`localhost:8025`) → click link xác thực → đăng nhập.
+`POST /api/auth/register` → open Mailpit (`localhost:8025`) → click the verification link → log in.
 
 ### CI
 
-Chưa có CI workflow chạy build/test trên PR/push (`.github/workflows/` chỉ có `release.yml`, chạy khi tag `v*`). Chạy các lệnh trên local trước khi xin review.
+There is no CI workflow running build/test on PR/push yet (`.github/workflows/` only has `release.yml`, triggered on `v*` tags). Run the commands above locally before requesting a review.
 
-Chi tiết đầy đủ xem `.claude/rules/commands.md`.
+For full details, see `.claude/rules/commands.md`.
 
-## Tài liệu
+## Documentation
 
-- Đóng góp / git workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Lịch sử thay đổi: [CHANGELOG.md](CHANGELOG.md)
-- Quyết định kiến trúc quan trọng: [.claude/decisions.md](.claude/decisions.md)
+- Contributing / git workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
+- Key architecture decisions: [.claude/decisions.md](.claude/decisions.md)

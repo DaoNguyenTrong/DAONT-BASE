@@ -122,13 +122,8 @@ public sealed class AccountsControllerTests(ApiFactoryFixture fixture) : IAsyncL
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    // KNOWN GAP: unlike AuthService.RegisterAsync, AccountService.CreateAsync does not
-    // pre-check username/email uniqueness before insert. A duplicate hits the DB's unique
-    // index and surfaces as an unhandled DbUpdateException -> uncaught by ExceptionHandlingMiddleware's
-    // ApiException branch -> 500, not a clean 409. This test documents current behavior, not
-    // the desired behavior — flagged separately, not silently fixed as part of test-writing.
     [Fact]
-    public async Task Create_DuplicateUsername_CurrentlyReturns500_NotConflict()
+    public async Task Create_DuplicateUsername_ReturnsConflict()
     {
         HttpClient client = await CreateAuthedClientAsync();
         await using (AppDbContext context = CreateDbContext())
@@ -139,7 +134,22 @@ public sealed class AccountsControllerTests(ApiFactoryFixture fixture) : IAsyncL
 
         HttpResponseMessage response = await client.PostAsJsonAsync("/api/accounts", request);
 
-        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_DuplicateEmail_ReturnsConflict()
+    {
+        HttpClient client = await CreateAuthedClientAsync();
+        await using (AppDbContext context = CreateDbContext())
+        {
+            await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "dup-account-user-2", email: "dup-shared@example.com");
+        }
+        CreateAccountRequest request = new("New Account", null, null, null, "another-username", "dup-shared@example.com", "password123");
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/accounts", request);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]

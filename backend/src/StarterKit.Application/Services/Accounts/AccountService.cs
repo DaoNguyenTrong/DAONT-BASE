@@ -51,13 +51,38 @@ public sealed class AccountService(
         CreateAccountRequest request,
         CancellationToken cancellationToken)
     {
+        IRepository<Account, Guid> repository = unitOfWork.Repository<Account, Guid>();
+
+        await EnsureUniqueAccountAsync(repository, request.Username, request.Email, cancellationToken);
+
         Account account = Account.Create(request.ToParams());
         account.SetPasswordHash(passwordHasher.Hash(request.Password));
 
-        await unitOfWork.Repository<Account, Guid>().AddAsync(account, cancellationToken);
+        await repository.AddAsync(account, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return EntityMapper.ToDto(account);
+    }
+
+    private static async Task EnsureUniqueAccountAsync(
+        IRepository<Account, Guid> accountRepository,
+        string username,
+        string email,
+        CancellationToken cancellationToken)
+    {
+        if (await accountRepository.FirstOrDefaultAsync(
+                account => account.Username == username,
+                cancellationToken) is not null)
+        {
+            throw new ConflictException(ApplicationMessages.AccountUsernameAlreadyExists);
+        }
+
+        if (await accountRepository.FirstOrDefaultAsync(
+                account => account.Email == email,
+                cancellationToken) is not null)
+        {
+            throw new ConflictException(ApplicationMessages.AccountEmailAlreadyExists);
+        }
     }
 
     public async Task<AccountDto> UpdateAsync(
