@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.1",
   "info": {
-    "title": "FeedbackHub API",
-    "description": "REST API for the FeedbackHub template.\n\n**Authentication:** All endpoints except `/auth/login` and `/auth/refresh` require a JWT Bearer token in the `Authorization` header, or the `access_token` cookie.\n\n**Required header:** Every request must include the `X-TimeZone` header with an IANA timezone identifier (e.g. `Asia/Ho_Chi_Minh`).\n\n**Roles:**\n- `User` — access own resources and profile\n- `Admin` — full management of accounts and system configuration",
+    "title": "StarterKit API",
+    "description": "REST API for the StarterKit template.\n\n**Authentication:** All endpoints except `/auth/login` and `/auth/refresh` require a JWT Bearer token in the `Authorization` header, or the `access_token` cookie.\n\n**Required header:** Every request must include the `X-TimeZone` header with an IANA timezone identifier (e.g. `Asia/Ho_Chi_Minh`).",
     "version": "v1"
   },
   "servers": [

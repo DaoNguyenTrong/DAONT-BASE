@@ -1,128 +1,97 @@
-# Feedback Hub
+# StarterKit
 
-Nền tảng tập trung thu thập và quản lý feedback từ nhiều sản phẩm qua một widget JavaScript nhúng (`<script>`).
+Bộ khởi tạo (app starter) cho ứng dụng web mới: .NET 10 Clean Architecture ở backend, Vue 3 + Vite ở frontend. Đã có sẵn phần nền tảng dùng chung cho hầu hết ứng dụng — auth, quản lý tài khoản, API key, audit log, file storage, system settings — để bạn bắt đầu code tính năng nghiệp vụ ngay, không phải dựng lại hạ tầng cơ bản từ đầu.
 
-Mỗi sản phẩm gắn widget → người dùng gửi feedback (kèm ảnh nếu cần) → team xử lý trên dashboard theo workflow trạng thái. Multi-tenant: feedback được quản lý theo Tenant / Project.
+Đây **không phải** một sản phẩm hoàn chỉnh — không có tính năng nghiệp vụ nào được cài sẵn. Xoá/thay các phần không cần, thêm domain của bạn lên trên nền này.
 
-> **Trạng thái hiện tại:** repo đang ở giai đoạn nền tảng — auth, multi-tenant (Tenant/Membership), API key, file storage, audit log, system settings đã có. Phần sản phẩm cốt lõi (embed widget, gửi feedback, dashboard xử lý workflow) **chưa được implement**, xem tiến độ theo phase tại [shared/docs/architecture/FeedbackHub-MVP-Implementation-Plan.md](shared/docs/architecture/FeedbackHub-MVP-Implementation-Plan.md).
+## Đã có sẵn
 
-## Kiến trúc tổng quan
+- **Auth**: đăng ký/đăng nhập email + password (JWT access + refresh token, refresh token lưu dạng SHA-256 hash), xác thực email bắt buộc qua SMTP, đăng nhập Google (credential flow), quản lý session (list/revoke theo thiết bị).
+- **Account**: CRUD tài khoản, đổi mật khẩu, profile.
+- **ApiKey**: tạo/quản lý API key cho tài khoản.
+- **AuditLog**: ghi log hành động.
+- **Files**: upload/lưu file (local disk, provider pluggable qua `IStorageProvider`).
+- **SystemSettings**: cấu hình hệ thống dạng key/value.
 
-```text
-Product A / B / C
-        │
-        ▼
- Feedback Widget (JS SDK)         ← chưa implement
-        │
-      HTTPS
-        │
-        ▼
-  Feedback API (.NET, Clean Architecture)
-        │
-        ├── PostgreSQL
-        ├── File Storage (Local disk hiện tại; provider pluggable qua IStorageProvider)
-        └── Redis (chưa wire, cân nhắc sau nếu cần)
+Không có multi-tenancy — mô hình single-user/single-account. Không có admin role/global role — mọi tài khoản đã đăng nhập đều truy cập ngang hàng các API trên; thêm phân quyền theo nhu cầu ứng dụng cụ thể của bạn.
 
- Dashboard (Vue 3 + Vite)
-        │
-     REST API
-```
-
-## Phạm vi MVP
-
-**Đã có:** đăng ký/đăng nhập email + password (JWT), Tenant + Membership (Owner/Member) qua header `X-Tenant-Id`, invite member, transfer ownership, API key, file storage (local disk), audit log, system settings, dashboard shell (login, accounts, profile).
-
-**Đang làm / chưa có:** trash Tenant + purge sau 30 ngày, Project + ApiKey + generate embed script, rate limit theo ApiKey/IP, public API nhận feedback + đính kèm ảnh, dashboard quản lý feedback (list/filter, đổi status, comment nội bộ), object storage provider ngoài local disk (S3/R2/MinIO).
-
-**Ngoài phạm vi MVP:** social login (Google/GitHub/Microsoft), AI phân loại, tích hợp Jira/GitHub, notification, analytics nâng cao, voting.
-
-## Workflow (feedback, khi implement xong)
+## Kiến trúc
 
 ```text
-NEW → TRIAGED → IN_PROGRESS → RESOLVED → CLOSED
- NEW → REJECTED
-```
-
-## Tech stack
-
-| Thành phần   | Công nghệ                        |
-| ------------ | --------------------------------- |
-| Backend      | .NET 10, ASP.NET Core, Clean Architecture |
-| Database     | PostgreSQL (EF Core)              |
-| Frontend     | Vue 3 + Vite, Pinia, naive-ui, vue-i18n |
-| Storage      | Local disk hiện tại; S3/R2/MinIO planned (pluggable provider) |
-| Cache        | Redis — chưa wire, cân nhắc sau nếu cần |
-
-## Cấu trúc repo
-
-```text
-backend/    .NET 10 API — Domain → Application → Infrastructure → API (src/, tests/, FEEDBACK-HUB.sln)
+backend/    .NET 10 API — Domain → Application → Infrastructure → API (src/, tests/, StarterKit.sln)
 frontend/   Vue 3 + Vite dashboard (src/api, src/stores, src/views, ...)
-shared/     docs/ (api, architecture) + openapi/ (contract dùng chung, chưa wire codegen)
-plans/      plan file cho các task đang triển khai
+shared/     docs/ + openapi/ (contract dùng chung, chưa wire codegen)
+plans/      lịch sử plan file của các task đã triển khai (tham khảo pattern, không phải tài liệu sản phẩm)
 ```
 
 Chi tiết layer/rule cho từng phần xem `CLAUDE.md` / `AGENTS.md` và `.claude/rules/`.
 
+## Tech stack
+
+| Thành phần | Công nghệ                                          |
+| ---------- | --------------------------------------------------- |
+| Backend    | .NET 10, ASP.NET Core, Clean Architecture, EF Core   |
+| Database   | PostgreSQL                                           |
+| Frontend   | Vue 3 + Vite, Pinia, naive-ui, vue-i18n, Tailwind    |
+| Storage    | Local disk hiện tại; pluggable qua `IStorageProvider`|
+| Email      | SMTP (MailKit) — bắt buộc, kể cả ở dev               |
+
 ## Bắt đầu
 
-### Backend (`backend/`)
+### 1. Hạ tầng local (Postgres + Mailpit)
 
 ```bash
+docker compose up -d
+```
+
+Email xác thực tài khoản là bắt buộc ngay cả ở môi trường dev — không có seeder/bypass. Dùng Mailpit (`http://localhost:8025`) để xem email xác thực gửi ra khi test đăng ký local, thay vì cần SMTP thật.
+
+### 2. Backend (`backend/`)
+
+```bash
+# Copy config mẫu
+cp backend/src/StarterKit.API/appsettings.Example.json backend/src/StarterKit.API/appsettings.json
+
 # Build — serialized, parallel build broken trong .NET 10 env này
-dotnet build backend/FEEDBACK-HUB.sln --no-restore -m:1
+dotnet build backend/StarterKit.sln --no-restore -m:1
+
+# Áp dụng migration
+dotnet ef database update --project backend/src/StarterKit.Infrastructure --startup-project backend/src/StarterKit.API
 
 # Run API
-dotnet run --project backend/src/FeedbackHub.API
+dotnet run --project backend/src/StarterKit.API
 
 # Test
-dotnet test backend/FEEDBACK-HUB.sln --no-restore -m:1
-
-# EF Core migrations — apply
-dotnet ef database update --project backend/src/FeedbackHub.Infrastructure --startup-project backend/src/FeedbackHub.API
-
-# EF Core migrations — thêm mới
-dotnet ef migrations add <MigrationName> --project backend/src/FeedbackHub.Infrastructure --startup-project backend/src/FeedbackHub.API
+dotnet test backend/StarterKit.sln --no-restore -m:1
 ```
 
 Production: migration tự áp dụng lúc startup qua `Database.MigrateAsync`.
 
-### Frontend (`frontend/`)
+### 3. Frontend (`frontend/`)
 
 Package manager: `bun`.
 
 ```bash
-# Install deps
 bun install --cwd frontend
-
-# Dev server
-bun run --cwd frontend dev
-
-# Type-check + production build
-bun run --cwd frontend build
-
-# Unit test (vitest)
-bun run --cwd frontend test:run
-
-# E2E test (playwright — cài browser 1 lần)
-bun run --cwd frontend test:e2e:install
-bun run --cwd frontend test:e2e
-
-# Format (prettier — không có ESLint trong project này)
-bun run --cwd frontend format
+bun run --cwd frontend dev            # dev server
+bun run --cwd frontend build          # type-check + production build
+bun run --cwd frontend test:run       # unit test (vitest)
+bun run --cwd frontend test:e2e:install && bun run --cwd frontend test:e2e   # e2e (playwright)
+bun run --cwd frontend format         # prettier — không có ESLint trong project này
 ```
+
+### 4. Thử luồng đăng ký
+
+`POST /api/auth/register` → mở Mailpit (`localhost:8025`) → click link xác thực → đăng nhập.
 
 ### CI
 
-Chưa có CI workflow chạy build/test trên PR/push (`.github/workflows/` chỉ có `release.yml`). Chạy các lệnh trên local trước khi xin review.
+Chưa có CI workflow chạy build/test trên PR/push (`.github/workflows/` chỉ có `release.yml`, chạy khi tag `v*`). Chạy các lệnh trên local trước khi xin review.
 
 Chi tiết đầy đủ xem `.claude/rules/commands.md`.
 
 ## Tài liệu
 
-- Kiến trúc sản phẩm MVP: [shared/docs/architecture/FeedbackHub-MVP-Architecture.md](shared/docs/architecture/FeedbackHub-MVP-Architecture.md)
-- Kiến trúc backend: [shared/docs/architecture/FeedbackHub-Backend-Architecture.md](shared/docs/architecture/FeedbackHub-Backend-Architecture.md)
-- Kế hoạch triển khai theo phase: [shared/docs/architecture/FeedbackHub-MVP-Implementation-Plan.md](shared/docs/architecture/FeedbackHub-MVP-Implementation-Plan.md)
-- API contract hiện có (Tenants): [shared/docs/api/api-tenants.md](shared/docs/api/api-tenants.md), [shared/docs/api/integration-tenants.md](shared/docs/api/integration-tenants.md)
 - Đóng góp / git workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Lịch sử thay đổi: [CHANGELOG.md](CHANGELOG.md)
+- Quyết định kiến trúc quan trọng: [.claude/decisions.md](.claude/decisions.md)
