@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 - Full backend test coverage across all layers: `StarterKit.Application.Tests` now covers every service (Account, ApiKey, AuditLog, File, SystemSettings, in addition to the existing Auth coverage); new `StarterKit.Infrastructure.Tests` project covers JWT/password/cache/storage/timezone/Google/SMTP services plus Testcontainers.PostgreSql-backed repository and cleanup-service tests; new `StarterKit.API.Tests` project adds `WebApplicationFactory` + Testcontainers integration tests across all 8 controllers and cross-cutting middleware.
 - `RateLimiterSettings` config seam for `AuthController`'s rate limiter (production default unchanged).
 - Additional backend test coverage from a follow-up review: expired/tampered JWT rejection, oversized file upload, DataAnnotations validation-400 paths on Accounts/ApiKeys/Profile, auth cookie flag assertions (`HttpOnly`/`SameSite`), `RefreshTokenCleanupService`'s failure-swallowing path, `UserTimeZoneProvider`'s `httpContext.Items` string-id branch, and expanded `Account`/`ApiKey` domain entity cases.
+- Frontend test coverage from a test-gap audit: `AccountsView.vue` (create/edit/delete dialogs, debounced search, infinite scroll — previously untested), concurrent-401 refresh queueing in the api client (`isRefreshing`/`failedQueue`), and unit tests for the router's auth/guestOnly guard.
+- `@vitest/coverage-v8` wired up for the frontend (`bun run test:coverage`) to measure real line/branch coverage instead of file-presence heuristics.
 
 ### Fixed
 
@@ -22,6 +24,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - `GoogleAuthProvider` and `SmtpEmailSender` refactored behind thin interfaces (`IGoogleJwtValidator`, `ISmtpClientFactory`) to enable unit testing — no behavior change.
+- Frontend router's `beforeEach` guard extracted into an exported `resolveGuardRedirect` function to enable direct unit testing — no behavior change.
 
 ### StarterKit baseline
 
