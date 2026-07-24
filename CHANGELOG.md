@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Additional backend test coverage from a follow-up review: expired/tampered JWT rejection, oversized file upload, DataAnnotations validation-400 paths on Accounts/ApiKeys/Profile, auth cookie flag assertions (`HttpOnly`/`SameSite`), `RefreshTokenCleanupService`'s failure-swallowing path, `UserTimeZoneProvider`'s `httpContext.Items` string-id branch, and expanded `Account`/`ApiKey` domain entity cases.
 - Frontend test coverage from a test-gap audit: `AccountsView.vue` (create/edit/delete dialogs, debounced search, infinite scroll — previously untested), concurrent-401 refresh queueing in the api client (`isRefreshing`/`failedQueue`), and unit tests for the router's auth/guestOnly guard.
 - `@vitest/coverage-v8` wired up for the frontend (`bun run test:coverage`) to measure real line/branch coverage instead of file-presence heuristics.
+- Frontend test coverage for the app shell layout (`AppHeader`, `AppFooter`, `AppSidebar`, `AppSidebarItem`, `AppLayout`), previously entirely untested despite rendering on every authenticated page; also fills out `AccountForm`'s remaining untested field bindings.
 
 ### Fixed
 
