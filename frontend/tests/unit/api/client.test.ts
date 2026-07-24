@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/stores/auth'
+import { KEEP_LOGIN_STORAGE_KEY, setKeepLoginPreference } from '@/lib/auth-session'
 import { server } from '../../helpers/msw/server'
 import { makeAuthResponse } from '../../helpers/msw/fixtures'
 import { setupTestPinia } from '../../helpers/pinia'
@@ -173,6 +174,21 @@ describe('apiClient interceptors', () => {
 
     await expect(apiClient.get('/api/test-protected')).rejects.toBeDefined()
     expect(auth.account).toBeNull()
+  })
+
+  it('clears the keep-login preference when a mid-session refresh fails', async () => {
+    server.use(
+      http.get('*/api/test-protected', () => HttpResponse.json(null, { status: 401 })),
+      http.post('*/api/auth/refresh', () => HttpResponse.json(null, { status: 401 })),
+    )
+    setKeepLoginPreference(true)
+
+    const apiClient = await loadApiClient()
+    const auth = useAuthStore()
+    auth.setAuth(makeAuthResponse())
+
+    await expect(apiClient.get('/api/test-protected')).rejects.toBeDefined()
+    expect(localStorage.getItem(KEEP_LOGIN_STORAGE_KEY)).toBeNull()
   })
 
   it('does not refresh on auth flow 401', async () => {

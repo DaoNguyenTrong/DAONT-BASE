@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getProfile } from '@/api/generated/profile/profile'
 import type {
   ChangePasswordRequest,
   ProfileDto,
@@ -10,6 +11,8 @@ import { formatDeviceInfo } from '@/lib/format-device-info'
 const visible = defineModel<boolean>('visible', { required: true })
 
 const { t, locale } = useI18n()
+const profileClient = getProfile()
+const authStore = useAuthStore()
 
 const loading = ref(false)
 const savingProfile = ref(false)
@@ -52,7 +55,7 @@ async function loadProfile() {
   loading.value = true
   loadError.value = null
   try {
-    const data = await profileApi.getProfile()
+    const data = await profileClient.profileGet()
     fillProfileForm(data)
   } catch (error) {
     loadError.value =
@@ -69,7 +72,7 @@ async function updateProfile() {
   savingProfile.value = true
   profileErrors.value = {}
   try {
-    const updated = await profileApi.updateProfile({
+    const updated = await profileClient.profileUpdate({
       name: profileForm.name.trim(),
       phone: profileForm.phone?.trim() || null,
       position: profileForm.position?.trim() || null,
@@ -95,7 +98,7 @@ async function changePassword() {
   savingPassword.value = true
   passwordErrors.value = {}
   try {
-    await profileApi.changePassword({ ...passwordForm })
+    await profileClient.profileChangePassword({ ...passwordForm })
     passwordForm.currentPassword = ''
     passwordForm.newPassword = ''
     showSuccessMessage(t('profile.passwordChanged'))
@@ -136,7 +139,7 @@ function reportSessionError(error: unknown) {
 async function loadSessions() {
   sessionsLoading.value = true
   try {
-    sessions.value = await authApi.getSessions()
+    sessions.value = await authStore.getSessions()
   } catch (error) {
     reportSessionError(error)
   } finally {
@@ -153,7 +156,7 @@ function confirmRevokeSession(session: SessionDto) {
     accept: async () => {
       revokingSessionId.value = session.id
       try {
-        await authApi.revokeSession(session.id)
+        await authStore.revokeSession(session.id)
         sessions.value = sessions.value.filter((s) => s.id !== session.id)
         showSuccessMessage(t('profile.deviceSignedOut'))
       } catch (error) {
@@ -174,7 +177,7 @@ function confirmRevokeOtherSessions() {
     accept: async () => {
       revokingOthers.value = true
       try {
-        await authApi.revokeOtherSessions()
+        await authStore.revokeOtherSessions()
         sessions.value = sessions.value.filter((session) => session.isCurrent)
         showSuccessMessage(t('profile.otherDevicesSignedOut'))
       } catch (error) {

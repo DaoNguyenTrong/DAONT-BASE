@@ -20,7 +20,7 @@ No multi-tenancy — single-user/single-account model. No admin role/global role
 ```text
 backend/    .NET 10 API — Domain → Application → Infrastructure → API (src/, tests/, StarterKit.sln)
 frontend/   Vue 3 + Vite dashboard (src/api, src/stores, src/views, ...)
-shared/     docs/ + openapi/ (shared contract, codegen not wired up yet)
+shared/     docs/ + openapi/ (shared contract — frontend generates its client/types from it)
 plans/      history of plan files from implemented tasks (reference for patterns, not product documentation)
 ```
 
@@ -72,7 +72,7 @@ Production: migrations are applied automatically on startup via `Database.Migrat
 Package manager: `bun`.
 
 ```bash
-bun install --cwd frontend
+bun install --cwd frontend            # also generates src/api/generated/** via postinstall
 bun run --cwd frontend dev            # dev server
 bun run --cwd frontend build          # type-check + production build
 bun run --cwd frontend test:run       # unit tests (vitest)
@@ -83,6 +83,23 @@ bun run --cwd frontend format         # prettier — there is no ESLint config i
 ### 4. Try the Registration Flow
 
 `POST /api/auth/register` → open Mailpit (`localhost:8025`) → click the verification link → log in.
+
+### Updating the API Contract
+
+Whenever you add or change a backend controller route, request/response DTO, or status code, regenerate the OpenAPI spec and the frontend client:
+
+```bash
+# 1. Backend: re-export the spec to shared/openapi/openapi.json (no running server/DB required)
+dotnet build backend/src/StarterKit.API/StarterKit.API.csproj --no-restore -m:1 -p:OpenApiGenerateDocumentsOnBuild=true
+
+# 2. Frontend: regenerate src/api/generated/** from the updated spec
+bun run --cwd frontend codegen
+```
+
+- Step 1 writes `shared/openapi/openapi.json` — this file is committed (it's the single source of truth for the contract), so commit the diff along with your backend change.
+- `OpenApiGenerateDocumentsOnBuild` defaults to `false`: generating the doc costs ~5-9s via a design-time host, so it's opt-in rather than slowing every plain `dotnet build`.
+- Step 2 writes `frontend/src/api/generated/**` — gitignored, never hand-edited, and already regenerated automatically on every `bun install` via `postinstall`. Only needed here to pick up the change without reinstalling.
+- There is no hand-written API wrapper layer on the frontend — views/stores call the generated client directly (side effects like updating auth state live in `frontend/src/stores/auth.ts`). See `.claude/rules/api-contract.md` for the full contract-sync workflow and how the generated client is wired in.
 
 ### CI
 

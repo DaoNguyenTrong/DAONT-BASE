@@ -1,5 +1,7 @@
 using System.Globalization;
+using System.Net;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -65,13 +67,36 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.SupportedCultures = supportedCultures;
     options.SupportedUICultures = supportedCultures;
 });
+CorsSettings corsSettings = builder.Configuration.GetSection(nameof(CorsSettings)).Get<CorsSettings>()
+    ?? throw new InvalidOperationException("CorsSettings configuration is missing.");
+if (corsSettings.AllowedOrigins.Length == 0)
+{
+    throw new InvalidOperationException("CorsSettings:AllowedOrigins must contain at least one origin.");
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-        policy.SetIsOriginAllowed(_ => true)
+        policy.WithOrigins(corsSettings.AllowedOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials());
+});
+ForwardedHeadersSettings forwardedHeadersSettings = builder.Configuration
+    .GetSection(nameof(ForwardedHeadersSettings)).Get<ForwardedHeadersSettings>() ?? new ForwardedHeadersSettings();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    foreach (string proxy in forwardedHeadersSettings.KnownProxies)
+    {
+        options.KnownProxies.Add(IPAddress.Parse(proxy));
+    }
+
+    foreach (string network in forwardedHeadersSettings.KnownNetworks)
+    {
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(network));
+    }
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddOpenApiWithAuth();
@@ -123,6 +148,7 @@ using (IServiceScope seedScope = app.Services.CreateScope())
     await SystemSettingSeeder.SeedAsync(seedDbContext);
 }
 
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseRequestLocalization();
 app.UseCors();

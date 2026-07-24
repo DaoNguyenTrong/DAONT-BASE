@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "orval",
     "dev": "vite",
+    "codegen": "orval",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
@@ -45,6 +47,7 @@
     "happy-dom": "^20.10.6",
     "msw": "^2.15.0",
     "npm-run-all2": "^9.0.2",
+    "orval": "^8.22.0",
     "prettier": "3.8.4",
     "sass-embedded": "^1.100.0",
     "typescript": "~6.0.3",

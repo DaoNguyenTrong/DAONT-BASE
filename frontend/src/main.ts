@@ -22,8 +22,8 @@ async function bootstrap() {
   const app = createApp(App)
   const pinia = createPinia()
 
-  // Must run before app.use(pinia): restoreSession -> authApi calls useAuthStore()
-  // without an explicit pinia arg, so it relies on this active instance.
+  // Must run before app.use(pinia): restoreSession -> authStore.refreshToken() calls
+  // useAuthStore() without an explicit pinia arg, so it relies on this active instance.
   setActivePinia(pinia)
   await restoreSession(pinia)
 

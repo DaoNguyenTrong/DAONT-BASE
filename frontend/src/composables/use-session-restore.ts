@@ -5,7 +5,7 @@ export async function restoreSession(pinia: Pinia) {
   const keepLogin = getKeepLoginPreference()
 
   try {
-    await authApi.refreshToken()
+    await authStore.refreshToken()
     return true
   } catch {
     if (keepLogin) {

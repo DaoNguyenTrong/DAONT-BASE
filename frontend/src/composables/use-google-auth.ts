@@ -7,7 +7,7 @@ export function useGoogleAuth() {
   async function handleCredential(credential: string) {
     showResendVerification.value = false
 
-    const result = await run(() => authApi.externalLogin('google', { credential }), {
+    const result = await run(() => useAuthStore().externalLogin('google', { credential }), {
       onCode: {
         ExternalLoginEmailNotConfirmed: () => {
           error.value = t('auth.googleEmailNotConfirmed')

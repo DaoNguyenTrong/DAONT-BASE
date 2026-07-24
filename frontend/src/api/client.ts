@@ -168,15 +168,15 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true
       isRefreshing = true
 
-      return refreshClient
-        .post('/api/auth/refresh', {})
-        .then((response) => {
-          auth.setAuth(response.data)
+      return auth
+        .refreshToken()
+        .then(() => {
           processFailedQueue(null)
           return apiClient(originalRequest)
         })
         .catch((refreshError) => {
           const apiError = toApiError(refreshError) ?? refreshError
+          clearKeepLoginPreference()
           auth.clearAuth()
           processFailedQueue(apiError)
           return Promise.reject(apiError)
