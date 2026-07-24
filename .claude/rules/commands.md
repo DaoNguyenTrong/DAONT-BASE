@@ -8,20 +8,20 @@ Read this file when building, running, or testing either `backend/` or `frontend
 
 ```bash
 # Serialized — parallel build is broken in this .NET 10 environment
-dotnet build backend/FEEDBACK-HUB.sln --no-restore -m:1
+dotnet build backend/StarterKit.sln --no-restore -m:1
 
 # Run API
-dotnet run --project backend/src/FeedbackHub.API
+dotnet run --project backend/src/StarterKit.API
 ```
 
 ### EF Core Migrations
 
 ```bash
 # Apply pending migrations
-dotnet ef database update --project backend/src/FeedbackHub.Infrastructure --startup-project backend/src/FeedbackHub.API
+dotnet ef database update --project backend/src/StarterKit.Infrastructure --startup-project backend/src/StarterKit.API
 
 # Add a new migration
-dotnet ef migrations add <MigrationName> --project backend/src/FeedbackHub.Infrastructure --startup-project backend/src/FeedbackHub.API
+dotnet ef migrations add <MigrationName> --project backend/src/StarterKit.Infrastructure --startup-project backend/src/StarterKit.API
 ```
 
 In production, migrations are applied automatically on startup via `Database.MigrateAsync`.
@@ -29,10 +29,10 @@ In production, migrations are applied automatically on startup via `Database.Mig
 ### Tests
 
 ```bash
-dotnet test backend/FEEDBACK-HUB.sln --no-restore -m:1
+dotnet test backend/StarterKit.sln --no-restore -m:1
 ```
 
-Test projects live under `backend/tests/` (`FeedbackHub.Domain.Tests`, `FeedbackHub.Application.Tests`), mirroring the `backend/src/` layer split. See `docs/unit-testing-plan.md` for the testing strategy and phase roadmap.
+Test projects live under `backend/tests/` (`StarterKit.Domain.Tests`, `StarterKit.Application.Tests`), mirroring the `backend/src/` layer split. See `docs/unit-testing-plan.md` for the testing strategy and phase roadmap.
 
 ## Frontend (`frontend/`)
 

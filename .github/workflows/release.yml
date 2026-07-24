@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
@@ -19,16 +19,13 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: "10.0.x"
 
       - name: Restore (backend)
-        run: dotnet restore backend/FEEDBACK-HUB.sln
+        run: dotnet restore backend/StarterKit.sln
 
       - name: Test (backend)
-        run: dotnet test backend/FEEDBACK-HUB.sln --no-restore -m:1
-
-      - name: Build Release (backend)
-        run: dotnet publish backend/src/FeedbackHub.API -c Release -o ./publish
+        run: dotnet test backend/StarterKit.sln --no-restore -m:1
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -40,9 +37,6 @@ jobs:
 
       - name: Test (frontend)
         run: bun run --cwd frontend test:run
-
-      - name: Build (frontend)
-        run: bun run --cwd frontend build
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

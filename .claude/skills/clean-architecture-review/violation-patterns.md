@@ -6,7 +6,7 @@
 
 ```csharp
 // BAD - Domain/Entities/User.cs
-using FeedbackHub.Infrastructure.Persistence;  // VIOLATION!
+using StarterKit.Infrastructure.Persistence;  // VIOLATION!
 
 public class User
 {
@@ -27,7 +27,7 @@ public class User
 
 ```csharp
 // BAD - Application/Features/Users/CreateUserHandler.cs
-using FeedbackHub.Infrastructure.Services;  // VIOLATION!
+using StarterKit.Infrastructure.Services;  // VIOLATION!
 
 public class CreateUserHandler
 {
@@ -37,7 +37,7 @@ public class CreateUserHandler
 
 ```csharp
 // GOOD - Dùng interface từ Domain/Application
-using FeedbackHub.Domain.Interfaces;
+using StarterKit.Domain.Interfaces;
 
 public class CreateUserHandler
 {
@@ -139,14 +139,14 @@ public async Task Handle(CreateOrderCommand cmd)
 ### Tìm Domain violations với grep
 
 ```bash
-# Trong backend/src/FeedbackHub.Domain, tìm using không hợp lệ
-grep -r "using FeedbackHub.Application\|using FeedbackHub.Infrastructure\|using FeedbackHub.API" backend/src/FeedbackHub.Domain/
+# Trong backend/src/StarterKit.Domain, tìm using không hợp lệ
+grep -r "using StarterKit.Application\|using StarterKit.Infrastructure\|using StarterKit.API" backend/src/StarterKit.Domain/
 ```
 
 ### Tìm Application violations
 
 ```bash
-grep -r "using FeedbackHub.Infrastructure\|using FeedbackHub.API" backend/src/FeedbackHub.Application/
+grep -r "using StarterKit.Infrastructure\|using StarterKit.API" backend/src/StarterKit.Application/
 ```
 
 ### Tìm fat interfaces với Serena
@@ -159,6 +159,6 @@ find_symbol({name: "I*"})
 ### Tìm god classes
 
 ```
-get_symbols_overview({path: "backend/src/FeedbackHub.Application/Features"})
+get_symbols_overview({path: "backend/src/StarterKit.Application/Features"})
 # Class nào có > 5 injected dependencies trong constructor
 ```
