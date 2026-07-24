@@ -6,12 +6,12 @@ Read this when changing a backend endpoint, request/response DTO, or header cont
 
 `shared/openapi/` is a **placeholder** — reserved for the backend's exported OpenAPI spec, not yet wired up (see `shared/openapi/README.md` and `.claude/decisions.md`). There is no codegen pipeline today. Until it exists:
 
-- The frontend's request/response types (`frontend/src/api/types.ts`) are **hand-maintained** — they are not generated from `backend/src/FeedbackHub.API`'s actual contract.
+- The frontend's request/response types (`frontend/src/api/types.ts`) are **hand-maintained** — they are not generated from `backend/src/StarterKit.API`'s actual contract.
 - Nothing automatically fails or warns when a backend DTO and its frontend counterpart drift apart. Treat this as a manual, easy-to-miss sync step.
 
 ## Rule: Changing a Backend Endpoint or DTO
 
-Whenever you change a controller route, request/response DTO shape, status code, or error contract in `backend/src/FeedbackHub.API` or `backend/src/FeedbackHub.Application`:
+Whenever you change a controller route, request/response DTO shape, status code, or error contract in `backend/src/StarterKit.API` or `backend/src/StarterKit.Application`:
 
 1. Check whether `frontend/src/api/{resource}-api.ts` calls that endpoint and whether `frontend/src/api/types.ts` has a matching type.
 2. Update the frontend type/call to match — same field names/casing (backend DTOs are typically `PascalCase` in C# but serialize `camelCase` over the wire; frontend types should match the wire shape, not the C# property names).

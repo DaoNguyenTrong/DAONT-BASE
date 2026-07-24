@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AccountNameRequired" xml:space="preserve">
+    <value>Tên tài khoản là bắt buộc.</value>
+  </data>
+  <data name="AccountUsernameRequired" xml:space="preserve">
+    <value>Tên đăng nhập là bắt buộc.</value>
+  </data>
+  <data name="AccountEmailRequired" xml:space="preserve">
+    <value>Email tài khoản là bắt buộc.</value>
+  </data>
+  <data name="PasswordHashRequired" xml:space="preserve">
+    <value>Mã băm mật khẩu là bắt buộc.</value>
+  </data>
+  <data name="FileNameRequired" xml:space="preserve">
+    <value>Tên tệp là bắt buộc.</value>
+  </data>
+  <data name="ContentTypeRequired" xml:space="preserve">
+    <value>Loại nội dung là bắt buộc.</value>
+  </data>
+  <data name="FileSizePositive" xml:space="preserve">
+    <value>Kích thước tệp phải lớn hơn không.</value>
+  </data>
+  <data name="StoragePathRequired" xml:space="preserve">
+    <value>Đường dẫn lưu trữ là bắt buộc.</value>
+  </data>
+  <data name="AccountIdRequired" xml:space="preserve">
+    <value>Mã tài khoản là bắt buộc.</value>
+  </data>
+  <data name="RefreshTokenRequired" xml:space="preserve">
+    <value>Refresh token là bắt buộc.</value>
+  </data>
+  <data name="RefreshTokenExpiryFuture" xml:space="preserve">
+    <value>Thời hạn refresh token phải ở tương lai.</value>
+  </data>
+  <data name="InvalidUsernameOrPassword" xml:space="preserve">
+    <value>Tên đăng nhập hoặc mật khẩu không hợp lệ.</value>
+  </data>
+  <data name="InvalidCurrentPassword" xml:space="preserve">
+    <value>Mật khẩu hiện tại không hợp lệ.</value>
+  </data>
+  <data name="InvalidRefreshToken" xml:space="preserve">
+    <value>Refresh token không hợp lệ.</value>
+  </data>
+  <data name="AccountUsernameAlreadyExists" xml:space="preserve">
+    <value>Tên đăng nhập đã tồn tại.</value>
+  </data>
+  <data name="AccountEmailAlreadyExists" xml:space="preserve">
+    <value>Email tài khoản đã tồn tại.</value>
+  </data>
+  <data name="FileIsRequired" xml:space="preserve">
+    <value>Tệp là bắt buộc.</value>
+  </data>
+  <data name="FileSizeExceeded" xml:space="preserve">
+    <value>Kích thước tệp không được vượt quá {0} byte.</value>
+  </data>
+  <data name="FileContentTypeNotAllowed" xml:space="preserve">
+    <value>Loại nội dung tệp không được phép.</value>
+  </data>
+  <data name="AuthenticatedUserRequired" xml:space="preserve">
+    <value>Người dùng xác thực là bắt buộc.</value>
+  </data>
+  <data name="EntityNotFound" xml:space="preserve">
+    <value>{0} với id '{1}' không tìm thấy.</value>
+  </data>
+  <data name="FieldRequired" xml:space="preserve">
+    <value>Trường này là bắt buộc.</value>
+  </data>
+  <data name="FieldMaxLength" xml:space="preserve">
+    <value>Trường này không được vượt quá {1} ký tự.</value>
+  </data>
+  <data name="FieldMinLength" xml:space="preserve">
+    <value>Trường này phải có ít nhất {1} ký tự.</value>
+  </data>
+  <data name="FieldEmailAddress" xml:space="preserve">
+    <value>Địa chỉ email không hợp lệ.</value>
+  </data>
+  <data name="SystemSettingKeyRequired" xml:space="preserve">
+    <value>Khóa cấu hình hệ thống là bắt buộc.</value>
+  </data>
+  <data name="FieldRange" xml:space="preserve">
+    <value>Trường này phải trong khoảng {1} đến {2}.</value>
+  </data>
+  <data name="FieldRegularExpression" xml:space="preserve">
+    <value>Trường này không đúng định dạng yêu cầu.</value>
+  </data>
+  <data name="AccountNotFound" xml:space="preserve">
+    <value>Tài khoản không tìm thấy.</value>
+  </data>
+  <data name="EmailVerificationTokenRequired" xml:space="preserve">
+    <value>Token xác thực email là bắt buộc.</value>
+  </data>
+  <data name="EmailVerificationTokenExpiryFuture" xml:space="preserve">
+    <value>Thời hạn token xác thực email phải ở tương lai.</value>
+  </data>
+  <data name="EmailNotConfirmed" xml:space="preserve">
+    <value>Email của tài khoản chưa được xác thực. Vui lòng kiểm tra hộp thư để xác thực.</value>
+  </data>
+  <data name="EmailVerificationTokenInvalidOrExpired" xml:space="preserve">
+    <value>Token xác thực email không hợp lệ hoặc đã hết hạn.</value>
+  </data>
+  <data name="EmailAlreadyConfirmed" xml:space="preserve">
+    <value>Email của tài khoản đã được xác thực.</value>
+  </data>
+  <data name="ExternalLoginProviderRequired" xml:space="preserve">
+    <value>Nhà cung cấp đăng nhập là bắt buộc.</value>
+  </data>
+  <data name="ExternalLoginProviderUserIdRequired" xml:space="preserve">
+    <value>Mã người dùng từ nhà cung cấp là bắt buộc.</value>
+  </data>
+  <data name="ExternalLoginEmailNotConfirmed" xml:space="preserve">
+    <value>Đã có tài khoản dùng email này nhưng chưa được xác thực. Vui lòng xác thực email trước khi liên kết đăng nhập.</value>
+  </data>
+  <data name="ExternalLoginProviderNotSupported" xml:space="preserve">
+    <value>Nhà cung cấp đăng nhập không được hỗ trợ.</value>
+  </data>
+  <data name="InvalidExternalCredential" xml:space="preserve">
+    <value>Thông tin xác thực từ nhà cung cấp không hợp lệ.</value>
+  </data>
+  <data name="ExternalLoginEmailNotVerifiedByProvider" xml:space="preserve">
+    <value>Nhà cung cấp chưa xác thực địa chỉ email này. Vui lòng xác thực email với nhà cung cấp trước khi đăng nhập.</value>
+  </data>
+  <data name="ValidationFailed" xml:space="preserve">
+    <value>Dữ liệu gửi lên không hợp lệ. Vui lòng kiểm tra lại các trường được đánh dấu.</value>
+  </data>
+  <data name="TooManyRequests" xml:space="preserve">
+    <value>Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau ít phút.</value>
+  </data>
+  <data name="InternalServerError" xml:space="preserve">
+    <value>Đã có lỗi xảy ra. Vui lòng thử lại sau.</value>
+  </data>
+</root>

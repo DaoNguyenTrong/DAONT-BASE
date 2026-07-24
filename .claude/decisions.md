@@ -1,10 +1,18 @@
 # Decision Log
 
-Expensive, non-obvious architectural decisions for FEEDBACK-HUB — real trade-offs, external constraints, rejected alternatives, or anything a future session could easily get wrong without the reasoning. Skip routine decisions (standard CRUD, straightforward bug fixes, following an existing pattern) — they add noise without future value.
+Expensive, non-obvious architectural decisions for StarterKit — real trade-offs, external constraints, rejected alternatives, or anything a future session could easily get wrong without the reasoning. Skip routine decisions (standard CRUD, straightforward bug fixes, following an existing pattern) — they add noise without future value.
 Newest entry at top — prepend new entries directly below this line, do not append at the bottom.
 Keep each entry under ~120 words (excluding heading) — trim to the essential why + rejected alternative, not a full narrative.
 
 ---
+
+## Repurposed FeedbackHub into a generic app starter (`StarterKit`): dropped multi-tenancy, kept the rest
+
+User wanted this repo cleared to an app-starter baseline for future projects. Multi-tenancy (`Tenant`/`TenantMembership`/`TenantRole`, `X-Tenant-Id` header, `ICurrentTenantService`/`ITenantContextResolver`, `TenantMiddleware`, `TenantsController`) was removed entirely — confirmed via full-codebase mapping that it was bolted on as an isolated vertical slice (own entity/service/controller/middleware/DI lines) with zero coupling into Auth/Account/ApiKey/AuditLog/Files/SystemSettings, so removal was low-risk. Kept: email+password auth (mandatory email verification), Google social login, session management, Account/Profile, ApiKey, AuditLog, Files, SystemSettings.
+
+Renamed `FeedbackHub`/`FEEDBACK-HUB`/`feedback-hub` → `StarterKit` everywhere (namespaces, `.sln`/`.csproj`, DB name, JWT issuer/audiences, email from-name, frontend package name) — a repo-wide mechanical token rename, not a symbol rename, so handled as combined code+config edits rather than via `gitnexus_rename`. Squashed the 7 existing EF migrations into a single `InitialCreate` (no value in preserving FeedbackHub-era schema history for a template repo). Added root `docker-compose.yml` (Postgres + Mailpit) since the mandatory-email-verification design (see "Reverses 'Social login sau MVP'" below) had no seeder and no real SMTP wired for local dev — this fulfills that entry's own "recommend Mailpit for local dev" note, which had never actually been implemented. Rejected keeping tenancy behind a feature flag — no consumer of this template asked for it, and adding it back later is cheaper than carrying dead-but-flagged code.
+
+Also deleted the FeedbackHub-product-specific docs (`shared/docs/architecture/FeedbackHub-*.md`, `shared/docs/api/{api-tenants,integration-tenants}.md`, `plans/v1/{phase 1. Tenancy Core,phase-2-membership-operations}.md`, `plans/implements/02. Import FEEDBACK-HUB-FE.md`) and rewrote `README.md`/`CHANGELOG.md` as generic starter-kit docs — none of it described code that still exists after the removal above.
 
 ## Session management endpoints: "revoke others" keeps the calling session alive, not a literal "revoke all"
 
@@ -87,21 +95,9 @@ Copied working tree from the standalone `FEEDBACK-HUB-FE` repo (Vue 3 + Vite app
 
 Restructured root into `backend/` (moved `src/`, `tests/`, `.sln`, `Directory.Build.props`), `frontend/` (placeholder, Vue 3 + Vite pending), `shared/` (`docs/api`, `docs/architecture` merged from root `docs/`+`documents/`, plus `openapi/` reserved for the exported contract). This overrides the earlier decision "Repo này = API + embed script generate theo Tenant/Project; frontend repo riêng" — user explicitly confirmed the override. Rationale: a monorepo lets the frontend consume the backend's OpenAPI spec directly from `shared/openapi/` without manual sync across repos. Rejected: keep frontend in a separate repo (the original plan) — would require versioning/publishing the OpenAPI contract independently. All `.csproj`/`.sln` relative paths were unaffected since `src/`+`tests/` moved together as a unit; only doc/rule/skill files with hardcoded paths needed edits.
 
-## TenantMembership role validation: never check `== default` on an enum
+## `== default` is never a valid required-check for an enum whose first member is the meaningful default
 
-`TenantMembership.Update()` had `if (p.Role == default) throw`. Because `TenantRole { Owner, Member }` gives `Owner = 0 = default(TenantRole)`, this silently rejected every attempt to assign `Owner` — breaking `POST /api/tenants` (creator-as-owner) and `TransferOwnershipAsync` (owner promotion) at runtime, while build and the full test suite stayed green (no test exercised `TenantService`/`TenantMembership` at all). Fixed by validating with `!Enum.IsDefined(p.Role)` instead. Added `TenantMembershipTests`, `TenantTests`, and `TenantServiceTests` (verified against the bug by reverting the fix and confirming 11/18 new tests failed). Lesson: `== default` is never a valid "required" check for an enum whose first member is the meaningful default (here, `Owner`) — use `Enum.IsDefined` or a designated `Unspecified = 0` sentinel instead.
-
-## Email register in MVP; social login after MVP; drop bootstrap admin
-
-Auth self-serve: `POST /api/auth/register` (email + password) thay bootstrap-admin (Admin toàn cục không còn chỗ sau khi bỏ `Account.Role`). Social login (Google, GitHub, Microsoft) để **sau MVP** — OAuth/OIDC + link account làm chậm P0/P1 tenancy. Rejected: nhét 4 provider vào Phase 0 cùng lúc gỡ Role.
-
-## Tenant context, single Owner, UUID v7, rate limits, repo scope
-
-Chốt bổ sung MVP: (1) Bỏ `Account.Role` toàn cục — chỉ `TenantRole` (Owner|Member; mở rộng sau). (2) JWT không mang tenant; dùng header `X-Tenant-Id`; chưa có Tenant → data trống. (3) Đúng 1 Owner/Tenant; invite = Member; transfer Owner tường minh; trash + purge 30 ngày. (4) UUID v7; rate limit per ApiKey (Owner cấu hình) + per IP; giới hạn size ảnh. (5) Enum/filter chốt khi tới phase. (6) Repo này = API + embed script generate theo Tenant/Project; frontend repo riêng. (7) Tính năng Phase 2 chỉ làm sau khi xong MVP. Rejected: tenant claim trong JWT (phải re-issue khi đổi Tenant) và nhiều Owner (phức tạp ownership).
-
-## Account ↔ Tenant via membership (Owner/Member), not 1:1
-
-Chốt multi-tenant SaaS: Account đăng ký độc lập → tạo Tenant (creator = Owner) → tạo Project (+ ApiKey) → invite Account khác. Dùng `TenantMembership` nhiều-nhiều. Quyền ở cấp Tenant; RBAC theo Project để sau. Invite MVP chỉ Account đã có — pending invite sau MVP. Rejected: Account 1:1 Tenant và RBAC Project ngay MVP.
+Historical lesson from this codebase (originally caught in the now-removed `TenantMembership.Role` validation, since deleted along with multi-tenancy — see the StarterKit-baseline entry above): a check like `if (p.Role == default) throw` silently rejects the *first* enum member whenever that member's underlying value is `0` (C#'s implicit enum default) — e.g. an enum `{ Owner, Member }` makes `Owner == 0 == default`, so "require a role" ends up rejecting the exact value most likely to be assigned by default. This passed build and the full test suite despite being wrong, because nothing exercised that code path — only caught by a test written specifically to cover the "assign the first enum member" case. Fix: validate with `!Enum.IsDefined(p.Role)` instead, or add an explicit `Unspecified = 0` sentinel if `default` genuinely shouldn't be a valid value.
 
 ## Stripped chat/RAG business logic to make a generic project template
 

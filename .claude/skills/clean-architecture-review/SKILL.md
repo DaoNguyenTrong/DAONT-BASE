@@ -11,7 +11,7 @@ Review kiến trúc Clean Architecture theo 4 layers và phát hiện vi phạm.
 ## Layers & Dependency Rule
 
 ```
-FeedbackHub.Domain (innermost) → FeedbackHub.Application → FeedbackHub.Infrastructure → FeedbackHub.API (outermost)
+StarterKit.Domain (innermost) → StarterKit.Application → StarterKit.Infrastructure → StarterKit.API (outermost)
 ```
 
 | Layer          | Cho phép import                     | CẤM import                       |
@@ -36,7 +36,7 @@ Task Progress:
 **1.1 Kiểm tra index:**
 
 ```
-Đọc resource: gitnexus://repo/FEEDBACK-HUB/context
+Đọc resource: gitnexus://repo/DAONT-BASE/context
 ```
 
 > Nếu index stale → chạy `npx gitnexus analyze` trước khi tiếp tục.
@@ -52,22 +52,22 @@ gitnexus_query({query: "all clusters"})
 ```cypher
 -- Domain import Infrastructure/API (vi phạm)
 MATCH (a:File)-[:CodeRelation {type: 'IMPORTS'}]->(b:File)
-WHERE a.filePath CONTAINS '/FeedbackHub.Domain/'
-  AND (b.filePath CONTAINS '/FeedbackHub.Infrastructure/'
-    OR b.filePath CONTAINS '/FeedbackHub.API/')
+WHERE a.filePath CONTAINS '/StarterKit.Domain/'
+  AND (b.filePath CONTAINS '/StarterKit.Infrastructure/'
+    OR b.filePath CONTAINS '/StarterKit.API/')
 RETURN a.filePath, b.filePath
 
 -- Application import Infrastructure/API (vi phạm)
 MATCH (a:File)-[:CodeRelation {type: 'IMPORTS'}]->(b:File)
-WHERE a.filePath CONTAINS '/FeedbackHub.Application/'
-  AND (b.filePath CONTAINS '/FeedbackHub.Infrastructure/'
-    OR b.filePath CONTAINS '/FeedbackHub.API/')
+WHERE a.filePath CONTAINS '/StarterKit.Application/'
+  AND (b.filePath CONTAINS '/StarterKit.Infrastructure/'
+    OR b.filePath CONTAINS '/StarterKit.API/')
 RETURN a.filePath, b.filePath
 
 -- Infrastructure import API (vi phạm)
 MATCH (a:File)-[:CodeRelation {type: 'IMPORTS'}]->(b:File)
-WHERE a.filePath CONTAINS '/FeedbackHub.Infrastructure/'
-  AND b.filePath CONTAINS '/FeedbackHub.API/'
+WHERE a.filePath CONTAINS '/StarterKit.Infrastructure/'
+  AND b.filePath CONTAINS '/StarterKit.API/'
 RETURN a.filePath, b.filePath
 ```
 
@@ -94,28 +94,28 @@ Task Progress:
 **2.1 Domain layer violations:**
 
 ```
-get_symbols_overview({path: "backend/src/FeedbackHub.Domain"})
-# Tìm bất kỳ using FeedbackHub.Application, FeedbackHub.Infrastructure, FeedbackHub.API
+get_symbols_overview({path: "backend/src/StarterKit.Domain"})
+# Tìm bất kỳ using StarterKit.Application, StarterKit.Infrastructure, StarterKit.API
 ```
 
 **2.2 Application layer violations:**
 
 ```
-get_symbols_overview({path: "backend/src/FeedbackHub.Application"})
-# Tìm bất kỳ using FeedbackHub.Infrastructure, FeedbackHub.API
+get_symbols_overview({path: "backend/src/StarterKit.Application"})
+# Tìm bất kỳ using StarterKit.Infrastructure, StarterKit.API
 ```
 
 **2.3 Infrastructure layer violations:**
 
 ```
-get_symbols_overview({path: "backend/src/FeedbackHub.Infrastructure"})
-# Tìm bất kỳ using FeedbackHub.API
+get_symbols_overview({path: "backend/src/StarterKit.Infrastructure"})
+# Tìm bất kỳ using StarterKit.API
 ```
 
 **2.4 Interface Segregation:**
 
 ```
-find_symbol({name: "I*", path: "backend/src/FeedbackHub.Application", include_body: true})
+find_symbol({name: "I*", path: "backend/src/StarterKit.Application", include_body: true})
 # Interface > 5 methods → cân nhắc tách
 ```
 
@@ -123,8 +123,8 @@ find_symbol({name: "I*", path: "backend/src/FeedbackHub.Application", include_bo
 
 ```
 # Class có quá nhiều dependencies (> 5 constructor params)
-find_symbol({name: "*Service", path: "backend/src/FeedbackHub.Application", include_body: true})
-find_symbol({name: "*Service", path: "backend/src/FeedbackHub.Infrastructure", include_body: true})
+find_symbol({name: "*Service", path: "backend/src/StarterKit.Application", include_body: true})
+find_symbol({name: "*Service", path: "backend/src/StarterKit.Infrastructure", include_body: true})
 ```
 
 ## Violation Categories

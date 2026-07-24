@@ -6,9 +6,9 @@ Both the backend API and the frontend UI support Vietnamese (`vi`, default) and 
 
 | Type               | Location                                                              |
 |--------------------|-----------------------------------------------------------------------|
-| Validation errors  | `backend/src/FeedbackHub.Application/Resources/Messages.{vi,en}.resx`           |
-| Domain exceptions  | `backend/src/FeedbackHub.Domain/DomainMessages.cs`                               |
-| Application errors | `backend/src/FeedbackHub.Application/ApplicationMessages.cs`                     |
+| Validation errors  | `backend/src/StarterKit.Application/Resources/Messages.{vi,en}.resx`           |
+| Domain exceptions  | `backend/src/StarterKit.Domain/DomainMessages.cs`                               |
+| Application errors | `backend/src/StarterKit.Application/ApplicationMessages.cs`                     |
 
 Validation messages are surfaced via DataAnnotations localization. Domain and application messages are string constants — add both `vi` and `en` entries whenever adding new messages.
 

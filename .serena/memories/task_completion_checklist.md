@@ -1,21 +1,15 @@
 # Task Completion Checklist
 
-After every non-trivial change, in order:
-
-## Backend changes
-1. `dotnet test backend/FEEDBACK-HUB.sln --no-restore -m:1` — must pass
-2. If EF entity/config changed: `dotnet ef migrations add <Name> --project backend/src/FeedbackHub.Infrastructure --startup-project backend/src/FeedbackHub.API`
-3. If API contract changed: update `frontend/src/api/types.ts` to match wire shape (camelCase)
-
-## Frontend changes
-1. `bun run --cwd frontend test:run` — must pass
-2. `bun run --cwd frontend format` — run prettier
-3. If new user-facing text added: update BOTH `src/locales/vi.ts` AND `src/locales/en.ts`
-4. If new locale key added: update TypeScript interface in `en.ts` too
-
-## Both sides changed
-Run both test suites before committing.
-
-## Before committing
-- `npx gitnexus analyze` after committing to re-index
-- Log expensive/non-obvious decisions in `.claude/decisions.md`
+1. Build the side you touched:
+   - Backend: `dotnet build backend/StarterKit.sln --no-restore -m:1`
+   - Frontend: `bun run --cwd frontend build`
+2. Run tests for the side you touched:
+   - Backend: `dotnet test backend/StarterKit.sln --no-restore -m:1`
+   - Frontend: `bun run --cwd frontend test:run`
+3. If you changed a backend endpoint/DTO, check `frontend/src/api/{resource}-api.ts` and
+   `frontend/src/api/types.ts` are still in sync (no codegen wired yet — see `.claude/rules/api-contract.md`).
+4. If you added/changed a user-facing message, add both `vi` and `en` entries (backend resx/consts,
+   frontend `locales/{vi,en}.ts`) — see `.claude/rules/localization.md`.
+5. Run `npx gitnexus analyze` then `gitnexus_detect_changes()` before committing to confirm the
+   change's blast radius matches intent.
+6. Log only expensive/non-obvious decisions to `.claude/decisions.md` (skip routine ones).

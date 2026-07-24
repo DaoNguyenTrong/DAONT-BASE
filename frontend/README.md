@@ -1,6 +1,6 @@
-# FeedbackHub Frontend
+# StarterKit Frontend
 
-Vue 3 + Vite + TypeScript dashboard, imported from the standalone `FEEDBACK-HUB-FE` app-starter template (auth flow, role-based routing, responsive layout, design-token theming, i18n en/vi, Vitest + Playwright).
+Vue 3 + Vite + TypeScript dashboard (auth flow, role-based routing, responsive layout, design-token theming, i18n en/vi, Vitest + Playwright).
 
 Will consume the backend's OpenAPI contract from `../shared/openapi/` once codegen is wired up.
 
