@@ -21,11 +21,14 @@ All notable changes to this project will be documented in this file.
 
 - `GenericRepositoryTests`' `CreatedAt`-ordering test was non-deterministic (audit-field stamping silently overwrote manually-seeded timestamps); fixed to seed a genuine timestamp difference.
 - `AccountServiceTests`' email-collision test used an over-permissive mock that never evaluated the self-exclusion predicate — tightened so the check is actually exercised.
+- Admin account creation (`POST /api/accounts`) returned a generic 500 on a duplicate username/email instead of a 409 Conflict; now pre-checks uniqueness like registration does.
 
 ### Changed
 
 - `GoogleAuthProvider` and `SmtpEmailSender` refactored behind thin interfaces (`IGoogleJwtValidator`, `ISmtpClientFactory`) to enable unit testing — no behavior change.
 - Frontend router's `beforeEach` guard extracted into an exported `resolveGuardRedirect` function to enable direct unit testing — no behavior change.
+- README translated to English.
+- `.claude/decisions.md` convention tightened to record only the *why* (no restating what/how), with a lower per-entry word cap; prior entries cleared.
 
 ### StarterKit baseline
 
