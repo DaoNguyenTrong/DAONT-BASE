@@ -7,7 +7,7 @@ namespace StarterKit.API.Controllers;
 
 [ApiController]
 [Authorize]
-[Route("api/[controller]")]
+[Route("api/files")]
 public sealed class FilesController(IFileService fileService) : ControllerBase
 {
     /// <summary>Uploads a file to the system. Send as multipart/form-data.</summary>

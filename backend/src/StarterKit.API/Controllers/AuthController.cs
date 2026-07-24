@@ -11,7 +11,7 @@ using StarterKit.Domain.Exceptions;
 namespace StarterKit.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public sealed class AuthController(
     IAuthService authService,
     IOptions<JwtSettings> jwtOptions) : ControllerBase

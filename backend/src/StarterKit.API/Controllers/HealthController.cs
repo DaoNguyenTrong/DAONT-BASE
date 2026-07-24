@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace StarterKit.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/health")]
 public sealed class HealthController : ControllerBase
 {
     private static readonly string Version = TrimBuildMetadata(

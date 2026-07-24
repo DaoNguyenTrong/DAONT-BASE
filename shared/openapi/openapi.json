@@ -2,40 +2,44 @@
   "openapi": "3.1.1",
   "info": {
     "title": "StarterKit API",
-    "description": "REST API for the StarterKit template.\n\n**Authentication:** All endpoints except `/auth/login` and `/auth/refresh` require a JWT Bearer token in the `Authorization` header, or the `access_token` cookie.\n\n**Required header:** Every request must include the `X-TimeZone` header with an IANA timezone identifier (e.g. `Asia/Ho_Chi_Minh`).",
+    "description": "REST API for the StarterKit template.\n\n**Authentication:** All endpoints except `/auth/login` and `/auth/refresh` require a JWT Bearer token in the `Authorization` header, or the `access_token` cookie.\n\n**Required header:** Every request must include the `X-TimeZone` header with an IANA timezone identifier (e.g. `Asia/Ho_Chi_Minh`).\n\n**Roles:**\n- `User` — access own resources and profile\n- `Admin` — full management of accounts and system configuration",
     "version": "v1"
   },
-  "servers": [
-    {
-      "url": "http://localhost:7000/"
-    }
-  ],
   "paths": {
-    "/api/Accounts": {
+    "/api/accounts": {
       "get": {
-        "tags": ["Accounts"],
+        "tags": [
+          "Accounts"
+        ],
         "summary": "Returns a paginated list of all accounts.",
+        "operationId": "Accounts_GetAll",
         "parameters": [
           {
-            "name": "PageNumber",
+            "name": "pageNumber",
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
           {
-            "name": "PageSize",
+            "name": "pageSize",
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
           {
-            "name": "Search",
+            "name": "search",
             "in": "query",
             "schema": {
               "type": "string"
@@ -116,8 +120,11 @@
         }
       },
       "post": {
-        "tags": ["Accounts"],
+        "tags": [
+          "Accounts"
+        ],
         "summary": "Creates a new account.",
+        "operationId": "Accounts_Create",
         "parameters": [
           {
             "name": "X-TimeZone",
@@ -132,22 +139,7 @@
         ],
         "requestBody": {
           "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAccountRequest"
-              }
-            },
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAccountRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAccountRequest"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateAccountRequest"
               }
@@ -259,10 +251,13 @@
         }
       }
     },
-    "/api/Accounts/{id}": {
+    "/api/accounts/{id}": {
       "get": {
-        "tags": ["Accounts"],
+        "tags": [
+          "Accounts"
+        ],
         "summary": "Returns the details of an account by ID.",
+        "operationId": "Accounts_GetById",
         "parameters": [
           {
             "name": "id",
@@ -368,8 +363,11 @@
         }
       },
       "put": {
-        "tags": ["Accounts"],
+        "tags": [
+          "Accounts"
+        ],
         "summary": "Updates an existing account.",
+        "operationId": "Accounts_Update",
         "parameters": [
           {
             "name": "id",
@@ -393,22 +391,7 @@
         ],
         "requestBody": {
           "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateAccountRequest"
-              }
-            },
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateAccountRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateAccountRequest"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateAccountRequest"
               }
@@ -520,8 +503,11 @@
         }
       },
       "delete": {
-        "tags": ["Accounts"],
+        "tags": [
+          "Accounts"
+        ],
         "summary": "Deletes an account.",
+        "operationId": "Accounts_Delete",
         "parameters": [
           {
             "name": "id",
@@ -612,8 +598,11 @@
     },
     "/api/admin/api-keys": {
       "get": {
-        "tags": ["ApiKeys"],
+        "tags": [
+          "ApiKeys"
+        ],
         "summary": "Returns a list of all API keys.",
+        "operationId": "ApiKeys_GetAll",
         "parameters": [
           {
             "name": "X-TimeZone",
@@ -699,8 +688,11 @@
         }
       },
       "post": {
-        "tags": ["ApiKeys"],
+        "tags": [
+          "ApiKeys"
+        ],
         "summary": "Creates a new API key. The raw key is returned only once.",
+        "operationId": "ApiKeys_Create",
         "parameters": [
           {
             "name": "X-TimeZone",
@@ -715,22 +707,7 @@
         ],
         "requestBody": {
           "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateApiKeyRequest"
-              }
-            },
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateApiKeyRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateApiKeyRequest"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateApiKeyRequest"
               }
@@ -824,8 +801,11 @@
     },
     "/api/admin/api-keys/{id}": {
       "delete": {
-        "tags": ["ApiKeys"],
+        "tags": [
+          "ApiKeys"
+        ],
         "summary": "Deactivates an API key.",
+        "operationId": "ApiKeys_Deactivate",
         "parameters": [
           {
             "name": "id",
@@ -916,29 +896,38 @@
     },
     "/api/admin/audit-logs": {
       "get": {
-        "tags": ["AuditLogs"],
+        "tags": [
+          "AuditLogs"
+        ],
         "summary": "Returns a paginated list of audit logs.",
+        "operationId": "AuditLogs_GetAll",
         "parameters": [
           {
-            "name": "PageNumber",
+            "name": "pageNumber",
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
           {
-            "name": "PageSize",
+            "name": "pageSize",
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
           {
-            "name": "Search",
+            "name": "search",
             "in": "query",
             "schema": {
               "type": "string"
@@ -1038,8 +1027,11 @@
     },
     "/api/admin/audit-logs/{id}": {
       "get": {
-        "tags": ["AuditLogs"],
+        "tags": [
+          "AuditLogs"
+        ],
         "summary": "Returns the details of an audit log by ID.",
+        "operationId": "AuditLogs_GetById",
         "parameters": [
           {
             "name": "id",
@@ -1146,11 +1138,14 @@
         }
       }
     },
-    "/api/Auth/login": {
+    "/api/auth/login": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Authenticates with username and password. Returns an access token and refresh token.",
-        "description": "Tokens are also set as HttpOnly cookies (`access_token` and `refresh_token`) for browser client support.",
+        "description": "Tokens are also set as HttpOnly cookies (`access_token` and `refresh_token`) for browser client support. Fails with 401 if the account's email has not been verified yet.",
+        "operationId": "Auth_Login",
         "parameters": [
           {
             "name": "X-TimeZone",
@@ -1165,22 +1160,7 @@
         ],
         "requestBody": {
           "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
-              }
-            },
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/LoginRequest"
               }
@@ -1228,15 +1208,37 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
     },
-    "/api/Auth/register": {
+    "/api/auth/register": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Registers a new account with email and password. Returns an access token and refresh token.",
-        "description": "Tokens are also set as HttpOnly cookies (`access_token` and `refresh_token`) for browser client support.",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Registers a new account with email and password. Sends a verification email — the account cannot log in until the email is verified.",
+        "operationId": "Auth_Register",
         "parameters": [
           {
             "name": "X-TimeZone",
@@ -1251,22 +1253,7 @@
         ],
         "requestBody": {
           "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
-              }
-            },
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/RegisterRequest"
               }
@@ -1275,22 +1262,22 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "202": {
+            "description": "Accepted",
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/LoginResponse"
+                  "$ref": "#/components/schemas/RegisterResult"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LoginResponse"
+                  "$ref": "#/components/schemas/RegisterResult"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LoginResponse"
+                  "$ref": "#/components/schemas/RegisterResult"
                 }
               }
             }
@@ -1338,10 +1325,14 @@
         }
       }
     },
-    "/api/Auth/refresh": {
+    "/api/auth/verify-email": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Refreshes the access token using a refresh token. The refresh token can be sent in the request body or via cookie.",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Verifies an account's email using the token sent by /register or /resend-verification. Logs the account in on success.",
+        "description": "Tokens are also set as HttpOnly cookies (`access_token` and `refresh_token`) for browser client support.",
+        "operationId": "Auth_VerifyEmail",
         "parameters": [
           {
             "name": "X-TimeZone",
@@ -1356,43 +1347,298 @@
         ],
         "requestBody": {
           "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/RefreshTokenRequest"
-                  }
-                ]
-              }
-            },
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/RefreshTokenRequest"
-                  }
-                ]
+                "$ref": "#/components/schemas/VerifyEmailRequest"
               }
-            },
-            "text/json": {
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/resend-verification": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Resends the email verification link for an account that has not verified its email yet.",
+        "operationId": "Auth_ResendVerification",
+        "parameters": [
+          {
+            "name": "X-TimeZone",
+            "in": "header",
+            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Asia/Ho_Chi_Minh"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/RefreshTokenRequest"
-                  }
-                ]
+                "$ref": "#/components/schemas/ResendVerificationRequest"
               }
-            },
-            "application/*+json": {
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/external/{provider}": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Authenticates (or registers, on first use) with a credential issued by an external provider (currently: google). Returns an access token and refresh token.",
+        "description": "Tokens are also set as HttpOnly cookies (`access_token` and `refresh_token`) for browser client support.",
+        "operationId": "Auth_ExternalLogin",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-TimeZone",
+            "in": "header",
+            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Asia/Ho_Chi_Minh"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Refreshes the access token using a refresh token. The refresh token can be sent in the request body or via cookie.",
+        "operationId": "Auth_Refresh",
+        "parameters": [
+          {
+            "name": "X-TimeZone",
+            "in": "header",
+            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Asia/Ho_Chi_Minh"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
               "schema": {
                 "oneOf": [
                   {
@@ -1450,10 +1696,13 @@
         }
       }
     },
-    "/api/Auth/logout": {
+    "/api/auth/logout": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Logs out and revokes the refresh token. Clears authentication cookies.",
+        "operationId": "Auth_Logout",
         "parameters": [
           {
             "name": "X-TimeZone",
@@ -1468,43 +1717,7 @@
         ],
         "requestBody": {
           "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/RefreshTokenRequest"
-                  }
-                ]
-              }
-            },
             "application/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/RefreshTokenRequest"
-                  }
-                ]
-              }
-            },
-            "text/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/RefreshTokenRequest"
-                  }
-                ]
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "oneOf": [
                   {
@@ -1545,10 +1758,207 @@
         }
       }
     },
-    "/api/Files": {
+    "/api/auth/sessions": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Lists the active sessions (refresh tokens) for the currently authenticated account.",
+        "operationId": "Auth_GetSessions",
+        "parameters": [
+          {
+            "name": "X-TimeZone",
+            "in": "header",
+            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Asia/Ho_Chi_Minh"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/sessions/{id}": {
+      "delete": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Revokes a specific session (refresh token) belonging to the currently authenticated account.",
+        "operationId": "Auth_RevokeSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "X-TimeZone",
+            "in": "header",
+            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Asia/Ho_Chi_Minh"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/sessions/revoke-others": {
       "post": {
-        "tags": ["Files"],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Revokes every other session for the currently authenticated account. The session making this request is left active.",
+        "operationId": "Auth_RevokeOtherSessions",
+        "parameters": [
+          {
+            "name": "X-TimeZone",
+            "in": "header",
+            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Asia/Ho_Chi_Minh"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files": {
+      "post": {
+        "tags": [
+          "Files"
+        ],
         "summary": "Uploads a file to the system. Send as multipart/form-data.",
+        "operationId": "Files_Upload",
         "parameters": [
           {
             "name": "ownerId",
@@ -1662,24 +2072,33 @@
         }
       },
       "get": {
-        "tags": ["Files"],
+        "tags": [
+          "Files"
+        ],
         "summary": "Returns a paginated list of files, with optional filtering by owner and category.",
+        "operationId": "Files_GetAll",
         "parameters": [
           {
-            "name": "PageNumber",
+            "name": "pageNumber",
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
           {
-            "name": "PageSize",
+            "name": "pageSize",
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -1738,10 +2157,13 @@
         }
       }
     },
-    "/api/Files/{id}": {
+    "/api/files/{id}": {
       "get": {
-        "tags": ["Files"],
+        "tags": [
+          "Files"
+        ],
         "summary": "Returns the metadata of a file by ID.",
+        "operationId": "Files_GetById",
         "parameters": [
           {
             "name": "id",
@@ -1827,8 +2249,11 @@
         }
       },
       "delete": {
-        "tags": ["Files"],
+        "tags": [
+          "Files"
+        ],
         "summary": "Deletes a file by ID.",
+        "operationId": "Files_Delete",
         "parameters": [
           {
             "name": "id",
@@ -1897,10 +2322,13 @@
         }
       }
     },
-    "/api/Files/{id}/download": {
+    "/api/files/{id}/download": {
       "get": {
-        "tags": ["Files"],
+        "tags": [
+          "Files"
+        ],
         "summary": "Downloads the content of a file by ID.",
+        "operationId": "Files_Download",
         "parameters": [
           {
             "name": "id",
@@ -1986,10 +2414,13 @@
         }
       }
     },
-    "/api/Health": {
+    "/api/health": {
       "get": {
-        "tags": ["Health"],
+        "tags": [
+          "Health"
+        ],
         "summary": "Checks the operational status of the API. No authentication required.",
+        "operationId": "Health_Get",
         "parameters": [
           {
             "name": "X-TimeZone",
@@ -2028,8 +2459,11 @@
     },
     "/api/profile": {
       "get": {
-        "tags": ["Profile"],
+        "tags": [
+          "Profile"
+        ],
         "summary": "Returns the profile of the currently authenticated user.",
+        "operationId": "Profile_Get",
         "parameters": [
           {
             "name": "X-TimeZone",
@@ -2086,8 +2520,11 @@
         }
       },
       "put": {
-        "tags": ["Profile"],
+        "tags": [
+          "Profile"
+        ],
         "summary": "Updates the profile of the currently authenticated user.",
+        "operationId": "Profile_Update",
         "parameters": [
           {
             "name": "X-TimeZone",
@@ -2102,22 +2539,7 @@
         ],
         "requestBody": {
           "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProfileRequest"
-              }
-            },
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProfileRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProfileRequest"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateProfileRequest"
               }
@@ -2191,8 +2613,11 @@
     },
     "/api/profile/password": {
       "put": {
-        "tags": ["Profile"],
+        "tags": [
+          "Profile"
+        ],
         "summary": "Changes the password of the currently authenticated user.",
+        "operationId": "Profile_ChangePassword",
         "parameters": [
           {
             "name": "X-TimeZone",
@@ -2207,22 +2632,7 @@
         ],
         "requestBody": {
           "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangePasswordRequest"
-              }
-            },
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangePasswordRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangePasswordRequest"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/ChangePasswordRequest"
               }
@@ -2279,8 +2689,11 @@
     },
     "/api/system-settings": {
       "get": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Returns all dynamic system settings as key/value pairs.",
+        "operationId": "SystemSettings_GetAll",
         "parameters": [
           {
             "name": "X-TimeZone",
@@ -2368,8 +2781,11 @@
     },
     "/api/system-settings/{keyPrefix}": {
       "put": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Updates the settings under the given key prefix.",
+        "operationId": "SystemSettings_UpdateSection",
         "parameters": [
           {
             "name": "keyPrefix",
@@ -2392,31 +2808,7 @@
         ],
         "requestBody": {
           "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": {
-                  "type": "string"
-                }
-              }
-            },
             "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": {
-                  "type": "string"
-                }
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": {
-                  "type": "string"
-                }
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "type": "object",
                 "additionalProperties": {
@@ -2453,685 +2845,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/Tenants": {
-      "get": {
-        "tags": ["Tenants"],
-        "parameters": [
-          {
-            "name": "X-TimeZone",
-            "in": "header",
-            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "Asia/Ho_Chi_Minh"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TenantDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TenantDto"
-                  }
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TenantDto"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": ["Tenants"],
-        "parameters": [
-          {
-            "name": "X-TimeZone",
-            "in": "header",
-            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "Asia/Ho_Chi_Minh"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTenantRequest"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTenantRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTenantRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTenantRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/TenantDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TenantDto"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TenantDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidationProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidationProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidationProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/Tenants/{id}": {
-      "get": {
-        "tags": ["Tenants"],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "X-TimeZone",
-            "in": "header",
-            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "Asia/Ho_Chi_Minh"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/TenantDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TenantDto"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TenantDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/Tenants/{id}/members": {
-      "post": {
-        "tags": ["Tenants"],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "X-TimeZone",
-            "in": "header",
-            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "Asia/Ho_Chi_Minh"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/InviteMemberRequest"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/InviteMemberRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/InviteMemberRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/InviteMemberRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/TenantMembershipDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TenantMembershipDto"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TenantMembershipDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": ["Tenants"],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "X-TimeZone",
-            "in": "header",
-            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "Asia/Ho_Chi_Minh"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TenantMembershipDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TenantMembershipDto"
-                  }
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TenantMembershipDto"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/Tenants/{id}/members/{accountId}": {
-      "delete": {
-        "tags": ["Tenants"],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "accountId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "X-TimeZone",
-            "in": "header",
-            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "Asia/Ho_Chi_Minh"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/Tenants/{id}/transfer-owner": {
-      "post": {
-        "tags": ["Tenants"],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "X-TimeZone",
-            "in": "header",
-            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "Asia/Ho_Chi_Minh"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/TransferOwnershipRequest"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TransferOwnershipRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TransferOwnershipRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/TransferOwnershipRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/TenantMembershipDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TenantMembershipDto"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TenantMembershipDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "text/plain": {
                 "schema": {
@@ -3166,6 +2879,7 @@
           "status",
           "username",
           "email",
+          "emailConfirmed",
           "createdAt",
           "updatedAt"
         ],
@@ -3179,13 +2893,22 @@
             "type": "string"
           },
           "phone": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "position": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "address": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "status": {
             "type": "boolean"
@@ -3196,18 +2919,29 @@
           "email": {
             "type": "string"
           },
+          "emailConfirmed": {
+            "type": "boolean"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
           },
           "updatedAt": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           }
         }
       },
       "ApiKeyDto": {
-        "required": ["id", "name", "isActive", "createdAt"],
+        "required": [
+          "id",
+          "name",
+          "isActive",
+          "createdAt"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -3244,7 +2978,10 @@
         "properties": {
           "id": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int64"
           },
           "entityName": {
@@ -3257,22 +2994,40 @@
             "type": "string"
           },
           "oldValues": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "newValues": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "userId": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "userName": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "ipAddress": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "userAgent": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "timestamp": {
             "type": "string",
@@ -3281,7 +3036,10 @@
         }
       },
       "ChangePasswordRequest": {
-        "required": ["currentPassword", "newPassword"],
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
         "type": "object",
         "properties": {
           "currentPassword": {
@@ -3308,13 +3066,22 @@
             "type": "string"
           },
           "phone": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "position": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "address": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "username": {
             "type": "string"
@@ -3332,7 +3099,9 @@
         }
       },
       "CreateApiKeyRequest": {
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "type": "object",
         "properties": {
           "name": {
@@ -3341,7 +3110,10 @@
         }
       },
       "CreateApiKeyResult": {
-        "required": ["rawKey", "key"],
+        "required": [
+          "rawKey",
+          "key"
+        ],
         "type": "object",
         "properties": {
           "rawKey": {
@@ -3349,18 +3121,6 @@
           },
           "key": {
             "$ref": "#/components/schemas/ApiKeyDto"
-          }
-        }
-      },
-      "CreateTenantRequest": {
-        "required": ["name", "description"],
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": ["null", "string"]
           }
         }
       },
@@ -3372,6 +3132,17 @@
           },
           "isWeak": {
             "type": "boolean"
+          }
+        }
+      },
+      "ExternalLoginRequest": {
+        "required": [
+          "credential"
+        ],
+        "type": "object",
+        "properties": {
+          "credential": {
+            "type": "string"
           }
         }
       },
@@ -3403,7 +3174,10 @@
           },
           "size": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int64"
           },
           "storagePath": {
@@ -3413,21 +3187,33 @@
             "type": "string"
           },
           "ownerId": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "description": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "category": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "createdAt": {
             "type": "string",
             "format": "date-time"
           },
           "updatedAt": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           }
         }
@@ -3439,13 +3225,22 @@
             "$ref": "#/components/schemas/Stream"
           },
           "contentType": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "fileDownloadName": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "lastModified": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           },
           "entityTag": {
@@ -3464,7 +3259,12 @@
         }
       },
       "HealthResponse": {
-        "required": ["status", "version", "timestamp", "buildTimestamp"],
+        "required": [
+          "status",
+          "version",
+          "timestamp",
+          "buildTimestamp"
+        ],
         "type": "object",
         "properties": {
           "status": {
@@ -3481,7 +3281,10 @@
             "format": "date-time"
           },
           "buildTimestamp": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "When this build was compiled, in Vietnam local time (Asia/Ho_Chi_Minh) — used as a proxy for the deploy time, since deploys build and ship the same artifact. Null if unavailable.",
             "format": "date-time"
           }
@@ -3491,18 +3294,11 @@
         "type": "string",
         "format": "binary"
       },
-      "InviteMemberRequest": {
-        "required": ["accountId"],
-        "type": "object",
-        "properties": {
-          "accountId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
       "LoginRequest": {
-        "required": ["username", "password"],
+        "required": [
+          "username",
+          "password"
+        ],
         "type": "object",
         "properties": {
           "username": {
@@ -3542,7 +3338,12 @@
         }
       },
       "PagedResultOfAccountDto": {
-        "required": ["items", "totalCount", "pageNumber", "pageSize"],
+        "required": [
+          "items",
+          "totalCount",
+          "pageNumber",
+          "pageSize"
+        ],
         "type": "object",
         "properties": {
           "items": {
@@ -3553,22 +3354,34 @@
           },
           "totalCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "pageNumber": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "pageSize": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "totalPages": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "hasPreviousPage": {
@@ -3580,7 +3393,12 @@
         }
       },
       "PagedResultOfAuditLogDto": {
-        "required": ["items", "totalCount", "pageNumber", "pageSize"],
+        "required": [
+          "items",
+          "totalCount",
+          "pageNumber",
+          "pageSize"
+        ],
         "type": "object",
         "properties": {
           "items": {
@@ -3591,22 +3409,34 @@
           },
           "totalCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "pageNumber": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "pageSize": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "totalPages": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "hasPreviousPage": {
@@ -3618,7 +3448,12 @@
         }
       },
       "PagedResultOfFileDto": {
-        "required": ["items", "totalCount", "pageNumber", "pageSize"],
+        "required": [
+          "items",
+          "totalCount",
+          "pageNumber",
+          "pageSize"
+        ],
         "type": "object",
         "properties": {
           "items": {
@@ -3629,22 +3464,34 @@
           },
           "totalCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "pageNumber": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "pageSize": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "totalPages": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "hasPreviousPage": {
@@ -3659,21 +3506,37 @@
         "type": "object",
         "properties": {
           "type": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "title": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "status": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "detail": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "instance": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3685,7 +3548,9 @@
           "position",
           "address",
           "username",
-          "email"
+          "email",
+          "emailConfirmed",
+          "hasPassword"
         ],
         "type": "object",
         "properties": {
@@ -3697,33 +3562,58 @@
             "type": "string"
           },
           "phone": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "position": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "address": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "username": {
             "type": "string"
           },
           "email": {
             "type": "string"
+          },
+          "emailConfirmed": {
+            "type": "boolean"
+          },
+          "hasPassword": {
+            "type": "boolean"
           }
         }
       },
       "RefreshTokenRequest": {
-        "required": ["refreshToken"],
+        "required": [
+          "refreshToken"
+        ],
         "type": "object",
         "properties": {
           "refreshToken": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
       "RegisterRequest": {
-        "required": ["name", "username", "email", "password"],
+        "required": [
+          "name",
+          "username",
+          "email",
+          "password"
+        ],
         "type": "object",
         "properties": {
           "name": {
@@ -3739,13 +3629,102 @@
             "type": "string"
           },
           "phone": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "position": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "address": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RegisterResult": {
+        "required": [
+          "accountId",
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "ResendVerificationRequest": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "SessionDto": {
+        "required": [
+          "id",
+          "deviceInfo",
+          "ipAddress",
+          "isPersistent",
+          "isCurrent",
+          "loginAt",
+          "lastActiveAt",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "deviceInfo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ipAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isPersistent": {
+            "type": "boolean"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "loginAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastActiveAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -3757,100 +3736,35 @@
         "type": "object",
         "properties": {
           "buffer": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "offset": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "length": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "value": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "hasValue": {
             "type": "boolean"
-          }
-        }
-      },
-      "TenantDto": {
-        "required": [
-          "id",
-          "name",
-          "description",
-          "role",
-          "createdAt",
-          "updatedAt"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": ["null", "string"]
-          },
-          "role": {
-            "$ref": "#/components/schemas/TenantRole"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": ["null", "string"],
-            "format": "date-time"
-          }
-        }
-      },
-      "TenantMembershipDto": {
-        "required": [
-          "tenantId",
-          "accountId",
-          "accountUsername",
-          "role",
-          "createdAt"
-        ],
-        "type": "object",
-        "properties": {
-          "tenantId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "accountId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "accountUsername": {
-            "type": "string"
-          },
-          "role": {
-            "$ref": "#/components/schemas/TenantRole"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "TenantRole": {
-        "type": "integer"
-      },
-      "TransferOwnershipRequest": {
-        "required": ["newOwnerId"],
-        "type": "object",
-        "properties": {
-          "newOwnerId": {
-            "type": "string",
-            "format": "uuid"
           }
         }
       },
@@ -3870,13 +3784,22 @@
             "type": "string"
           },
           "phone": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "position": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "address": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "status": {
             "type": "boolean"
@@ -3890,20 +3813,35 @@
         }
       },
       "UpdateProfileRequest": {
-        "required": ["name", "phone", "position", "address", "email"],
+        "required": [
+          "name",
+          "phone",
+          "position",
+          "address",
+          "email"
+        ],
         "type": "object",
         "properties": {
           "name": {
             "type": "string"
           },
           "phone": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "position": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "address": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "email": {
             "type": "string"
@@ -3914,21 +3852,37 @@
         "type": "object",
         "properties": {
           "type": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "title": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "status": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "detail": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "instance": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "errors": {
             "type": "object",
@@ -3940,12 +3894,23 @@
             }
           }
         }
+      },
+      "VerifyEmailRequest": {
+        "required": [
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
       }
     },
     "securitySchemes": {
       "Bearer": {
         "type": "http",
-        "description": "JWT Bearer token. Enter the token only — no 'Bearer ' prefix required. Obtain a token from POST /api/Auth/login.",
+        "description": "JWT Bearer token. Enter the token only — no 'Bearer ' prefix required. Obtain a token from POST /api/auth/login.",
         "scheme": "bearer",
         "bearerFormat": "JWT"
       }
@@ -3953,7 +3918,7 @@
   },
   "security": [
     {
-      "Bearer": []
+      "Bearer": [ ]
     }
   ],
   "tags": [
@@ -3980,9 +3945,6 @@
     },
     {
       "name": "SystemSettings"
-    },
-    {
-      "name": "Tenants"
     }
   ]
 }
