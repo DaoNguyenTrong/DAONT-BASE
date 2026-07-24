@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="UTF-8">
+    <!--
+      Anchor for naive-ui's runtime-injected component styles (see
+      @css-render's `cssrAnchorMetaName`). Without this, naive-ui appends its
+      <style> tags at the end of <head> as components mount — after
+      Tailwind's utility classes — so any utility with the same specificity
+      as a naive-ui rule (e.g. `w-full` vs `.n-button`'s `width: var(--n-width)`)
+      silently loses the cascade tie. Keeping this first in <head>, before
+      Tailwind's stylesheet, makes Tailwind win those ties instead.
+    -->
+    <meta name="naive-ui-style">
+    <link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+    <link rel="manifest" href="/icons/site.webmanifest">
+    <meta name="theme-color" content="#0f766e">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Starter</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

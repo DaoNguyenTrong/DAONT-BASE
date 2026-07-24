@@ -1,0 +1,81 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Static accent palette (supports opacity modifiers, e.g. bg-accent-500/50) */
+  --color-accent-50: #f0fdfa;
+  --color-accent-100: #ccfbf1;
+  --color-accent-200: #99f6e4;
+  --color-accent-300: #5eead4;
+  --color-accent-400: #2dd4bf;
+  --color-accent-500: #14b8a6;
+  --color-accent-600: #0d9488;
+  --color-accent-700: #0f766e;
+  --color-accent-800: #115e59;
+  --color-accent-900: #134e4a;
+  --color-accent-950: #042f2e;
+
+  /* Primary (bridged, auto-switches light/dark below) — light default */
+  --color-primary-50: var(--color-accent-50);
+  --color-primary-100: var(--color-accent-100);
+  --color-primary-200: var(--color-accent-200);
+  --color-primary-300: var(--color-accent-300);
+  --color-primary-400: var(--color-accent-400);
+  --color-primary-500: var(--color-accent-500);
+  --color-primary-600: var(--color-accent-600);
+  --color-primary-700: var(--color-accent-700);
+  --color-primary-800: var(--color-accent-800);
+  --color-primary-900: var(--color-accent-900);
+  --color-primary-950: var(--color-accent-950);
+
+  /* Surface (bridged, auto-switches light/dark below) — light default */
+  --color-surface-0: #ffffff;
+  --color-surface-50: #f8fafc;
+  --color-surface-100: #f1f5f9;
+  --color-surface-200: #e2e8f0;
+  --color-surface-300: #cbd5e1;
+  --color-surface-400: #94a3b8;
+  --color-surface-500: #738195;
+  --color-surface-600: #5f6f84;
+  --color-surface-700: #46576b;
+  --color-surface-800: #344357;
+  --color-surface-900: #223044;
+  --color-surface-950: #111827;
+
+  /* Shared neutral fill for filled controls (Button secondary, Tag, Input, Select) —
+     single source of truth so they can't drift out of sync with each other. */
+  --fill-color: var(--color-surface-200);
+}
+
+.dark {
+  /* Primary — dark mode */
+  --color-primary-50: var(--color-accent-50);
+  --color-primary-100: var(--color-accent-100);
+  --color-primary-200: var(--color-accent-200);
+  --color-primary-300: var(--color-accent-300);
+  --color-primary-400: var(--color-accent-400);
+  --color-primary-500: var(--color-accent-500);
+  --color-primary-600: var(--color-accent-600);
+  --color-primary-700: var(--color-accent-700);
+  --color-primary-800: var(--color-accent-800);
+  --color-primary-900: var(--color-accent-900);
+  --color-primary-950: var(--color-accent-950);
+
+  /* Surface — dark mode */
+  --color-surface-0: #dbe1ec;
+  --color-surface-50: #d2d8e5;
+  --color-surface-100: #c5ccdb;
+  --color-surface-200: #aeb7c8;
+  --color-surface-300: #9aa4b8;
+  --color-surface-400: #858fa3;
+  --color-surface-500: #6f7890;
+  --color-surface-600: #555f75;
+  --color-surface-700: #3b4357;
+  --color-surface-800: #262c3d;
+  --color-surface-900: #1e2235;
+  --color-surface-950: #121527;
+
+  /* Shared neutral fill for filled controls — see light-mode definition above. */
+  --fill-color: var(--color-surface-800);
+}

@@ -1,0 +1,48 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using FeedbackHub.Domain.Entities;
+
+namespace FeedbackHub.Infrastructure.Persistence.Configurations;
+
+public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
+{
+    public void Configure(EntityTypeBuilder<RefreshToken> builder)
+    {
+        builder.ToTable("refresh_tokens");
+
+        builder.HasKey(token => token.Id);
+
+        builder.Property(token => token.TokenHash)
+            .HasMaxLength(64)
+            .IsRequired();
+
+        builder.Property(token => token.DeviceInfo)
+            .HasMaxLength(500);
+
+        builder.Property(token => token.IpAddress)
+            .HasMaxLength(100);
+
+        builder.Property(token => token.ExpiresAt)
+            .IsRequired();
+
+        builder.Property(token => token.IsPersistent)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(token => token.CreatedAt)
+            .IsRequired();
+
+        builder.Property(token => token.LoginAt)
+            .IsRequired();
+
+        builder.HasIndex(token => token.TokenHash)
+            .IsUnique();
+
+        builder.HasIndex(token => token.AccountId);
+
+        builder.HasOne<Account>()
+            .WithMany()
+            .HasForeignKey(token => token.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}

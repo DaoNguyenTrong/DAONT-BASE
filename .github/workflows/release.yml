@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore (backend)
+        run: dotnet restore backend/FEEDBACK-HUB.sln
+
+      - name: Test (backend)
+        run: dotnet test backend/FEEDBACK-HUB.sln --no-restore -m:1
+
+      - name: Build Release (backend)
+        run: dotnet publish backend/src/FeedbackHub.API -c Release -o ./publish
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install deps (frontend)
+        run: bun install --cwd frontend --frozen-lockfile
+
+      - name: Test (frontend)
+        run: bun run --cwd frontend test:run
+
+      - name: Build (frontend)
+        run: bun run --cwd frontend build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
