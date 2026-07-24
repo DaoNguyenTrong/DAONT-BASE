@@ -12,6 +12,12 @@ export default mergeConfig(
       env: {
         VITE_API_BASE_URL: '',
       },
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'html'],
+        include: ['src/**/*.{ts,vue}'],
+        exclude: ['src/typings/**', 'src/main.ts'],
+      },
     },
   }),
 )
