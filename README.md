@@ -20,7 +20,7 @@ No multi-tenancy — single-user/single-account model. No admin role/global role
 ```text
 backend/    .NET 10 API — Domain → Application → Infrastructure → API (src/, tests/, StarterKit.sln)
 frontend/   Vue 3 + Vite dashboard (src/api, src/stores, src/views, ...)
-shared/     docs/ + openapi/ (shared contract, codegen not wired up yet)
+shared/     docs/ + openapi/ (shared contract — frontend generates its client/types from it)
 plans/      history of plan files from implemented tasks (reference for patterns, not product documentation)
 ```
 
@@ -72,13 +72,15 @@ Production: migrations are applied automatically on startup via `Database.Migrat
 Package manager: `bun`.
 
 ```bash
-bun install --cwd frontend
+bun install --cwd frontend            # also generates src/api/generated/** via postinstall
 bun run --cwd frontend dev            # dev server
 bun run --cwd frontend build          # type-check + production build
 bun run --cwd frontend test:run       # unit tests (vitest)
 bun run --cwd frontend test:e2e:install && bun run --cwd frontend test:e2e   # e2e (playwright)
 bun run --cwd frontend format         # prettier — there is no ESLint config in this project
 ```
+
+Re-run `bun run --cwd frontend codegen` after a backend contract change (new/changed endpoint or DTO) to refresh the generated API client — see `.claude/rules/api-contract.md`.
 
 ### 4. Try the Registration Flow
 
