@@ -73,9 +73,10 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to) => {
-  const auth = useAuthStore()
-
+export function resolveGuardRedirect(
+  to: { meta: { requiresAuth?: boolean; guestOnly?: boolean } },
+  auth: { isAuthenticated: boolean },
+) {
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: 'login' }
   }
@@ -83,6 +84,10 @@ router.beforeEach((to) => {
   if (to.meta.guestOnly && auth.isAuthenticated) {
     return useHomeRoute()
   }
-})
+
+  return undefined
+}
+
+router.beforeEach((to) => resolveGuardRedirect(to, useAuthStore()))
 
 export default router
