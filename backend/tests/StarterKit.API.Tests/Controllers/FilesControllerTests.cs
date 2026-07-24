@@ -75,6 +75,18 @@ public sealed class FilesControllerTests(ApiFactoryFixture fixture) : IAsyncLife
     }
 
     [Fact]
+    public async Task Upload_ExceedsMaxFileSize_ReturnsBadRequest()
+    {
+        // StorageSettings:MaxFileSizeBytes is 10485760 (10 MB) in the test host's appsettings.json.
+        HttpClient client = await CreateAuthedClientAsync();
+        byte[] bytes = new byte[10_485_761];
+
+        HttpResponseMessage response = await client.PostAsync("/api/files", CreateUploadContent(bytes));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetById_NotFound_Returns404()
     {
         HttpClient client = await CreateAuthedClientAsync();

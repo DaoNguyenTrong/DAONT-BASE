@@ -51,6 +51,27 @@ public class UserTimeZoneProviderTests
     }
 
     [Fact]
+    public void UserTimeZone_PreSetIdStringInItems_ResolvesTimeZone()
+    {
+        DefaultHttpContext httpContext = new();
+        httpContext.Items["UserTimeZoneId"] = "Asia/Ho_Chi_Minh";
+        UserTimeZoneProvider provider = CreateProvider(httpContext);
+
+        Assert.Equal("Asia/Ho_Chi_Minh", provider.TimeZoneId);
+    }
+
+    [Fact]
+    public void UserTimeZone_IdStringInItems_TakesPriorityOverHeader()
+    {
+        DefaultHttpContext httpContext = new();
+        httpContext.Items["UserTimeZoneId"] = "Asia/Ho_Chi_Minh";
+        httpContext.Request.Headers["X-TimeZone"] = "UTC";
+        UserTimeZoneProvider provider = CreateProvider(httpContext);
+
+        Assert.Equal("Asia/Ho_Chi_Minh", provider.TimeZoneId);
+    }
+
+    [Fact]
     public void UserTimeZone_ComputedOnce_MemoizedAcrossAccesses()
     {
         DefaultHttpContext httpContext = new();

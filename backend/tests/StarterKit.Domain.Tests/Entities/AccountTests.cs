@@ -80,6 +80,32 @@ public class AccountTests
         Assert.Null(account.Phone);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Create_WithBlankOptionalPosition_SetsNull(string? position)
+    {
+        AccountParams p = ValidParams() with { Position = position };
+
+        Account account = Account.Create(p);
+
+        Assert.Null(account.Position);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Create_WithBlankOptionalAddress_SetsNull(string? address)
+    {
+        AccountParams p = ValidParams() with { Address = address };
+
+        Account account = Account.Create(p);
+
+        Assert.Null(account.Address);
+    }
+
     [Fact]
     public void Create_TrimsOptionalFields()
     {
@@ -90,6 +116,28 @@ public class AccountTests
         Assert.Equal("0900000000", account.Phone);
         Assert.Equal("Engineer", account.Position);
         Assert.Equal("123 Street", account.Address);
+    }
+
+    [Fact]
+    public void Create_TrimsRequiredFields()
+    {
+        AccountParams p = ValidParams() with { Name = " Nguyen Van A ", Username = " nva ", Email = " nva@example.com " };
+
+        Account account = Account.Create(p);
+
+        Assert.Equal("Nguyen Van A", account.Name);
+        Assert.Equal("nva", account.Username);
+        Assert.Equal("nva@example.com", account.Email);
+    }
+
+    [Fact]
+    public void Create_WithStatusFalse_AssignsStatusFalse()
+    {
+        AccountParams p = ValidParams() with { Status = false };
+
+        Account account = Account.Create(p);
+
+        Assert.False(account.Status);
     }
 
     [Fact]

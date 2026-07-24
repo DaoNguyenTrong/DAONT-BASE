@@ -1,5 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Services.ApiKeys;
 using StarterKit.Domain.Entities;
@@ -44,6 +48,38 @@ public static class AuthTestHelper
     {
         JwtTokenService jwtTokenService = new(Options.Create(JwtSettings));
         return jwtTokenService.GenerateAccessToken(account);
+    }
+
+    // Signed with the real JwtSettings.SecretKey but already-expired — exercises the JwtBearer
+    // pipeline's lifetime validation, distinct from a token that's simply missing.
+    public static string MintExpiredAccessToken(Account account) =>
+        MintAccessToken(account, JwtSettings.SecretKey, DateTime.UtcNow.AddMinutes(-1));
+
+    // Correct claims/expiry but signed with a different key — exercises signature validation.
+    public static string MintTamperedAccessToken(Account account) =>
+        MintAccessToken(account, "tampered-secret-key-also-32-chars-minimum", DateTime.UtcNow.AddMinutes(15));
+
+    private static string MintAccessToken(Account account, string secretKey, DateTime expires)
+    {
+        SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(secretKey));
+        SigningCredentials credentials = new(key, SecurityAlgorithms.HmacSha256);
+        List<Claim> claims =
+        [
+            new(ClaimTypes.NameIdentifier, account.Id.ToString()),
+            new(ClaimTypes.Name, account.Username),
+            new(ClaimTypes.Email, account.Email),
+            new(JwtRegisteredClaimNames.Sub, account.Id.ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        ];
+
+        JwtSecurityToken token = new(
+            issuer: JwtSettings.Issuer,
+            audience: JwtSettings.Audiences[0],
+            claims: claims,
+            expires: expires,
+            signingCredentials: credentials);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
     public static async Task<(ApiKey ApiKey, string RawKey)> SeedActiveApiKeyAsync(AppDbContext context, string name = "Test Key")

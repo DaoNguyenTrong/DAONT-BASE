@@ -73,6 +73,16 @@ public sealed class ApiKeysControllerTests(ApiFactoryFixture fixture) : IAsyncLi
     }
 
     [Fact]
+    public async Task Create_BlankName_ReturnsBadRequest()
+    {
+        HttpClient client = await CreateAuthedClientAsync();
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/api-keys", new CreateApiKeyRequest(""));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Deactivate_NotFound_Returns404()
     {
         HttpClient client = await CreateAuthedClientAsync();

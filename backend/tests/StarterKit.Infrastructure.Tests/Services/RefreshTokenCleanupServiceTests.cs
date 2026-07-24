@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Domain.Entities;
 using StarterKit.Infrastructure.Persistence;
@@ -117,5 +119,29 @@ public sealed class RefreshTokenCleanupServiceTests(PostgresContainerFixture fix
         RefreshTokenCleanupService service = CreateService();
 
         await service.RunCleanupAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task RunCleanupAsync_ScopeCreationFails_SwallowsExceptionAndLogsError()
+    {
+        // Simulates a DB-layer failure (e.g. connection loss) inside the try block — the
+        // BackgroundService must not crash the host on a transient cleanup failure.
+        IServiceScopeFactory scopeFactory = Substitute.For<IServiceScopeFactory>();
+        scopeFactory.CreateScope().Returns(_ => throw new InvalidOperationException("simulated DB failure"));
+        ILogger<RefreshTokenCleanupService> logger = Substitute.For<ILogger<RefreshTokenCleanupService>>();
+        RefreshTokenCleanupService service = new(
+            scopeFactory,
+            Options.Create(new RefreshTokenCleanupSettings { RetentionDays = 7 }),
+            logger);
+
+        Exception? thrown = await Record.ExceptionAsync(() => service.RunCleanupAsync(CancellationToken.None));
+
+        Assert.Null(thrown);
+        logger.Received(1).Log(
+            LogLevel.Error,
+            Arg.Any<EventId>(),
+            Arg.Any<object>(),
+            Arg.Any<Exception>(),
+            Arg.Any<Func<object, Exception?, string>>());
     }
 }

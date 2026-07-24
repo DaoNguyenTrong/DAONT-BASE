@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using StarterKit.Domain.Entities;
 using StarterKit.Infrastructure.Persistence;
@@ -27,15 +28,8 @@ public sealed class GenericRepositoryTests(PostgresContainerFixture fixture) : I
         await context.DisposeAsync();
     }
 
-    private static ApiKey CreateApiKey(string name, DateTime? createdAt = null)
-    {
-        ApiKey key = ApiKey.Create(new ApiKeyParams(name), name.Length >= 8 ? name[..8] : name.PadRight(8, 'x'), "hash-" + name);
-        if (createdAt is not null)
-        {
-            key.CreatedAt = createdAt.Value;
-        }
-        return key;
-    }
+    private static ApiKey CreateApiKey(string name) =>
+        ApiKey.Create(new ApiKeyParams(name), name.Length >= 8 ? name[..8] : name.PadRight(8, 'x'), "hash-" + name);
 
     private async Task SeedAsync(params ApiKey[] keys)
     {
@@ -122,9 +116,17 @@ public sealed class GenericRepositoryTests(PostgresContainerFixture fixture) : I
     [Fact]
     public async Task ListPagedAsync_WithPredicate_OrdersByCreatedAtDescending()
     {
-        ApiKey older = CreateApiKey("Older", DateTime.UtcNow.AddHours(-1));
-        ApiKey newer = CreateApiKey("Newer", DateTime.UtcNow);
+        ApiKey older = CreateApiKey("Older");
+        ApiKey newer = CreateApiKey("Newer");
         await SeedAsync(older, newer);
+
+        // AppDbContext.SetAuditFields stamps CreatedAt = now for every Added entity on
+        // SaveChangesAsync, overwriting any value set before seeding — both rows above land
+        // with the same timestamp. Back-date "older" via raw SQL (bypasses the change tracker,
+        // so SetAuditFields never touches it) to give the ordering assertion below a real,
+        // deterministic timestamp difference to sort on.
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE api_keys SET created_at = {older.CreatedAt.AddHours(-1)} WHERE id = {older.Id}");
 
         (IReadOnlyList<ApiKey> items, int totalCount) = await repository.ListPagedAsync(k => true, 1, 10);
 
