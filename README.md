@@ -80,11 +80,26 @@ bun run --cwd frontend test:e2e:install && bun run --cwd frontend test:e2e   # e
 bun run --cwd frontend format         # prettier — there is no ESLint config in this project
 ```
 
-Re-run `bun run --cwd frontend codegen` after a backend contract change (new/changed endpoint or DTO) to refresh the generated API client — see `.claude/rules/api-contract.md`.
-
 ### 4. Try the Registration Flow
 
 `POST /api/auth/register` → open Mailpit (`localhost:8025`) → click the verification link → log in.
+
+### Updating the API Contract
+
+Whenever you add or change a backend controller route, request/response DTO, or status code, regenerate the OpenAPI spec and the frontend client:
+
+```bash
+# 1. Backend: re-export the spec to shared/openapi/openapi.json (no running server/DB required)
+dotnet build backend/src/StarterKit.API/StarterKit.API.csproj --no-restore -m:1 -p:OpenApiGenerateDocumentsOnBuild=true
+
+# 2. Frontend: regenerate src/api/generated/** from the updated spec
+bun run --cwd frontend codegen
+```
+
+- Step 1 writes `shared/openapi/openapi.json` — this file is committed (it's the single source of truth for the contract), so commit the diff along with your backend change.
+- `OpenApiGenerateDocumentsOnBuild` defaults to `false`: generating the doc costs ~5-9s via a design-time host, so it's opt-in rather than slowing every plain `dotnet build`.
+- Step 2 writes `frontend/src/api/generated/**` — gitignored, never hand-edited, and already regenerated automatically on every `bun install` via `postinstall`. Only needed here to pick up the change without reinstalling.
+- There is no hand-written API wrapper layer on the frontend — views/stores call the generated client directly (side effects like updating auth state live in `frontend/src/stores/auth.ts`). See `.claude/rules/api-contract.md` for the full contract-sync workflow and how the generated client is wired in.
 
 ### CI
 
