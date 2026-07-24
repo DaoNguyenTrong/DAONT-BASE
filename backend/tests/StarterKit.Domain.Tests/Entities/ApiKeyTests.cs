@@ -52,6 +52,26 @@ public class ApiKeyTests
     }
 
     [Fact]
+    public void Update_WithValidParams_RenamesKey()
+    {
+        ApiKey key = ApiKey.Create(ValidParams(), "prefix", "hash");
+
+        key.Update(new ApiKeyParams(Name: "Renamed key"));
+
+        Assert.Equal("Renamed key", key.Name);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Update_WithBlankName_ThrowsDomainException(string name)
+    {
+        ApiKey key = ApiKey.Create(ValidParams(), "prefix", "hash");
+
+        DomainAssert.ThrowsWithMessage(DomainMessages.ApiKeyNameRequired, () => key.Update(new ApiKeyParams(Name: name)));
+    }
+
+    [Fact]
     public void Deactivate_SetsIsActiveFalse()
     {
         ApiKey key = ApiKey.Create(ValidParams(), "prefix", "hash");
