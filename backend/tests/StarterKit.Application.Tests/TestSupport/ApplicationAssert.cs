@@ -17,4 +17,11 @@ public static class ApplicationAssert
         Assert.Equal(typeof(TEntity).Name, ex.Args[0]);
         Assert.Equal(expectedId, ex.Args[1]);
     }
+
+    public static async Task AssertNotFoundAsync(string expectedEntityName, object expectedId, Func<Task> act)
+    {
+        NotFoundException ex = await Assert.ThrowsAsync<NotFoundException>(act);
+        Assert.Equal(expectedEntityName, ex.Args[0]);
+        Assert.Equal(expectedId, ex.Args[1]);
+    }
 }
