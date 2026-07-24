@@ -23,6 +23,7 @@ internal static class ExternalAuthExtensions
         // instead of blocking application startup for everyone.
         if (!string.IsNullOrWhiteSpace(externalAuthSettings.Google.ClientId))
         {
+            services.AddScoped<IGoogleJwtValidator, GoogleJwtValidator>();
             services.AddScoped<IExternalAuthProvider, GoogleAuthProvider>();
         }
 

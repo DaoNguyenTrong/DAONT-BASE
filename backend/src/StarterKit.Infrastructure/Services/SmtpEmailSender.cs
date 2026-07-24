@@ -8,9 +8,10 @@ using StarterKit.Application.Common.Settings;
 
 namespace StarterKit.Infrastructure.Services;
 
-public sealed class SmtpEmailSender(
+internal sealed class SmtpEmailSender(
     IOptions<EmailSettings> emailOptions,
-    ILogger<SmtpEmailSender> logger) : IEmailSender
+    ILogger<SmtpEmailSender> logger,
+    ISmtpClientFactory smtpClientFactory) : IEmailSender
 {
     private readonly EmailSettings emailSettings = emailOptions.Value;
 
@@ -22,7 +23,7 @@ public sealed class SmtpEmailSender(
         message.Subject = subject;
         message.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
 
-        using SmtpClient client = new();
+        using ISmtpClient client = smtpClientFactory.Create();
 
         try
         {

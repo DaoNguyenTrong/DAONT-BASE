@@ -34,4 +34,11 @@
     <AssemblyMetadata Include="BuildTimestampUtc" Value="$([System.DateTime]::UtcNow.ToString('o'))" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Program is internal (top-level statements) — WebApplicationFactory<Program> needs access. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>StarterKit.API.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
 </Project>

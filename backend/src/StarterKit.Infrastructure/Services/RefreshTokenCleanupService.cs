@@ -23,7 +23,7 @@ internal sealed class RefreshTokenCleanupService(
         }
     }
 
-    private async Task RunCleanupAsync(CancellationToken ct)
+    internal async Task RunCleanupAsync(CancellationToken ct)
     {
         DateTime cutoff = DateTime.UtcNow.AddDays(-options.Value.RetentionDays);
         try
