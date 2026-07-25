@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - Normalized 4 controller routes (`Accounts`, `Auth`, `Files`, `Health`) from `[Route("api/[controller]")]` to explicit lowercase (`api/accounts`, etc.) — ASP.NET Core routing was always case-insensitive, but the OpenAPI spec captures the declared casing verbatim and codegen reproduced it, so this keeps the generated client's paths consistent with every existing caller.
 - Removed the hand-written `frontend/src/api/{account,auth,health,profile}-api.ts` wrapper modules; views/composables now call the generated client directly. Side effects the OpenAPI spec can't express (updating auth state after login, session-id normalization, the refresh-token client isolation) moved into `stores/auth.ts` as actions.
 - Deduplicated the refresh-token call between the axios 401-retry interceptor and the auth store — the interceptor now delegates to `authStore.refreshToken()` instead of reimplementing it.
+- Dark mode body/card switched to explicit navy hex values (`#121527`/`#1e2235`); retinted the surface-600/700/800 hover/border/fill tokens and boosted the dark-mode primary to a more saturated violet (`#9c80dc`) so both stay visually consistent with the new navy base.
 
 ### Fixed
 

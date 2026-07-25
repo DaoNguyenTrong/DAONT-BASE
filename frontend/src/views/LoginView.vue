@@ -145,7 +145,7 @@ async function handleSubmit() {
             >
 
             <RouterLink
-              class="mt-5 block text-center text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
+              class="mt-5 block text-center text-sm font-medium text-primary-600 hover:underline dark:text-primary-200"
               :to="{ name: 'register' }"
             >
               {{ t('auth.registerLink') }}

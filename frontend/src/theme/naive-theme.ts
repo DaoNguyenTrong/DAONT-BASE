@@ -10,18 +10,31 @@ import type { GlobalThemeOverrides } from 'naive-ui'
  * Brand primary is a single indigo/violet accent palette (`--color-accent-*`
  * in tailwind.css, derived from the weatherplus logo's #4e3d90 wordmark) —
  * swap the hex values here (and in tailwind.css) to rebrand. Light mode uses
- * accent-600/700/800 (darkens on hover/pressed); dark mode uses accent-200/
- * 100/50 rather than the mirrored 400/300/200 a hue-neutral palette would use
- * — this hue needs meaningfully more lightness than teal did to clear the
- * same contrast ratio against the dark surface (WCAG luminance weights green
- * far more than blue, so a blue-violet needs to sit lighter to read as
- * equally bright).
+ * accent-600/700/800 (darkens on hover/pressed) — 600 was promoted from the
+ * original #3d3071 to `#5e4c9e` (same H253°/S35° hue family, just a lighter
+ * point on it — originally a one-off sidebar background hex, since reused
+ * as the actual primary so `AppSidebar.vue` could reference `bg-primary-600`
+ * instead of an arbitrary hex) — 700/800 are darkened continuations of it,
+ * not the old #3d3071-anchored steps, to avoid a hue seam on hover/pressed;
+ * dark mode uses a custom
+ * lighter+more-saturated purple trio (not the plain accent-200/100/50 steps)
+ * — those steps needed meaningfully more lightness than teal did to clear
+ * the same contrast ratio against the dark surface in the first place (WCAG
+ * luminance weights green far more than blue, so a blue-violet needs to sit
+ * lighter to read as equally bright), and were then tuned further toward a
+ * vivid, more saturated violet (`#9c80dc`, H258°/S57%/L68%) rather than a
+ * washed-out lilac, while still clearing WCAG AA against the dark body/card
+ * (5.6:1 / 4.9:1). Only the `200` step (`--color-primary-200` in
+ * tailwind.css) carries this custom value — it's the one step used
+ * exclusively by `dark:` variants app-wide — and the two files must be
+ * edited together or components (Naive UI) and utility classes
+ * (`dark:text-primary-200`) will render two different purples.
  *
  * Surface mapping (light): base & card = #ffffff (surface-0), body = #efedf6,
- * popover/modal = #f9f8fb. Surface mapping (dark): base/body = #1a1920
- * (surface-950), card/popover/modal = #27252e (surface-900). Dark surface's
- * tint is roughly half as saturated as light's — at full strength it read as
- * a distinctly purple-navy theme rather than a dark neutral with a hint of it.
+ * popover/modal = #f9f8fb. Surface mapping (dark): base/body = #121527
+ * (surface-950), card/popover/modal = #1e2235 (surface-900) — a navy-black
+ * dark theme per explicit user-supplied hex values, not derived from the
+ * brand hue like the rest of the surface ramp.
  *
  * `successColor` is retuned to the leaf-green accent (`--color-leaf-*` in
  * tailwind.css, from the logo's leaf glyph) instead of Naive UI's default
@@ -69,10 +82,10 @@ import type { GlobalThemeOverrides } from 'naive-ui'
 
 const lightThemeOverrides: GlobalThemeOverrides = {
   common: {
-    primaryColor: '#3d3071',
-    primaryColorHover: '#33285e',
-    primaryColorPressed: '#2a214e',
-    primaryColorSuppl: '#3d3071',
+    primaryColor: '#5e4c9e',
+    primaryColorHover: '#4e3f84',
+    primaryColorPressed: '#41356d',
+    primaryColorSuppl: '#5e4c9e',
     successColor: '#5b772a',
     successColorHover: '#4b6223',
     successColorPressed: '#3f521d',
@@ -104,21 +117,21 @@ const lightThemeOverrides: GlobalThemeOverrides = {
 
 const darkThemeOverrides: GlobalThemeOverrides = {
   common: {
-    primaryColor: '#bab0df',
-    primaryColorHover: '#dcd7f0',
-    primaryColorPressed: '#f4f3fa',
-    primaryColorSuppl: '#bab0df',
+    primaryColor: '#9c80dc',
+    primaryColorHover: '#c1a4ff',
+    primaryColorPressed: '#f6f2fb',
+    primaryColorSuppl: '#9c80dc',
     successColor: '#91bd44',
     successColorHover: '#b0d078',
     successColorPressed: '#cfe3ac',
     successColorSuppl: '#91bd44',
-    baseColor: '#1a1920',
-    bodyColor: '#1a1920',
-    cardColor: '#27252e',
-    popoverColor: '#27252e',
-    modalColor: '#27252e',
+    baseColor: '#121527',
+    bodyColor: '#121527',
+    cardColor: '#1e2235',
+    popoverColor: '#1e2235',
+    modalColor: '#1e2235',
     inputColor: 'var(--fill-color)',
-    inputColorDisabled: '#1a1920',
+    inputColorDisabled: '#121527',
     tagColor: 'var(--fill-color)',
     buttonColor2: 'var(--fill-color)',
     buttonColor2Hover: '#454250',

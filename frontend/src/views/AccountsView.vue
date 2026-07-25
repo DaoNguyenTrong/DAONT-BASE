@@ -172,7 +172,7 @@ onMounted(async () => {
         <div
           class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 dark:bg-primary-400/10"
         >
-          <SvgIcon name="users" class="text-2xl text-primary-500 dark:text-primary-400" />
+          <SvgIcon name="users" class="text-2xl text-primary-500 dark:text-primary-200" />
         </div>
         <p class="text-base font-medium text-surface-700 dark:text-surface-200">
           {{ t('accounts.empty') }}
