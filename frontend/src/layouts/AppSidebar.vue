@@ -9,6 +9,7 @@ const route = useRoute()
 const sidebar = useSidebarStore()
 const auth = useAuthStore()
 const sidebarMenu = useSidebarMenu()
+const { wordmarkSrc } = useBrandWordmark()
 
 function isActive(item: SidebarMenuItem): boolean {
   if (item.routeName) {
@@ -56,21 +57,17 @@ const profileVisible = ref(false)
     <!-- Logo area -->
     <button
       type="button"
-      class="flex h-16 w-full cursor-pointer items-center border-b border-surface-200 px-4 text-left transition-colors hover:bg-surface-100 dark:border-surface-800 dark:hover:bg-surface-800"
+      class="flex h-16 w-full cursor-pointer items-center justify-center border-b border-surface-200 text-left transition-colors hover:bg-surface-100 dark:border-surface-800 dark:hover:bg-surface-800"
       :class="sidebar.isMinimal ? 'justify-center' : 'gap-3'"
       @click="goHome"
     >
       <img
+        v-if="sidebar.isMinimal"
         :alt="t('app.name')"
-        class="h-9 w-9 shrink-0 rounded-lg"
-        src="/icons/android-chrome-192x192.png"
+        class="h-9 w-9 object-cover shrink-0"
+        src="/weatherplus-mark.webp"
       />
-      <div v-if="!sidebar.isMinimal" class="flex flex-col overflow-hidden">
-        <span class="truncate text-sm font-semibold text-surface-800 dark:text-surface-100">
-          {{ t('app.name') }}
-        </span>
-        <span class="truncate text-xs text-surface-400 dark:text-surface-500"> Workspace </span>
-      </div>
+      <img v-else :alt="t('app.name')" class="h-9 shrink-0" :src="wordmarkSrc" />
     </button>
 
     <!-- Navigation -->
@@ -154,14 +151,7 @@ const profileVisible = ref(false)
           class="flex w-full cursor-pointer items-center gap-3 text-left"
           @click="goHome"
         >
-          <img
-            :alt="t('app.name')"
-            class="h-9 w-9 shrink-0 rounded-lg"
-            src="/icons/android-chrome-192x192.png"
-          />
-          <span class="text-base font-semibold text-surface-800 dark:text-surface-100">
-            {{ t('app.name') }}
-          </span>
+          <img :alt="t('app.name')" class="h-8 w-auto shrink-0" :src="wordmarkSrc" />
         </button>
       </template>
 

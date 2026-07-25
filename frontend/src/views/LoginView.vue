@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const router = useRouter()
 const { t } = useI18n()
+const { wordmarkSrc } = useBrandWordmark()
 
 const username = ref('')
 const password = ref('')
@@ -78,15 +79,8 @@ async function handleSubmit() {
         <div class="h-1 bg-primary-500" />
 
         <div class="p-6 sm:p-8">
-          <div class="space-y-4 text-center">
-            <div class="flex justify-center">
-              <img :alt="t('app.name')" class="h-14 w-14" src="/icons/android-chrome-192x192.png" />
-            </div>
-            <div class="space-y-1">
-              <h1 class="text-xl font-semibold text-surface-900 dark:text-surface-0">
-                {{ t('app.name') }}
-              </h1>
-            </div>
+          <div class="flex justify-center">
+            <img :alt="t('app.name')" class="h-12 w-auto" :src="wordmarkSrc" />
           </div>
 
           <form class="mt-8 space-y-5" @submit.prevent="handleSubmit">
