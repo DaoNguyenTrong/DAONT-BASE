@@ -4,16 +4,22 @@
 
 @theme {
   /* Static accent palette (supports opacity modifiers, e.g. bg-accent-500/50) —
-     indigo/violet derived from the weatherplus logo's wordmark color (#4e3d90). */
+     indigo/violet derived from the weatherplus logo's wordmark color (#4e3d90).
+     600/700/800 (the light-mode primaryColor/-Hover/-Pressed trio — see
+     naive-theme.ts) were retuned to the same H253°/S35% hue/saturation as
+     #5e4c9e (the sidebar background, now promoted to the actual primary
+     color rather than a one-off hex) — same hue family as the rest of this
+     ramp, just a lighter point on it, so 700/800 are darkened continuations
+     of it rather than the old #3d3071-anchored steps. */
   --color-accent-50: #f4f3fa;
   --color-accent-100: #dcd7f0;
   --color-accent-200: #bab0df;
   --color-accent-300: #8e7fc9;
   --color-accent-400: #624db4;
   --color-accent-500: #4e3d8f;
-  --color-accent-600: #3d3071;
-  --color-accent-700: #33285e;
-  --color-accent-800: #2a214e;
+  --color-accent-600: #5e4c9e;
+  --color-accent-700: #4e3f84;
+  --color-accent-800: #41356d;
   --color-accent-900: #272041;
   --color-accent-950: #141122;
 

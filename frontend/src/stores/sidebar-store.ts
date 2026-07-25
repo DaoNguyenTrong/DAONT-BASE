@@ -7,7 +7,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
 
   // Getters
   const isMinimal = computed(() => mode.value === 'minimal')
-  const sidebarWidth = computed(() => (mode.value === 'minimal' ? '4rem' : '16rem'))
+  const sidebarWidth = computed(() => (mode.value === 'minimal' ? '5rem' : '16rem'))
 
   // Actions
   function toggleMode() {

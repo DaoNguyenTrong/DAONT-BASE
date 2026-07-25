@@ -62,8 +62,8 @@ function handlePopupSelect(key: string) {
           class="mb-1 flex min-h-10 w-full items-center justify-center rounded-lg py-2 transition-colors"
           :class="
             isActive(item)
-              ? 'bg-primary-50 text-primary-700 dark:bg-primary-400/10 dark:text-primary-200'
-              : 'text-surface-600 hover:bg-surface-100 hover:text-surface-800 dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100'
+              ? 'bg-white/15 text-white dark:bg-primary-400/10 dark:text-primary-200'
+              : 'text-white/70 hover:bg-white/10 hover:text-white dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100'
           "
           @click="sidebar.closeMobile()"
         >
@@ -82,7 +82,7 @@ function handlePopupSelect(key: string) {
       <button
         type="button"
         :aria-label="t(item.labelKey)"
-        class="mb-1 flex min-h-10 w-full cursor-pointer items-center justify-center rounded-lg py-2 text-surface-600 transition-colors hover:bg-surface-100 hover:text-surface-800 dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100"
+        class="mb-1 flex min-h-10 w-full cursor-pointer items-center justify-center rounded-lg py-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100"
       >
         <SvgIcon :name="item.icon" :class="iconSize" />
       </button>
@@ -93,7 +93,7 @@ function handlePopupSelect(key: string) {
   <template v-else-if="item.items?.length">
     <button
       type="button"
-      class="mb-0.5 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-surface-600 transition-colors hover:bg-surface-100 hover:text-surface-800 dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100"
+      class="mb-0.5 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-white/70 transition-colors hover:bg-white/10 hover:text-white dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100"
       :class="minHeight"
       @click="toggleExpand(item.labelKey)"
     >
@@ -101,12 +101,12 @@ function handlePopupSelect(key: string) {
       <span class="flex-1 truncate text-sm">{{ t(item.labelKey) }}</span>
       <SvgIcon
         :name="expandedKeys.has(item.labelKey) ? 'chevron-down' : 'chevron-right'"
-        class="text-xs text-surface-400 transition-transform duration-200"
+        class="text-xs text-white/50 transition-transform duration-200"
       />
     </button>
     <div
       v-if="expandedKeys.has(item.labelKey)"
-      class="ml-2 border-l border-surface-200 pl-2 dark:border-surface-600"
+      class="ml-2 border-l border-white/15 pl-2 dark:border-surface-600"
     >
       <AppSidebarItem
         v-for="child in item.items"
@@ -126,8 +126,8 @@ function handlePopupSelect(key: string) {
       :class="[
         minHeight,
         isActive(item)
-          ? 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-400/10 dark:text-primary-200'
-          : 'text-surface-600 hover:bg-surface-100 hover:text-surface-800 dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100',
+          ? 'bg-white/15 font-medium text-white dark:bg-primary-400/10 dark:text-primary-200'
+          : 'text-white/70 hover:bg-white/10 hover:text-white dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100',
       ]"
       @click="sidebar.closeMobile()"
     >
