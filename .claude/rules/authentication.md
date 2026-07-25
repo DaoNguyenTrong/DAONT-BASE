@@ -1,19 +1,16 @@
 # Authentication
 
-JWT Bearer tokens are accepted from the `Authorization` header or the `access_token` cookie.
-
-JWT does not carry tenant context — no tenant claim is issued or re-issued on tenant switch.
+JWT Bearer tokens are accepted from the `Authorization` header or the `access_token` cookie
+(`AuthExtensions.cs`, `OnMessageReceived`). All endpoints require a valid token except
+`/api/auth/login`, `/api/auth/register`, `/api/auth/verify-email`, `/api/auth/resend-verification`,
+`/api/auth/external/{provider}`, and `/api/auth/refresh`.
 
 ## Roles
 
-Roles are tenant-scoped only (`TenantRole`: `Owner`, `Member`), resolved per-request via
-`X-Tenant-Id` + `ICurrentTenantService`. There is no global account role.
+No multi-tenancy, no admin/global role — single-user/single-account model. Every authenticated
+account has equal access to all APIs; add authorization as your specific application needs.
 
 ## Headers
 
-- `X-TimeZone` — required. IANA timezone identifier (e.g. `Asia/Ho_Chi_Minh`). Missing/invalid → 400.
-- `X-Tenant-Id` — optional. Tenant UUID. If present and the caller is a member, request is scoped
-  to that tenant (`ICurrentTenantService.TenantId`/`Role` populated). If absent, invalid, or the
-  caller is not a member, no tenant is resolved — this is **not** a 403; tenant-scoped list
-  endpoints return empty data, and only mutations that require tenant context reject the request
-  (none exist yet in Phase 1).
+- `X-TimeZone` — required. IANA timezone identifier (e.g. `Asia/Ho_Chi_Minh`). Missing/invalid → 400
+  (`UserTimeZoneMiddleware`).

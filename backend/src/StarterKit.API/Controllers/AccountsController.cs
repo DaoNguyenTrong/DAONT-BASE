@@ -7,7 +7,7 @@ namespace StarterKit.API.Controllers;
 
 [ApiController]
 [Authorize]
-[Route("api/[controller]")]
+[Route("api/accounts")]
 public sealed class AccountsController(IAccountService accountService) : ControllerBase
 {
     /// <summary>Returns a paginated list of all accounts.</summary>

@@ -36,7 +36,7 @@ describe('GoogleLoginButton', () => {
       expect.objectContaining({ client_id: 'test-client-id', callback: expect.any(Function) }),
     )
 
-    const button = wrapper.find('button.gsi-material-button')
+    const button = wrapper.find('button.google-button')
     expect(button.exists()).toBe(true)
     expect(button.attributes('disabled')).toBeUndefined()
   })
@@ -50,7 +50,7 @@ describe('GoogleLoginButton', () => {
     const { wrapper } = await renderComponent(GoogleLoginButton)
     await flushPromises()
 
-    await wrapper.find('button.gsi-material-button').trigger('click')
+    await wrapper.find('button.google-button').trigger('click')
 
     expect(prompt).toHaveBeenCalledTimes(1)
   })
@@ -76,12 +76,12 @@ describe('GoogleLoginButton', () => {
     const { wrapper } = await renderComponent(GoogleLoginButton)
     await flushPromises()
 
-    expect(wrapper.find('button.gsi-material-button').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('button.google-button').attributes('disabled')).toBeDefined()
 
     resolveScript()
     await flushPromises()
 
-    expect(wrapper.find('button.gsi-material-button').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('button.google-button').attributes('disabled')).toBeUndefined()
 
     appendChildSpy.mockRestore()
   })

@@ -2,6 +2,7 @@
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const { wordmarkSrc } = useBrandWordmark()
 
 const status = ref<'verifying' | 'error'>('verifying')
 const { error: errorMessage, run } = useApiAction()
@@ -27,7 +28,7 @@ watch(
       return
     }
 
-    const result = await run(() => authApi.verifyEmail({ token }), {
+    const result = await run(() => useAuthStore().verifyEmail({ token }), {
       onCode: {
         EmailVerificationTokenInvalidOrExpired: () => {
           errorMessage.value = t('auth.verifyEmailInvalidToken')
@@ -58,15 +59,8 @@ watch(
         <div class="h-1 bg-primary-500" />
 
         <div class="p-6 sm:p-8">
-          <div class="space-y-4 text-center">
-            <div class="flex justify-center">
-              <img :alt="t('app.name')" class="h-14 w-14" src="/icons/android-chrome-192x192.png" />
-            </div>
-            <div class="space-y-1">
-              <h1 class="text-xl font-semibold text-surface-900 dark:text-surface-0">
-                {{ t('app.name') }}
-              </h1>
-            </div>
+          <div class="flex justify-center">
+            <img :alt="t('app.name')" class="h-12 w-auto" :src="wordmarkSrc" />
           </div>
 
           <div v-if="status === 'verifying'" class="mt-8 flex flex-col items-center gap-4 py-4">
@@ -82,7 +76,7 @@ watch(
             </n-alert>
             <ResendVerificationForm />
             <RouterLink
-              class="block text-center text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
+              class="block text-center text-sm font-medium text-primary-600 hover:underline dark:text-primary-200"
               :to="{ name: 'login' }"
             >
               {{ t('auth.backToLogin') }}

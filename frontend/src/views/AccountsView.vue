@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { getAccounts } from '@/api/generated/accounts/accounts'
+import { toPagedResult } from '@/lib/paged-result'
 import type { Account, CreateAccountRequest, UpdateAccountRequest } from '@/api/types'
 import AccountForm from '@/components/AccountForm.vue'
 
 const { t, locale } = useI18n()
 const { open } = useAppDialogNaive()
+
+const accountsClient = getAccounts()
 
 const searchQuery = ref('')
 
@@ -13,10 +17,15 @@ useQuerySync([stringQueryField(searchQuery, 'q')])
 
 const list = useLazyList<Account>({
   pageSize: 10,
-  fetchPage: (pageNumber, pageSize) =>
-    accountApi.getAll(pageNumber, pageSize, {
-      search: searchQuery.value.trim() || undefined,
-    }),
+  fetchPage: async (pageNumber, pageSize) => {
+    const search = searchQuery.value.trim()
+    const result = await accountsClient.accountsGetAll({
+      pageNumber,
+      pageSize,
+      ...(search ? { search } : {}),
+    })
+    return toPagedResult(result)
+  },
 })
 
 function formatDate(dateStr: string | null) {
@@ -63,7 +72,7 @@ function openCreateDialog() {
     data: { state, isEditing: false },
     dialogClass: 'w-full! max-w-2xl!',
     onConfirm: async (close) => {
-      await accountApi.create({
+      await accountsClient.accountsCreate({
         ...state,
         phone: state.phone?.trim() || null,
         position: state.position?.trim() || null,
@@ -99,9 +108,9 @@ function openEditDialog(account: Account) {
         address: state.address?.trim() || null,
         username: state.username,
         email: state.email,
-        status: state.status,
+        status: state.status ?? account.status,
       }
-      await accountApi.update(account.id, payload)
+      await accountsClient.accountsUpdate(account.id, payload)
       showSuccessMessage(t('accounts.updated'))
       close()
       await list.reset()
@@ -116,7 +125,7 @@ function confirmDelete(account: Account) {
     rejectLabel: t('common.cancel'),
     acceptLabel: t('common.confirm'),
     accept: async () => {
-      await accountApi.remove(account.id)
+      await accountsClient.accountsDelete(account.id)
       showSuccessMessage(t('accounts.deleted'))
       await list.reset()
     },
@@ -163,7 +172,7 @@ onMounted(async () => {
         <div
           class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 dark:bg-primary-400/10"
         >
-          <SvgIcon name="users" class="text-2xl text-primary-500 dark:text-primary-400" />
+          <SvgIcon name="users" class="text-2xl text-primary-500 dark:text-primary-200" />
         </div>
         <p class="text-base font-medium text-surface-700 dark:text-surface-200">
           {{ t('accounts.empty') }}

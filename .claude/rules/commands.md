@@ -26,6 +26,15 @@ dotnet ef migrations add <MigrationName> --project backend/src/StarterKit.Infras
 
 In production, migrations are applied automatically on startup via `Database.MigrateAsync`.
 
+### OpenAPI Spec Export
+
+```bash
+# Writes shared/openapi/openapi.json — no running server/DB required
+dotnet build backend/src/StarterKit.API/StarterKit.API.csproj --no-restore -m:1 -p:OpenApiGenerateDocumentsOnBuild=true
+```
+
+Off by default on plain `dotnet build` (costs ~5-9s via a design-time host). Run after any controller/DTO change, then regenerate the frontend client (see below). See `.claude/rules/api-contract.md` for the full contract-sync workflow.
+
 ### Tests
 
 ```bash
@@ -44,6 +53,9 @@ bun install --cwd frontend
 
 # Dev server
 bun run --cwd frontend dev
+
+# Regenerate API client/types from shared/openapi/openapi.json (after a backend contract change)
+bun run --cwd frontend codegen
 
 # Type-check + production build
 bun run --cwd frontend build

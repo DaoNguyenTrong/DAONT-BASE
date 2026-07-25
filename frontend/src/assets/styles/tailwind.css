@@ -3,18 +3,42 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Static accent palette (supports opacity modifiers, e.g. bg-accent-500/50) */
-  --color-accent-50: #f0fdfa;
-  --color-accent-100: #ccfbf1;
-  --color-accent-200: #99f6e4;
-  --color-accent-300: #5eead4;
-  --color-accent-400: #2dd4bf;
-  --color-accent-500: #14b8a6;
-  --color-accent-600: #0d9488;
-  --color-accent-700: #0f766e;
-  --color-accent-800: #115e59;
-  --color-accent-900: #134e4a;
-  --color-accent-950: #042f2e;
+  /* Static accent palette (supports opacity modifiers, e.g. bg-accent-500/50) —
+     indigo/violet derived from the weatherplus logo's wordmark color (#4e3d90).
+     600/700/800 (the light-mode primaryColor/-Hover/-Pressed trio — see
+     naive-theme.ts) were retuned to the same H253°/S35% hue/saturation as
+     #5e4c9e (the sidebar background, now promoted to the actual primary
+     color rather than a one-off hex) — same hue family as the rest of this
+     ramp, just a lighter point on it, so 700/800 are darkened continuations
+     of it rather than the old #3d3071-anchored steps. */
+  --color-accent-50: #f4f3fa;
+  --color-accent-100: #dcd7f0;
+  --color-accent-200: #bab0df;
+  --color-accent-300: #8e7fc9;
+  --color-accent-400: #624db4;
+  --color-accent-500: #4e3d8f;
+  --color-accent-600: #5e4c9e;
+  --color-accent-700: #4e3f84;
+  --color-accent-800: #41356d;
+  --color-accent-900: #272041;
+  --color-accent-950: #141122;
+
+  /* Static leaf-green accent — derived from the small leaf glyph in the
+     weatherplus logo (#89b43f). A deliberate secondary accent, not a second
+     primary: only used for Naive UI's `successColor` (see naive-theme.ts),
+     not on interactive/primary elements, so it doesn't compete with the
+     brand's actual dominant color (the purple wordmark). */
+  --color-leaf-50: #f8fbf2;
+  --color-leaf-100: #e7f1d6;
+  --color-leaf-200: #cfe3ac;
+  --color-leaf-300: #b0d078;
+  --color-leaf-400: #91bd44;
+  --color-leaf-500: #739735;
+  --color-leaf-600: #5b772a;
+  --color-leaf-700: #4b6223;
+  --color-leaf-800: #3f521d;
+  --color-leaf-900: #36451c;
+  --color-leaf-950: #1c240f;
 
   /* Primary (bridged, auto-switches light/dark below) — light default */
   --color-primary-50: var(--color-accent-50);
@@ -29,19 +53,22 @@
   --color-primary-900: var(--color-accent-900);
   --color-primary-950: var(--color-accent-950);
 
-  /* Surface (bridged, auto-switches light/dark below) — light default */
+  /* Surface (bridged, auto-switches light/dark below) — light default.
+     Same lightness steps as before, retinted with a low-saturation slice of
+     the brand hue (252°) instead of a hue-neutral slate, so neutrals read as
+     part of the same family as --color-accent-* rather than a generic gray. */
   --color-surface-0: #ffffff;
-  --color-surface-50: #f8fafc;
-  --color-surface-100: #f1f5f9;
-  --color-surface-200: #e2e8f0;
-  --color-surface-300: #cbd5e1;
-  --color-surface-400: #94a3b8;
-  --color-surface-500: #738195;
-  --color-surface-600: #5f6f84;
-  --color-surface-700: #46576b;
-  --color-surface-800: #344357;
-  --color-surface-900: #223044;
-  --color-surface-950: #111827;
+  --color-surface-50: #f9f9fc;
+  --color-surface-100: #f3f2f8;
+  --color-surface-200: #e6e4ee;
+  --color-surface-300: #d2cfdd;
+  --color-surface-400: #9f9ab2;
+  --color-surface-500: #7b7593;
+  --color-surface-600: #69647f;
+  --color-surface-700: #514c65;
+  --color-surface-800: #3f3a51;
+  --color-surface-900: #2d293d;
+  --color-surface-950: #181523;
 
   /* Shared neutral fill for filled controls (Button secondary, Tag, Input, Select) —
      single source of truth so they can't drift out of sync with each other. */
@@ -49,10 +76,15 @@
 }
 
 .dark {
-  /* Primary — dark mode */
+  /* Primary — dark mode. 50/100/300-950 stay the shared accent scale; 200 is
+     overridden below (not just `var(--color-accent-200)`) since it's the one
+     step used exclusively by `dark:` variants app-wide (never referenced
+     unprefixed) — bumping only it gives dark mode a more saturated, more
+     purple primary without recoloring anything light mode still reads off
+     the shared accent-100 (e.g. NotFoundView's `ring-primary-100`). */
   --color-primary-50: var(--color-accent-50);
   --color-primary-100: var(--color-accent-100);
-  --color-primary-200: var(--color-accent-200);
+  --color-primary-200: #9c80dc;
   --color-primary-300: var(--color-accent-300);
   --color-primary-400: var(--color-accent-400);
   --color-primary-500: var(--color-accent-500);
@@ -62,17 +94,28 @@
   --color-primary-900: var(--color-accent-900);
   --color-primary-950: var(--color-accent-950);
 
-  /* Surface — dark mode */
-  --color-surface-0: #dbe1ec;
-  --color-surface-50: #d2d8e5;
-  --color-surface-100: #c5ccdb;
-  --color-surface-200: #aeb7c8;
-  --color-surface-300: #9aa4b8;
-  --color-surface-400: #858fa3;
-  --color-surface-500: #6f7890;
-  --color-surface-600: #555f75;
-  --color-surface-700: #3b4357;
-  --color-surface-800: #262c3d;
+  /* Surface — dark mode (same lightness steps, retinted — see light-mode note
+     above). Saturation here is roughly half of the light-mode surface ramp's
+     — a stronger tint read as a distinctly purple-navy dark theme rather than
+     a dark neutral with a brand hint, so it's toned down to just a hint.
+     600/700/800 are hue-matched (~230°) and re-saturated to the navy 900/950
+     pair above (was the ~252° violet hue at ~9-11% saturation, same family
+     as the old body/card) — otherwise every hover/fill state built on these
+     three (sidebar nav-item hover, logo-button hover, `--fill-color`) reads
+     as a mismatched violet-grey flash against the new navy body/card. Exact
+     lightness kept unchanged from before so the hover/fill contrast against
+     the card stays as subtle as originally designed — only hue+saturation
+     shifted to match. */
+  --color-surface-0: #e2e1e6;
+  --color-surface-50: #dad9de;
+  --color-surface-100: #ceccd4;
+  --color-surface-200: #b8b6c0;
+  --color-surface-300: #a5a2b0;
+  --color-surface-400: #8f8b9d;
+  --color-surface-500: #79758a;
+  --color-surface-600: #555a75;
+  --color-surface-700: #3a3f58;
+  --color-surface-800: #262a3d;
   --color-surface-900: #1e2235;
   --color-surface-950: #121527;
 

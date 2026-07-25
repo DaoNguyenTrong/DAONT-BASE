@@ -24,7 +24,7 @@ describe('AppFooter', () => {
     const { wrapper } = await renderComponent(AppFooter)
 
     expect(wrapper.text()).toContain('App Starter')
-    expect(wrapper.text()).toMatch(/Version \d+\.\d+\.\d+/)
+    expect(wrapper.text()).toMatch(/Version v?\d+\.\d+\.\d+/)
   })
 
   it('shows the offline status dot while the health check is pending', async () => {

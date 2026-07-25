@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.0] - 2026-07-25
+
+### Security
+
+- CORS previously reflected any Origin with credentials enabled (equivalent to a wildcard, but worse); now requires an explicit `CorsSettings:AllowedOrigins` allowlist, configured at startup.
+- Rate limiting keyed on `Connection.RemoteIpAddress` with no forwarded-headers handling — behind any reverse proxy/load balancer every client collapsed into a single bucket. Added opt-in `ForwardedHeadersSettings` (`KnownProxies`/`KnownNetworks`), defaulting to ASP.NET Core's loopback-only trust so it's a no-op until an operator explicitly configures their proxy.
+
+### Added
+
+- Microsoft sign-in (MSAL.js popup + PKCE) alongside the existing Google option, backed by a new `MicrosoftAuthProvider`/`IMicrosoftJwtValidator` on the backend's provider-agnostic external-login flow.
+- Backend exports its OpenAPI spec to `shared/openapi/openapi.json` at build time (`dotnet build ... -p:OpenApiGenerateDocumentsOnBuild=true`, off by default to avoid slowing every plain build), with operation transformers for stable OperationIds, a single `application/json` request content-type, and camelCase query parameter names.
+- Frontend generates its API client from that spec via `orval` (`bun run --cwd frontend codegen`; also runs automatically on `bun install` via `postinstall`) — the OpenAPI contract between backend and frontend is no longer hand-synced.
+- `RENAMING.md` — checklist for renaming the project (namespaces, solution/project files, config values) with the pitfalls to avoid (DB name, JWT issuer/audiences).
+- Weatherplus branding: primary/surface/success color palette derived from the logo, wordmark/mark logo assets used across the sidebar and auth pages, and a regenerated favicon/PWA icon set (WebP where the format allows it).
+
+### Changed
+
+- Restyled the Google sign-in button to a full-width text+logo button matching Microsoft's, extracting the shared "Or continue with" divider into `SocialLoginDivider`.
+- Normalized 4 controller routes (`Accounts`, `Auth`, `Files`, `Health`) from `[Route("api/[controller]")]` to explicit lowercase (`api/accounts`, etc.) — ASP.NET Core routing was always case-insensitive, but the OpenAPI spec captures the declared casing verbatim and codegen reproduced it, so this keeps the generated client's paths consistent with every existing caller.
+- Removed the hand-written `frontend/src/api/{account,auth,health,profile}-api.ts` wrapper modules; views/composables now call the generated client directly. Side effects the OpenAPI spec can't express (updating auth state after login, session-id normalization, the refresh-token client isolation) moved into `stores/auth.ts` as actions.
+- Deduplicated the refresh-token call between the axios 401-retry interceptor and the auth store — the interceptor now delegates to `authStore.refreshToken()` instead of reimplementing it.
+- Dark mode body/card switched to explicit navy hex values (`#121527`/`#1e2235`); retinted the surface-600/700/800 hover/border/fill tokens and boosted the dark-mode primary to a more saturated violet (`#9c80dc`) so both stay visually consistent with the new navy base.
+- Frontend app version (shown in the footer) is now derived from `git describe --tags --always` at build time instead of the static `package.json` version field, mirroring the backend's MinVer-derived versioning.
+- The `git-release` skill's standard release workflow now runs the backend and frontend test suites directly on `dev` before finalizing the CHANGELOG or opening the release PR — a failing suite blocks the release.
+
+### Fixed
+
+- The 401 interceptor's refresh-failure path now also clears the "keep me logged in" preference, matching `logout()`'s behavior (previously only cleared on the next app boot).
+- `.claude/rules/authentication.md` described a multi-tenancy system (`TenantRole`, `X-Tenant-Id`, `ICurrentTenantService`) that doesn't exist anywhere in the codebase and contradicted the README; corrected to match actual auth behavior.
+
 ## [v1.0.0] - 2026-07-24
 
 ### Security

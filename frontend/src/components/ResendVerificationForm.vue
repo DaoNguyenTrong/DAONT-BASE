@@ -26,7 +26,7 @@ async function handleSubmit() {
   isSubmitting.value = true
 
   try {
-    await authApi.resendVerification({ email: email.value.trim() })
+    await useAuthStore().resendVerification({ email: email.value.trim() })
     isSent.value = true
   } catch (error) {
     submitError.value =

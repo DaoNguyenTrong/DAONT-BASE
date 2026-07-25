@@ -33,7 +33,18 @@ git tag --sort=-v:refname | head -1       # last release tag
 
 **Stop and warn** if not on `dev`, working directory is dirty, or dev has unpushed commits.
 
-### 3. Finalize CHANGELOG.md
+### 3. Run test suite
+
+Tests run directly on `dev` — step 2 already confirmed it's clean and fully pushed, so this is exactly what will ship. No separate release branch.
+
+```bash
+dotnet test backend/StarterKit.sln --no-restore -m:1
+bun run --cwd frontend test:run
+```
+
+**Stop and report** if either suite fails — do not finalize the CHANGELOG or continue the release until both pass.
+
+### 4. Finalize CHANGELOG.md
 
 The `git-commit` skill already adds entries under `## [Unreleased]`. This step only promotes that section to the release version.
 
@@ -73,16 +84,16 @@ git commit -m "docs: update CHANGELOG for vX.Y.Z"
 git push origin dev
 ```
 
-### 4. Create and merge release PR
+### 5. Create and merge release PR
 
 ```bash
 gh pr create --base main --head dev \
   --title "Release vX.Y.Z" \
-  --body "<changelog entries from step 3>"
+  --body "<changelog entries from step 4>"
 gh pr merge <number> --merge --subject "Release vX.Y.Z"
 ```
 
-### 5. Tag on main and push
+### 6. Tag on main and push
 
 MinVer derives the version from git tags. Always tag `origin/main` after merge — never tag `dev`.
 
@@ -92,7 +103,7 @@ git tag vX.Y.Z origin/main
 git push origin vX.Y.Z
 ```
 
-### 6. Summary
+### 7. Summary
 
 Print:
 
@@ -231,6 +242,7 @@ Print:
 ## Rules
 
 - Never force push.
+- Never skip the test suite — a failing suite blocks the release (no CHANGELOG finalization, no PR).
 - Never skip the CHANGELOG finalization.
 - No version file to bump — MinVer reads the git tag directly.
 - Always tag `origin/main` after merge, never `dev` or the hotfix branch.

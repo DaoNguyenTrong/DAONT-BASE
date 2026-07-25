@@ -6,10 +6,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
+    <!-- Off by default — generating the doc costs ~9s via a design-time host and would slow every
+         plain `dotnet build`. Regenerate explicitly with -p:OpenApiGenerateDocumentsOnBuild=true. -->
+    <OpenApiGenerateDocumentsOnBuild>false</OpenApiGenerateDocumentsOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.7" />
     <PackageReference Include="Microsoft.OpenApi" Version="2.10.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
@@ -40,5 +47,12 @@
       <_Parameter1>StarterKit.API.Tests</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
+
+  <!-- dotnet-getdocument always names the file after the project ($(MSBuildProjectName).json);
+       normalize it to the single source of truth the frontend codegen reads from. -->
+  <Target Name="CopyOpenApiDocumentToShared" AfterTargets="GenerateOpenApiDocuments">
+    <Copy SourceFiles="$(BaseIntermediateOutputPath)$(MSBuildProjectName).json"
+          DestinationFiles="$(MSBuildProjectDirectory)/../../../shared/openapi/openapi.json" />
+  </Target>
 
 </Project>

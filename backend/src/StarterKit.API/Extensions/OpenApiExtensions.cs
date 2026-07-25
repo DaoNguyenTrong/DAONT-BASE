@@ -29,7 +29,7 @@ internal static class OpenApiExtensions
                 document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
                 document.Components.SecuritySchemes.Add("Bearer", new OpenApiSecurityScheme
                 {
-                    Description = "JWT Bearer token. Enter the token only — no 'Bearer ' prefix required. Obtain a token from POST /api/Auth/login.",
+                    Description = "JWT Bearer token. Enter the token only — no 'Bearer ' prefix required. Obtain a token from POST /api/auth/login.",
                     Type = SecuritySchemeType.Http,
                     Scheme = "bearer",
                     BearerFormat = "JWT"
@@ -44,6 +44,9 @@ internal static class OpenApiExtensions
                 return Task.CompletedTask;
             });
 
+            options.AddOperationTransformer<OperationIdTransformer>();
+            options.AddOperationTransformer<JsonOnlyRequestBodyTransformer>();
+            options.AddOperationTransformer<QueryParameterCasingTransformer>();
             options.AddOperationTransformer<TimeZoneHeaderOperationTransformer>();
         });
 
