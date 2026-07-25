@@ -93,7 +93,7 @@ All rule files in `.claude/rules/` are auto-loaded. This table documents when ea
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **DAONT-BASE** (3480 symbols, 7787 relationships, 196 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **DAONT-BASE** (3571 symbols, 7972 relationships, 198 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

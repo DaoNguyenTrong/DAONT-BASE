@@ -158,7 +158,9 @@ async function handleSubmit() {
             </RouterLink>
           </form>
 
-          <GoogleLoginButton class="mt-5" />
+          <SocialLoginDivider class="mt-5" />
+          <GoogleLoginButton class="mt-3" />
+          <MicrosoftLoginButton class="mt-3" />
         </div>
       </div>
     </div>
