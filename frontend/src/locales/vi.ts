@@ -84,6 +84,12 @@ const vi: LocaleSchema = {
     googleEmailNotVerifiedByProvider:
       'Google chưa xác thực địa chỉ email này. Vui lòng xác thực với Google trước.',
     googleLoginFailed: 'Không thể đăng nhập bằng Google lúc này. Vui lòng thử lại.',
+    continueWithMicrosoft: 'Đăng nhập bằng Microsoft',
+    microsoftEmailNotConfirmed:
+      'Đã có tài khoản dùng email này nhưng chưa được xác thực. Hãy xác thực để liên kết đăng nhập Microsoft.',
+    microsoftEmailNotVerifiedByProvider:
+      'Microsoft chưa xác thực địa chỉ email này. Vui lòng xác thực với Microsoft trước.',
+    microsoftLoginFailed: 'Không thể đăng nhập bằng Microsoft lúc này. Vui lòng thử lại.',
     registerLink: 'Chưa có tài khoản? Tạo tài khoản',
   },
   app: {

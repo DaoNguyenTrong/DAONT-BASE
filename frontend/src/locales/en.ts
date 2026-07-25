@@ -77,6 +77,10 @@ export interface LocaleSchema {
     googleEmailNotConfirmed: string
     googleEmailNotVerifiedByProvider: string
     googleLoginFailed: string
+    continueWithMicrosoft: string
+    microsoftEmailNotConfirmed: string
+    microsoftEmailNotVerifiedByProvider: string
+    microsoftLoginFailed: string
     registerLink: string
   }
   app: {
@@ -245,6 +249,12 @@ const en: LocaleSchema = {
     googleEmailNotVerifiedByProvider:
       "Google hasn't verified this email address. Please verify it with Google first.",
     googleLoginFailed: 'Unable to sign in with Google right now. Please try again.',
+    continueWithMicrosoft: 'Sign in with Microsoft',
+    microsoftEmailNotConfirmed:
+      'An account with this email already exists but has not been verified yet. Verify it below to link Microsoft sign-in.',
+    microsoftEmailNotVerifiedByProvider:
+      "Microsoft hasn't verified this email address. Please verify it with Microsoft first.",
+    microsoftLoginFailed: 'Unable to sign in with Microsoft right now. Please try again.',
     registerLink: "Don't have an account? Create one",
   },
   app: {
