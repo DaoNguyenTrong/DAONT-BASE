@@ -8,10 +8,12 @@
   `RateLimiterSettings`), `Common/Mappings/EntityMapper.cs` (Mapperly), `Resources/` (Messages.resx
   vi/en, ApplicationMessages.cs).
 - `StarterKit.Infrastructure` — EF Core (`Persistence/AppDbContext.cs`, `Configurations/`,
-  `Repositories/`, single squashed `InitialCreate` migration), auth/email/storage service impls
-  under `Services/` (incl. `IGoogleJwtValidator`/`ISmtpClientFactory` — thin interfaces wrapping
-  Google.Apis.Auth and MailKit's SmtpClient, added solely to make `GoogleAuthProvider`/
-  `SmtpEmailSender` unit-testable).
+  `Repositories/`, single squashed `InitialCreate` migration); `Services/` split into per-concern
+  subfolders — `Auth/` (incl. `Auth/External/` for Google/Microsoft providers), `Caching/`,
+  `Context/` (clock/timezone/current-user), `Email/`, `Security/`, `Storage/` — each with its own
+  `*Extensions` DI-registration class wired from `DependencyInjection.cs` (incl.
+  `IGoogleJwtValidator`/`ISmtpClientFactory` — thin interfaces wrapping Google.Apis.Auth and
+  MailKit's SmtpClient, added solely to make `GoogleAuthProvider`/`SmtpEmailSender` unit-testable).
 - `StarterKit.API` — `Controllers/` (Accounts, ApiKeys, AuditLogs, Auth, Files, Health, Profile,
   SystemSettings), `Middleware/` (exception handling, user-timezone), `Program.cs`, OpenAPI/Scalar.
 
