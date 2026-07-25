@@ -27,6 +27,12 @@ internal static class ExternalAuthExtensions
             services.AddScoped<IExternalAuthProvider, GoogleAuthProvider>();
         }
 
+        if (!string.IsNullOrWhiteSpace(externalAuthSettings.Microsoft.ClientId))
+        {
+            services.AddScoped<IMicrosoftJwtValidator, MicrosoftJwtValidator>();
+            services.AddScoped<IExternalAuthProvider, MicrosoftAuthProvider>();
+        }
+
         return services;
     }
 }

@@ -49,6 +49,12 @@ public sealed class ApiFactoryFixture : WebApplicationFactory<Program>, IAsyncLi
         Environment.SetEnvironmentVariable("RateLimiterSettings__AuthWindowMinutes", "1");
         Environment.SetEnvironmentVariable("StorageSettings__BasePath", storageTempDir);
 
+        // Deterministic regardless of the developer's local appsettings.json — a real ClientId
+        // filled in there for manual OAuth testing would otherwise register the provider and
+        // break ExternalLogin_UnsupportedProvider_ReturnsBadRequest's "no provider registered" case.
+        Environment.SetEnvironmentVariable("ExternalAuthSettings__Google__ClientId", "");
+        Environment.SetEnvironmentVariable("ExternalAuthSettings__Microsoft__ClientId", "");
+
         // Force host creation now so the initial (seeded) state is captured before Respawn resets anything.
         _ = Server;
 
