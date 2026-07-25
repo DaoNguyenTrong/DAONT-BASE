@@ -41,14 +41,14 @@ describe('AppSidebarItem', () => {
 
     const link = wrapper.get('a')
     expect(link.text()).toContain('Accounts')
-    expect(link.classes()).toContain('bg-primary-50')
+    expect(link.classes()).toContain('bg-white/15')
   })
 
   it('does not highlight a leaf item that does not match the current route', async () => {
     const item: SidebarMenuItem = { labelKey: 'nav.home', icon: 'home', routeName: 'home' }
     const { wrapper } = await mountItem(item)
 
-    expect(wrapper.get('a').classes()).not.toContain('bg-primary-50')
+    expect(wrapper.get('a').classes()).not.toContain('bg-white/15')
   })
 
   it('closes the mobile drawer when a leaf item link is clicked', async () => {
