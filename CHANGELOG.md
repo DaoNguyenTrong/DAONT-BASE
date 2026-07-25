@@ -24,6 +24,8 @@ All notable changes to this project will be documented in this file.
 - Removed the hand-written `frontend/src/api/{account,auth,health,profile}-api.ts` wrapper modules; views/composables now call the generated client directly. Side effects the OpenAPI spec can't express (updating auth state after login, session-id normalization, the refresh-token client isolation) moved into `stores/auth.ts` as actions.
 - Deduplicated the refresh-token call between the axios 401-retry interceptor and the auth store — the interceptor now delegates to `authStore.refreshToken()` instead of reimplementing it.
 - Dark mode body/card switched to explicit navy hex values (`#121527`/`#1e2235`); retinted the surface-600/700/800 hover/border/fill tokens and boosted the dark-mode primary to a more saturated violet (`#9c80dc`) so both stay visually consistent with the new navy base.
+- Frontend app version (shown in the footer) is now derived from `git describe --tags --always` at build time instead of the static `package.json` version field, mirroring the backend's MinVer-derived versioning.
+- The `git-release` skill's standard release workflow now runs the backend and frontend test suites directly on `dev` before finalizing the CHANGELOG or opening the release PR — a failing suite blocks the release.
 
 ### Fixed
 
