@@ -6,6 +6,112 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### Broadened MicrosoftAuthProvider's catch to include SecurityTokenArgumentException
+
+Found while investigating a fresh "Không thể đăng nhập" report (turned out unrelated — see below):
+a malformed/non-JWT-shaped `credential` throws `SecurityTokenMalformedException`, which derives from
+`SecurityTokenArgumentException`/`ArgumentException`, NOT `SecurityTokenException` — it fell through
+the existing `catch (SecurityTokenException)` and surfaced as an unhandled 500 instead of a 401.
+Verified via reflection that the actual validation-failure exceptions (invalid issuer/audience/
+signature/expiry) all still derive from `SecurityTokenException` as expected, so this only affects
+garbage/non-JWT input (a misbehaving or malicious client bypassing the frontend) — genuine MSAL-
+issued tokens were never affected by this specific gap. Broadened the catch with an `is X or Y`
+pattern rather than two catch blocks with identical bodies.
+
+### Microsoft login always failed with 401: `Regex.Escape` doesn't escape the closing `}`
+
+Root cause of every Microsoft sign-in returning `InvalidExternalCredential` (401), surfaced only by
+live testing — unit tests all mock `IMicrosoftJwtValidator`, so the real regex-building line was
+never exercised. `Regex.Escape("{tenantid}")` escapes the opening brace only (`\{tenantid}`, no
+backslash before `}`), so `Regex.Escape(config.Issuer).Replace("\\{tenantid\\}", "[^/]+")` searched
+for a substring that never occurred — the placeholder was silently never replaced, leaving the
+literal text `{tenantid}` in the final pattern, which then matched no real issuer, ever. Fixed by
+splitting the issuer template on the raw `{tenantid}` placeholder *before* escaping each segment,
+sidestepping any dependence on `Regex.Escape`'s exact brace-handling. Extracted the regex-building
+into `MicrosoftJwtValidator.BuildIssuerPattern` (previously inline, untestable without a network
+call) and added direct unit tests for it — a mocked-validator test alone cannot catch a bug that
+lives inside the validator itself.
+
+### `ExternalLogin_UnsupportedProvider_ReturnsBadRequest` depended on local appsettings.json state
+
+The API test fixture (`ApiFactoryFixture`) boots the real `Program` and only overrides a few
+settings via env var (connection string, rate limits, storage path) — `ExternalAuthSettings` was
+never one of them, so the test's "no provider registered" assumption silently depended on the
+developer's local `appsettings.json` having blank `Google`/`Microsoft` ClientIds. Filling in real
+ClientIds there for manual OAuth testing (this session) broke it — `google` became a registered,
+real (network-calling) provider, turning the expected 400 into a 401. Added explicit env var
+overrides forcing both ClientIds empty for the test run, matching the existing pattern for the
+other settings — test correctness should never depend on what a developer happens to have in their
+local, gitignored config.
+
+### Social login buttons: Google converted to a full-width text+logo button, not Microsoft to icon-only
+
+Google's button was icon-only (40x40 circle). Asked to sync the two, and confirmed with the user:
+made Google match Microsoft's shape (full-width, logo + visible "Sign in with Google" text, square
+corners, 40px height) rather than shrinking Microsoft to icon-only — Microsoft's own guidelines
+mandate the logo always pair with visible text (see the guideline-conflict entry above), while
+Google's guidelines are flexible enough to allow a text button. Both buttons now share identical
+structural CSS (height, padding, gap, font-size/weight, border width, corner radius, hover/pressed/
+disabled transitions); only brand-mandated colors, font-family and logo differ between them.
+
+### Microsoft popup login silently hung: hash-mode router *and* msal-browser 5.x's bridge model
+
+Two compounding issues, found across two rounds of live Playwright testing (first the popup
+returned `#/code=...` with a spurious `/`; after the first fix it stopped mangling the hash but
+never closed the popup — a real end-to-end MS sign-in reproduced with a cached SSO session,
+since no test credentials were available to type manually):
+
+1. `createWebHashHistory()` normalizes `location.hash` as a side effect of `createRouter()` at
+   `router/index.ts`'s module top level, which runs at *import time* — before any guard in
+   `main.ts`'s own body, since ES module imports evaluate before the importing file's body. A
+   static `import router from './router'` at the top of `main.ts` rewrote the unrecognized
+   `#code=...` into `#/code=...` on every load, including the popup's redirect-back load. Fixed by
+   making the router import dynamic (`await import('./router')`) inside `bootstrap()`, gated behind
+   `isOAuthPopupRedirect()` (hash contains `code=`/`error=` and doesn't start with `#/` — a real
+   route always does).
+2. Leaving the hash untouched wasn't sufficient on its own: `@azure/msal-browser` 5.x no longer
+   polls `popupWindow.location.href` from the opener (the old mechanism) — the popup page itself
+   must call `broadcastResponseToMainFrame()` (from the `@azure/msal-browser/redirect-bridge`
+   subpath export) to parse the response and post it to the opener over a `BroadcastChannel`, then
+   close itself. Skipping the app mount entirely (as fix #1 did in isolation) meant nothing ever
+   called that bridge — the popup sat on the callback URL forever until manually closed. Fixed by
+   branching on `isOAuthPopupRedirect()`: call the bridge instead of mounting, rather than doing
+   nothing.
+
+Rejected a dedicated static HTML redirect page (Microsoft's own recommended pattern for issue #1
+alone) — Vite's dev server routes nested `public/*.html` requests through its SPA-fallback/HTML-
+transform pipeline instead of serving them raw, silently returning `index.html` instead (confirmed
+via `curl`), so it would have "worked" only in production static hosting and broken in local dev.
+Google's login is unaffected by either issue — GIS delivers the credential via an in-page JS
+callback, never a URL/hash round-trip.
+
+### Microsoft login button kept text+logo (not icon-only like Google's circular button)
+
+User asked to visually sync the Microsoft button with Google's icon-only circular button, but
+Microsoft's own branding guidelines (learn.microsoft.com/entra/identity-platform/howto-add-branding-in-apps)
+explicitly state the logo must always appear paired with visible "Sign in with Microsoft"/"Sign in"
+text — an icon-only treatment breaks that rule. Kept the rectangular text+logo button (square
+corners per MS's redlines, not rounded), matched only height/font/hover-state feel to Google's
+button instead of shape, after confirming this trade-off with the user.
+
+### Microsoft external login: multi-tenant issuer validated by regex, no email_verified check
+
+`common` tenant's OIDC discovery document reports `issuer` as a literal `{tenantid}` placeholder
+(no single fixed issuer exists across tenants), so `ValidIssuer` couldn't be set directly — used a
+custom `IssuerValidator` that turns the placeholder into a regex instead. Also skipped Google's
+`email_verified` check: Microsoft ID tokens carry no such claim on either work/school or personal
+accounts, since Microsoft itself guarantees the email at the tenant/MSA level. Rejected an extra
+Microsoft Graph `/me` call to double-check — adds a network round-trip and a `User.Read` scope for
+a guarantee the token issuer already provides.
+
+### Social login buttons: divider extracted out of GoogleLoginButton into a shared component
+
+`GoogleLoginButton.vue` used to render its own "Or continue with" divider inline. Adding
+`MicrosoftLoginButton.vue` alongside it would have stacked two dividers. Extracted the divider into
+`SocialLoginDivider.vue` (shown once if any provider's client ID is configured), used by both
+`LoginView.vue` and `RegisterView.vue` ahead of the provider buttons — kept each provider button
+component only responsible for its own button/error/resend state.
+
 ### Refresh-token flow: interceptor delegates to the store instead of duplicating the call
 
 `client.ts`'s 401-retry interceptor had its own inline `refreshClient.post('/api/auth/refresh', {})`
