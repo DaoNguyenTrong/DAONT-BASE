@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.1] - 2026-07-25
+
+### Fixed
+
+- The release workflow's backend test step ran on a fresh checkout with no `appsettings.json` (gitignored); `StarterKit.API.Tests` boots the full web host and requires `CorsSettings`/`JwtSettings`/`EmailSettings` with no fallback, so every release run has failed since v1.0.0 before ever reaching the Create GitHub Release step. The workflow now seeds `appsettings.json` from `appsettings.Example.json` before running backend tests.
+
 ## [v1.1.0] - 2026-07-25
 
 ### Security
