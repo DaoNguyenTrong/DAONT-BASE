@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Backend exports its OpenAPI spec to `shared/openapi/openapi.json` at build time (`dotnet build ... -p:OpenApiGenerateDocumentsOnBuild=true`, off by default to avoid slowing every plain build), with operation transformers for stable OperationIds, a single `application/json` request content-type, and camelCase query parameter names.
 - Frontend generates its API client from that spec via `orval` (`bun run --cwd frontend codegen`; also runs automatically on `bun install` via `postinstall`) — the OpenAPI contract between backend and frontend is no longer hand-synced.
 - `RENAMING.md` — checklist for renaming the project (namespaces, solution/project files, config values) with the pitfalls to avoid (DB name, JWT issuer/audiences).
+- Weatherplus branding: primary/surface/success color palette derived from the logo, wordmark/mark logo assets used across the sidebar and auth pages, and a regenerated favicon/PWA icon set (WebP where the format allows it).
 
 ### Changed
 
