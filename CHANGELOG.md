@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Split `StarterKit.Infrastructure`'s flat `Services/` folder into per-concern subfolders (Auth, Caching, Context, Email, Security, Storage), each with its own DI-registration `*Extensions` class.
+- Replaced the custom `SvgIcon`/`vite-plugin-svg-icons` sprite system with `@vicons/tabler`.
+- The `git-release` skill's hotfix workflow no longer back-merges `main` into `dev` after tagging.
+
 ## [v1.1.1] - 2026-07-25
 
 ### Fixed

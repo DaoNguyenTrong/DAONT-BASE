@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Loader, Pencil, Plus, Trash, Users, X } from '@vicons/tabler'
 import { getAccounts } from '@/api/generated/accounts/accounts'
 import { toPagedResult } from '@/lib/paged-result'
 import type { Account, CreateAccountRequest, UpdateAccountRequest } from '@/api/types'
@@ -144,7 +145,7 @@ onMounted(async () => {
         {{ t('accounts.title') }}
       </h1>
       <NButton type="primary" class="min-h-11" @click="openCreateDialog">
-        <template #icon><SvgIcon name="plus" /></template>
+        <template #icon><n-icon><Plus /></n-icon></template>
         {{ t('accounts.createNew') }}
       </NButton>
     </div>
@@ -157,7 +158,7 @@ onMounted(async () => {
         @input="onSearchInput"
       >
         <template v-if="searchQuery" #suffix>
-          <SvgIcon name="times" class="cursor-pointer" @click="clearSearch" />
+          <n-icon class="cursor-pointer" @click="clearSearch"><X /></n-icon>
         </template>
       </NInput>
     </div>
@@ -172,7 +173,7 @@ onMounted(async () => {
         <div
           class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 dark:bg-primary-400/10"
         >
-          <SvgIcon name="users" class="text-2xl text-primary-500 dark:text-primary-200" />
+          <n-icon class="text-2xl text-primary-500 dark:text-primary-200"><Users /></n-icon>
         </div>
         <p class="text-base font-medium text-surface-700 dark:text-surface-200">
           {{ t('accounts.empty') }}
@@ -220,7 +221,7 @@ onMounted(async () => {
                     :aria-label="t('accounts.editTitle')"
                     @click="openEditDialog(account)"
                   >
-                    <template #icon><SvgIcon name="pencil" /></template>
+                    <template #icon><n-icon><Pencil /></n-icon></template>
                   </NButton>
                   <NButton
                     type="error"
@@ -230,7 +231,7 @@ onMounted(async () => {
                     :aria-label="t('accounts.deleteConfirm')"
                     @click="confirmDelete(account)"
                   >
-                    <template #icon><SvgIcon name="trash" /></template>
+                    <template #icon><n-icon><Trash /></n-icon></template>
                   </NButton>
                 </div>
               </div>
@@ -238,7 +239,7 @@ onMounted(async () => {
           </template>
         </NVirtualList>
         <div v-if="list.loadingMore.value" class="flex shrink-0 items-center justify-center py-3">
-          <SvgIcon name="loader" class="animate-spin text-lg text-surface-400" />
+          <n-icon class="animate-spin text-lg text-surface-400"><Loader /></n-icon>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 ---
 name: git-release
-description: 'Release a new version: update CHANGELOG, create PR from dev to main, merge, tag, and push. Supports standard release (dev → main) and hotfix (main → hotfix branch → main + back-merge to dev). Uses MinVer — version is derived from git tags. Examples: "Release v1.1.0", "Release patch", "Hotfix v1.2.1"'
+description: 'Release a new version: update CHANGELOG, create PR from dev to main, merge, tag, and push. Supports standard release (dev → main) and hotfix (main → hotfix branch → main). Uses MinVer — version is derived from git tags. Examples: "Release v1.1.0", "Release patch", "Hotfix v1.2.1"'
 ---
 
 # Git Release
@@ -9,7 +9,7 @@ Automates the release workflow with CHANGELOG and git tag. This is a .NET projec
 
 Two modes:
 - **Standard release**: `dev → main` for planned releases
-- **Hotfix**: `main → hotfix/vX.Y.Z → main`, then back-merge to `dev`
+- **Hotfix**: `main → hotfix/vX.Y.Z → main`
 
 ---
 
@@ -114,7 +114,7 @@ Print:
 
 ---
 
-## Hotfix Workflow (main → hotfix/vX.Y.Z → main → dev)
+## Hotfix Workflow (main → hotfix/vX.Y.Z → main)
 
 Use when a critical bug must be fixed on production without including unreleased changes from `dev`.
 
@@ -213,29 +213,13 @@ git tag vX.Y.Z origin/main
 git push origin vX.Y.Z
 ```
 
-### 7. Back-merge main into dev
-
-Keeps `dev` in sync — prevents the fix from being lost in the next standard release.
-
-Merge from `main` (not the hotfix branch) — `main` is the source of truth after tagging, and avoids divergence if the hotfix PR was squash-merged.
-
-```bash
-git fetch origin
-git checkout dev
-git merge origin/main --no-ff -m "chore: back-merge hotfix vX.Y.Z into dev"
-git push origin dev
-```
-
-If there are merge conflicts, stop and report — do not resolve automatically.
-
-### 8. Summary
+### 7. Summary
 
 Print:
 
 - Hotfix version
 - PR to main (link)
 - Tag name
-- Back-merge commit on dev
 
 ---
 
@@ -247,5 +231,4 @@ Print:
 - No version file to bump — MinVer reads the git tag directly.
 - Always tag `origin/main` after merge, never `dev` or the hotfix branch.
 - Hotfix: never modify `[Unreleased]` section — it belongs to `dev`.
-- Hotfix: always back-merge into `dev` after tagging.
 - If any step fails, stop and report — do not continue.

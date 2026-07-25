@@ -8,7 +8,7 @@ using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Services.ApiKeys;
 using StarterKit.Domain.Entities;
 using StarterKit.Infrastructure.Persistence;
-using StarterKit.Infrastructure.Services;
+using StarterKit.Infrastructure.Services.Auth;
 
 namespace StarterKit.API.Tests.TestSupport;
 

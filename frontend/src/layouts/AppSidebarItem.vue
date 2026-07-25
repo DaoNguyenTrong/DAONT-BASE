@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { h } from 'vue'
-import type { DropdownOption } from 'naive-ui'
+import { NIcon, type DropdownOption } from 'naive-ui'
+import { ChevronDown, ChevronRight } from '@vicons/tabler'
 import type { SidebarMenuItem } from './sidebar-menu'
 
 const props = defineProps<{
@@ -40,7 +41,7 @@ function toDropdownOptions(items: SidebarMenuItem[]): DropdownOption[] {
   return items.map((item) => ({
     label: t(item.labelKey),
     key: item.routeName ?? item.labelKey,
-    icon: () => h(SvgIcon, { name: item.icon }),
+    icon: () => h(NIcon, null, { default: () => h(item.icon) }),
     children: item.items ? toDropdownOptions(item.items) : undefined,
   }))
 }
@@ -67,7 +68,7 @@ function handlePopupSelect(key: string) {
           "
           @click="sidebar.closeMobile()"
         >
-          <SvgIcon :name="item.icon" :class="iconSize" />
+          <n-icon :component="item.icon" :class="iconSize" />
         </RouterLink>
       </template>
       {{ t(item.labelKey) }}
@@ -84,7 +85,7 @@ function handlePopupSelect(key: string) {
         :aria-label="t(item.labelKey)"
         class="mb-1 flex min-h-10 w-full cursor-pointer items-center justify-center rounded-lg py-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100"
       >
-        <SvgIcon :name="item.icon" :class="iconSize" />
+        <n-icon :component="item.icon" :class="iconSize" />
       </button>
     </n-dropdown>
   </template>
@@ -97,12 +98,11 @@ function handlePopupSelect(key: string) {
       :class="minHeight"
       @click="toggleExpand(item.labelKey)"
     >
-      <SvgIcon :name="item.icon" :class="iconSize" />
+      <n-icon :component="item.icon" :class="iconSize" />
       <span class="flex-1 truncate text-sm">{{ t(item.labelKey) }}</span>
-      <SvgIcon
-        :name="expandedKeys.has(item.labelKey) ? 'chevron-down' : 'chevron-right'"
-        class="text-xs text-white/50 transition-transform duration-200"
-      />
+      <n-icon class="text-xs text-white/50 transition-transform duration-200">
+        <component :is="expandedKeys.has(item.labelKey) ? ChevronDown : ChevronRight" />
+      </n-icon>
     </button>
     <div
       v-if="expandedKeys.has(item.labelKey)"
@@ -131,7 +131,7 @@ function handlePopupSelect(key: string) {
       ]"
       @click="sidebar.closeMobile()"
     >
-      <SvgIcon :name="item.icon" :class="iconSize" />
+      <n-icon :component="item.icon" :class="iconSize" />
       <span class="truncate text-sm">{{ t(item.labelKey) }}</span>
     </RouterLink>
   </template>
