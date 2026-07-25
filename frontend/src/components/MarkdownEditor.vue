@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import type { Component } from 'vue'
 import { marked } from 'marked'
+import { Columns, Eye, File, Pencil } from '@vicons/tabler'
 
 type ViewMode = 'split' | 'editor' | 'preview'
 
@@ -19,10 +21,10 @@ const emit = defineEmits<{
 
 const viewMode = ref<ViewMode>('split')
 
-const modeOptions: Array<{ value: ViewMode; icon: string; label: string }> = [
-  { value: 'split', icon: 'columns', label: 'Chia đôi' },
-  { value: 'editor', icon: 'pencil', label: 'Soạn thảo' },
-  { value: 'preview', icon: 'eye', label: 'Xem trước' },
+const modeOptions: Array<{ value: ViewMode; icon: Component; label: string }> = [
+  { value: 'split', icon: Columns, label: 'Chia đôi' },
+  { value: 'editor', icon: Pencil, label: 'Soạn thảo' },
+  { value: 'preview', icon: Eye, label: 'Xem trước' },
 ]
 
 const renderedMarkdown = computed(() => {
@@ -39,7 +41,7 @@ const renderedMarkdown = computed(() => {
       class="flex items-center justify-between border-b border-surface-200 bg-surface-50 px-4 py-2 dark:border-surface-800 dark:bg-surface-900/50"
     >
       <div class="flex items-center gap-2">
-        <SvgIcon name="file" class="text-xs text-surface-400 dark:text-surface-500" />
+        <n-icon class="text-xs text-surface-400 dark:text-surface-500"><File /></n-icon>
         <span class="text-xs font-medium text-surface-400 dark:text-surface-500">Markdown</span>
       </div>
 
@@ -58,7 +60,7 @@ const renderedMarkdown = computed(() => {
           @click="viewMode = option.value"
           text
         >
-          <SvgIcon :name="option.icon" class="text-xs" />
+          <n-icon class="text-xs"><component :is="option.icon" /></n-icon>
           <span class="hidden sm:inline">{{ option.label }}</span>
         </n-button>
       </div>
@@ -102,7 +104,7 @@ const renderedMarkdown = computed(() => {
             v-if="!modelValue"
             class="flex min-h-40 flex-col items-center justify-center gap-2 text-center"
           >
-            <SvgIcon name="file" class="text-2xl text-surface-300 dark:text-surface-600" />
+            <n-icon class="text-2xl text-surface-300 dark:text-surface-600"><File /></n-icon>
             <span class="text-sm text-surface-400 dark:text-surface-500">Chưa có nội dung</span>
           </div>
           <div

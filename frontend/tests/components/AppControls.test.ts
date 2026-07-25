@@ -100,13 +100,14 @@ describe('AppControls', () => {
     const { wrapper } = await renderComponent(AppControls, {
       global: { stubs: { teleport: true } },
     })
+    const themeButton = () => wrapper.findAll('button')[0]
 
     // Light mode renders the sun icon (a <circle>), no <circle> in dark mode.
-    expect(wrapper.find('circle').exists()).toBe(true)
+    expect(themeButton().find('circle').exists()).toBe(true)
 
-    await wrapper.findAll('button')[0].trigger('click')
+    await themeButton().trigger('click')
 
-    expect(wrapper.find('circle').exists()).toBe(false)
+    expect(themeButton().find('circle').exists()).toBe(false)
   })
 
   it('toggles the locale on click, updating the language button label', async () => {

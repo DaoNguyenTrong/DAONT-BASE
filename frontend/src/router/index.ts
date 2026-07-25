@@ -1,4 +1,6 @@
+import type { Component } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { Home, Users } from '@vicons/tabler'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -7,7 +9,7 @@ declare module 'vue-router' {
     breadcrumbKey?: string
     sidebar?: {
       labelKey: string
-      icon: string
+      icon: Component
       order?: number
     }
   }
@@ -29,7 +31,7 @@ const router = createRouter({
             breadcrumbKey: 'nav.home',
             sidebar: {
               labelKey: 'nav.home',
-              icon: 'home',
+              icon: Home,
             },
           },
         },
@@ -42,7 +44,7 @@ const router = createRouter({
             breadcrumbKey: 'nav.accounts',
             sidebar: {
               labelKey: 'nav.accounts',
-              icon: 'users',
+              icon: Users,
             },
           },
         },

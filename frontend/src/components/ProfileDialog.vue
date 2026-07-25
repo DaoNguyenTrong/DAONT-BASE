@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Logout } from '@vicons/tabler'
 import { getProfile } from '@/api/generated/profile/profile'
 import type {
   ChangePasswordRequest,
@@ -370,7 +371,7 @@ watch(visible, (open) => {
               :loading="revokingOthers"
               @click="confirmRevokeOtherSessions"
             >
-              <template #icon><SvgIcon name="sign-out" /></template>
+              <template #icon><n-icon><Logout /></n-icon></template>
               {{ t('profile.signOutOtherDevices') }}
             </n-button>
           </div>
@@ -422,7 +423,7 @@ watch(visible, (open) => {
                 :loading="revokingSessionId === session.id"
                 @click="confirmRevokeSession(session)"
               >
-                <template #icon><SvgIcon name="sign-out" /></template>
+                <template #icon><n-icon><Logout /></n-icon></template>
               </n-button>
             </li>
           </ul>

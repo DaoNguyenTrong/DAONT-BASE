@@ -9,8 +9,6 @@ import tailwindcss from '@tailwindcss/vite'
 import Components from 'unplugin-vue-components/vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
-import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
-import path from 'node:path'
 
 function resolveAppVersion(): string {
   try {
@@ -50,10 +48,6 @@ export default defineConfig(({ mode }) => {
         types: [{ from: 'vue-router', names: ['RouterLink', 'RouterView'] }],
         resolvers: [NaiveUiResolver()],
         dts: 'src/typings/components.d.ts',
-      }),
-      createSvgIconsPlugin({
-        iconDirs: [path.resolve(process.cwd(), 'src/assets/icons')],
-        symbolId: 'icon-[dir]-[name]',
       }),
     ],
     resolve: {
