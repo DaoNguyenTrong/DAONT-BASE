@@ -29,7 +29,7 @@ Follow this order for every non-trivial task:
 5. **Impact check** — run `gitnexus_impact` on every symbol you plan to modify
 6. **Execute** — make changes
 7. **Verify** — run `gitnexus_detect_changes` to confirm scope matches intent, then run the test suite for whichever side you touched (`dotnet test backend/StarterKit.sln --no-restore -m:1` for `backend/`, `bun run --cwd frontend test:run` for `frontend/` — see `commands.md`); it must pass before considering the task done
-8. **Log decisions** — record only expensive, non-obvious choices in `.claude/decisions.md`; skip routine ones
+8. **Log decisions** — record only choices that affect system design (architecture, contracts, security posture) in `.claude/decisions.md`, titled `### YYYY-MM-DD — <decision>`; skip branding/UI/copy calls and routine bug fixes. **Gate: before writing, show the user the proposed entry and get explicit confirmation — never write to `.claude/decisions.md` unprompted.**
 
 ### Tool Selection
 
@@ -73,7 +73,9 @@ Serena sees the codebase as a **tree of symbols** — it answers "what does this
 
 ## Decision Log
 
-Record only **expensive** decisions in `.claude/decisions.md` — ones that carry a real trade-off, an external constraint, a rejected alternative, or would be costly to re-derive later (irreversible choices, cross-cutting design calls, anything a future session could easily get wrong without the reasoning). Skip routine decisions — following an existing pattern, a standard CRUD addition, a straightforward bug fix, a mechanical rename — even if you had to think about them briefly; those add noise without future value. Write only the **why** — the reasoning and rejected alternative — never "what was done" or "how" (that's git log/diff's job; don't restate file names, method names, or a narrative of the change), and only when the why isn't obvious from reading the code. Newest entry at top — prepend new entries directly below the header note, do not append at the bottom. Keep each entry under ~80 words (excluding heading).
+Record only decisions that affect **system design** in `.claude/decisions.md` — architecture, module/layer boundaries, API or data contracts, security posture, or other cross-cutting structural choices that carry a real trade-off, an external constraint, a rejected alternative, or would be costly to re-derive later. Out of scope: visual/branding/UI styling, copy/content wording, and one-off bug fixes — even ones that took real investigation — unless the fix itself changed a structural/contract/security decision. Skip routine decisions — following an existing pattern, a standard CRUD addition, a mechanical rename — even if you had to think about them briefly; those add noise without future value. Write only the **why** — the reasoning and rejected alternative — never "what was done" or "how" (that's git log/diff's job; don't restate file names, method names, or a narrative of the change), and only when the why isn't obvious from reading the code. Title format: `### YYYY-MM-DD — <decision>`. Newest entry at top — prepend new entries directly below the header note, do not append at the bottom. Keep each entry under ~80 words (excluding heading).
+
+**Gate:** never write to `.claude/decisions.md` without asking first. Draft the proposed entry, show it to the user, and wait for explicit confirmation before prepending it.
 
 ## Rule Index
 
