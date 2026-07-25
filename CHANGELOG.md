@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.0] - 2026-07-25
+
 ### Security
 
 - CORS previously reflected any Origin with credentials enabled (equivalent to a wildcard, but worse); now requires an explicit `CorsSettings:AllowedOrigins` allowlist, configured at startup.
