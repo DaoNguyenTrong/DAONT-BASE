@@ -62,7 +62,7 @@ function handlePopupSelect(key: string) {
           class="mb-1 flex min-h-10 w-full items-center justify-center rounded-lg py-2 transition-colors"
           :class="
             isActive(item)
-              ? 'bg-primary-50 text-primary-700 dark:bg-primary-400/10 dark:text-primary-400'
+              ? 'bg-primary-50 text-primary-700 dark:bg-primary-400/10 dark:text-primary-200'
               : 'text-surface-600 hover:bg-surface-100 hover:text-surface-800 dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100'
           "
           @click="sidebar.closeMobile()"
@@ -126,7 +126,7 @@ function handlePopupSelect(key: string) {
       :class="[
         minHeight,
         isActive(item)
-          ? 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-400/10 dark:text-primary-400'
+          ? 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-400/10 dark:text-primary-200'
           : 'text-surface-600 hover:bg-surface-100 hover:text-surface-800 dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100',
       ]"
       @click="sidebar.closeMobile()"

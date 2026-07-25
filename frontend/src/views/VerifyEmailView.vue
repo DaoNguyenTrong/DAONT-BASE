@@ -76,7 +76,7 @@ watch(
             </n-alert>
             <ResendVerificationForm />
             <RouterLink
-              class="block text-center text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
+              class="block text-center text-sm font-medium text-primary-600 hover:underline dark:text-primary-200"
               :to="{ name: 'login' }"
             >
               {{ t('auth.backToLogin') }}

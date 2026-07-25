@@ -117,7 +117,7 @@ const profileVisible = ref(false)
           @click="viewProfile()"
         >
           <p
-            class="truncate text-sm font-medium text-surface-700 hover:text-primary-600 dark:text-surface-200 dark:hover:text-primary-400"
+            class="truncate text-sm font-medium text-surface-700 hover:text-primary-600 dark:text-surface-200 dark:hover:text-primary-200"
           >
             {{ auth.account?.name || auth.account?.username || 'User' }}
           </p>
@@ -183,7 +183,7 @@ const profileVisible = ref(false)
             @click="viewProfile()"
           >
             <p
-              class="truncate text-sm font-medium text-surface-700 hover:text-primary-600 dark:text-surface-200 dark:hover:text-primary-400"
+              class="truncate text-sm font-medium text-surface-700 hover:text-primary-600 dark:text-surface-200 dark:hover:text-primary-200"
             >
               {{ auth.account?.name || auth.account?.username || 'User' }}
             </p>

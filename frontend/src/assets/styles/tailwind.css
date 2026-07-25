@@ -70,10 +70,15 @@
 }
 
 .dark {
-  /* Primary — dark mode */
+  /* Primary — dark mode. 50/100/300-950 stay the shared accent scale; 200 is
+     overridden below (not just `var(--color-accent-200)`) since it's the one
+     step used exclusively by `dark:` variants app-wide (never referenced
+     unprefixed) — bumping only it gives dark mode a more saturated, more
+     purple primary without recoloring anything light mode still reads off
+     the shared accent-100 (e.g. NotFoundView's `ring-primary-100`). */
   --color-primary-50: var(--color-accent-50);
   --color-primary-100: var(--color-accent-100);
-  --color-primary-200: var(--color-accent-200);
+  --color-primary-200: #9c80dc;
   --color-primary-300: var(--color-accent-300);
   --color-primary-400: var(--color-accent-400);
   --color-primary-500: var(--color-accent-500);
@@ -86,7 +91,15 @@
   /* Surface — dark mode (same lightness steps, retinted — see light-mode note
      above). Saturation here is roughly half of the light-mode surface ramp's
      — a stronger tint read as a distinctly purple-navy dark theme rather than
-     a dark neutral with a brand hint, so it's toned down to just a hint. */
+     a dark neutral with a brand hint, so it's toned down to just a hint.
+     600/700/800 are hue-matched (~230°) and re-saturated to the navy 900/950
+     pair above (was the ~252° violet hue at ~9-11% saturation, same family
+     as the old body/card) — otherwise every hover/fill state built on these
+     three (sidebar nav-item hover, logo-button hover, `--fill-color`) reads
+     as a mismatched violet-grey flash against the new navy body/card. Exact
+     lightness kept unchanged from before so the hover/fill contrast against
+     the card stays as subtle as originally designed — only hue+saturation
+     shifted to match. */
   --color-surface-0: #e2e1e6;
   --color-surface-50: #dad9de;
   --color-surface-100: #ceccd4;
@@ -94,11 +107,11 @@
   --color-surface-300: #a5a2b0;
   --color-surface-400: #8f8b9d;
   --color-surface-500: #79758a;
-  --color-surface-600: #605c6e;
-  --color-surface-700: #454250;
-  --color-surface-800: #2e2c37;
-  --color-surface-900: #27252e;
-  --color-surface-950: #1a1920;
+  --color-surface-600: #555a75;
+  --color-surface-700: #3a3f58;
+  --color-surface-800: #262a3d;
+  --color-surface-900: #1e2235;
+  --color-surface-950: #121527;
 
   /* Shared neutral fill for filled controls — see light-mode definition above. */
   --fill-color: var(--color-surface-800);
