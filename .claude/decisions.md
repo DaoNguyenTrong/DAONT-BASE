@@ -6,6 +6,82 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### Brand images converted PNG→WebP, except apple-touch-icon.png and favicon.ico
+
+Converted the wordmark/mark/favicon-16/32/android-chrome files to lossless WebP. Two exceptions,
+confirmed with the user rather than converting blindly: `favicon.ico` is a distinct container
+format (multi-resolution ICO), not just re-encodable pixel content — must stay `.ico`, no browser
+reads a `.webp` through an `x-icon` link. `apple-touch-icon.png` stays PNG — iOS's "Add to Home
+Screen" icon has historically had unreliable/undocumented WebP support even where Safari supports
+WebP for regular images, and this is the one spot Apple's own guidance still points at PNG
+explicitly; not worth the risk of a broken home-screen icon on real iOS devices to save a few KB.
+
+### Favicon/PWA icon set regenerated from the brand mark; caught a stale teal theme-color
+
+Regenerated all 6 files under `public/icons/` (favicon.ico multi-size, 16/32px, apple-touch-icon,
+android-chrome 192/512) from `weatherplus-mark.png` via Pillow resize — same filenames/paths kept
+so `index.html`/`site.webmanifest` needed no reference changes. While touching these, found
+`theme-color` (both `index.html`'s meta tag and the manifest's `theme_color`) still hardcoded to
+the old teal (`#0f766e`) from before the purple rebrand — updated both to the new primary
+(`#3d3071`), since shipping brand-new icons next to a stale teal browser-chrome tint would have
+been an obvious, avoidable inconsistency sitting right next to what was actually asked for.
+
+### Auth pages (login/register/verify-email) also switched to the wordmark
+
+Follow-up to the sidebar-only wordmark decision below — extended the same swap to the auth pages'
+icon slot. Distinguished two cases: Login/VerifyEmail showed `t('app.name')` as a heading (pure
+brand-name restating what the wordmark image now already says) — dropped that heading entirely.
+Register showed `t('auth.registerTitle')` ("Create an account"/"Tạo tài khoản") — a distinct
+functional page title, not brand name — kept it below the wordmark. Extracted the light/dark image-
+selection logic (previously inlined in AppSidebar.vue) into `useBrandWordmark()` so 4 call sites
+don't duplicate the same computed/theme-check.
+
+### Sidebar header shows the wordmark image directly, dropping the separate "App Starter" text
+
+Every existing logo slot (sidebar, login/register/verify) was a small square icon next to
+separately-rendered `t('app.name')` text — but 2 of the 3 supplied brand images are wide wordmarks
+with the product name baked into the pixels (one for light backgrounds, one pre-built white-on-
+violet for dark). Confirmed with the user: only the sidebar header (expanded desktop + mobile
+drawer) swaps to the appropriate wordmark image outright, removing the redundant adjacent text —
+collapsed sidebar and the auth pages keep the existing icon+separate-heading layout, using the
+third (icon-only, circular) brand image in place of the generic placeholder mark. Two wordmark
+files are necessary (not one recolorable asset) because the text color is baked into each image,
+not CSS-styleable.
+
+### Rejected swapping primary/background roles between the brand's purple and green
+
+User asked to add more green, proposing purple-as-background-only and green-as-primary. Recommended
+against it: in the actual logo, purple is the dominant wordmark color and green is a small leaf
+accent — inverting that would make backgrounds (necessarily desaturated/low-visibility) carry the
+brand's real signature color while a minor logo detail becomes the loudest, most-repeated UI color.
+Green-as-primary also collides with the near-universal UI convention of green=success, making the
+primary action button read as a "success" state everywhere. Kept purple as primary; added green as
+a deliberate secondary accent instead (see below) — confirmed this direction with the user before
+implementing.
+
+### Green added as a deliberate accent, not a second primary
+
+Added `--color-leaf-*` (from the logo's leaf glyph, #89b43f) as a separate static palette, used in
+exactly two places: a purple→green gradient on the login card's top accent bar (echoing the logo's
+own color pairing), and retuning Naive UI's `successColor` to this green instead of its default —
+both reinforce brand recognition without touching any interactive/primary surface. Unlike the
+purple primary, the dark-mode success steps needed *no* lightness-shift correction (leaf-400/300/200
+already lands at ~8-13:1 contrast) — green sits favorably in WCAG's luminance weighting where blue-
+violet doesn't, so the same correction wasn't just unnecessary but would have overshot.
+
+### Rebrand: dark-mode primary uses lighter steps (200/100/50) than the old teal did (400/300/200)
+
+Derived the new indigo/violet primary+surface palette by sampling the logo's wordmark color
+(#4e3d90) and reusing the *existing* teal ramp's exact lightness steps per swatch (proven,
+already contrast-tuned) — only hue/saturation changed. That mostly worked, except dark-mode
+primaryColor: copying teal's 400/300/200 steps verbatim gave only ~2.8:1 contrast against the
+dark body (should be 4.5+), because WCAG luminance weights green ~10x more than blue, so a
+blue-violet hue needs meaningfully more lightness than teal to read equally bright. Shifted the
+whole dark-mode trio two steps lighter (200/100/50) to land back around 8-16:1, verified in code
+before touching any files, not just by eyeballing hex values. Also retinted the neutral `surface`
+scale (low-saturation slice of the same brand hue) instead of leaving it hue-neutral slate, so
+borders/backgrounds/text-muted read as one family with the primary color, not a generic gray.
+
 ### Broadened MicrosoftAuthProvider's catch to include SecurityTokenArgumentException
 
 Found while investigating a fresh "Không thể đăng nhập" report (turned out unrelated — see below):
