@@ -8,6 +8,17 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-07-26 — Infrastructure/Services split into per-concern modules; avoided naming one "System"
+
+Flat Services/ folder mixed auth, email, storage, caching, security, and request-context concerns
+with no grouping. Split into per-concern subfolders, namespace mirroring folder path (matches the
+existing Persistence/Repositories convention); DI-registration `*Extensions` classes keep the root
+`StarterKit.Infrastructure` namespace so `DependencyInjection.cs` needs only one `using`. Rejected
+naming the clock/timezone module "System" — it shadowed the BCL `System` namespace for sibling
+files, breaking unqualified `System.*` references; renamed to `Context`. Also moved cache/timezone/
+current-user/secret-protector/cleanup DI registrations out of `PersistenceExtensions` into their
+owning module.
+
 ### 2026-07-25 — Microsoft external login: multi-tenant issuer validated by regex, no email_verified check
 
 `common` tenant's OIDC discovery document reports `issuer` as a literal `{tenantid}` placeholder

@@ -10,6 +10,9 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddPersistence(configuration);
+        services.AddSecurity();
+        services.AddContext();
+        services.AddCaching(configuration);
         services.AddJwtAuthentication(configuration);
         services.AddStorage(configuration);
         services.AddEmail(configuration);
