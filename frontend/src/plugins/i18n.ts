@@ -20,7 +20,7 @@ const savedLocale =
 
 export const defaultLocale: SupportedLocale = isSupportedLocale(savedLocale) ? savedLocale : 'vi'
 
-const i18n = createI18n<[LocaleSchema], SupportedLocale>({
+const i18n = createI18n<[LocaleSchema], SupportedLocale, false>({
   legacy: false,
   locale: defaultLocale,
   fallbackLocale: 'en',
