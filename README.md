@@ -84,6 +84,17 @@ bun run --cwd frontend format         # prettier — there is no ESLint config i
 
 `POST /api/auth/register` → open Mailpit (`localhost:8025`) → click the verification link → log in.
 
+### Git Hooks (once, at the repo root)
+
+```bash
+bun install   # run at the repo root (not --cwd frontend) — wires up git hooks via Lefthook
+```
+
+Hooks installed:
+
+- **pre-commit**: blocks direct commits to `main` (release only happens via `gh pr merge` — see the `git-release` skill; bypass with `git commit --no-verify` for tooling that legitimately needs it); blocks staged changes containing unresolved merge-conflict markers (`<<<<<<<`/`=======`/`>>>>>>>`); runs `secretlint` on all staged files (catches known secret *formats* — private keys, GitHub/Slack/npm tokens; it does **not** catch arbitrary custom secrets like a hardcoded `JwtSettings:SecretKey` or `DB_PASSWORD=...` — keep those in the gitignored `appsettings.json`, not in source); runs `prettier --write` on staged `frontend/src/**` files (same scope as `bun run --cwd frontend format`). Backend files aren't formatted (no `.editorconfig` exists yet to pin `dotnet format`'s behavior).
+- **commit-msg**: enforces Conventional Commits (`feat:`, `fix:`, `docs:`, ... — see CONTRIBUTING.md) via commitlint.
+
 ### Updating the API Contract
 
 Whenever you add or change a backend controller route, request/response DTO, or status code, regenerate the OpenAPI spec and the frontend client:

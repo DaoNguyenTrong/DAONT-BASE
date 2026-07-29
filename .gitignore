@@ -3,3 +3,10 @@ node_modules/
 
 # Playwright MCP scratch snapshots/logs
 .playwright-mcp/
+
+# lock files — same convention as frontend/.gitignore: this is a starter-kit template,
+# each downstream project generates its own on first install rather than inheriting ours
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lock
