@@ -57,12 +57,12 @@ describe('AccountForm', () => {
     const { wrapper, state } = await mountAccountForm({ isEditing: false })
     const inputs = wrapper.findAll('input[type="text"]')
 
-    await inputs[0].setValue('Alice Nguyen') // name
-    await inputs[1].setValue('alice')
-    await inputs[2].setValue('alice@example.com')
-    await inputs[3].setValue('0900000000')
-    await inputs[4].setValue('Engineer')
-    await inputs[5].setValue('123 Main St')
+    await inputs[0]!.setValue('Alice Nguyen') // name
+    await inputs[1]!.setValue('alice')
+    await inputs[2]!.setValue('alice@example.com')
+    await inputs[3]!.setValue('0900000000')
+    await inputs[4]!.setValue('Engineer')
+    await inputs[5]!.setValue('123 Main St')
 
     expect(state.username).toBe('alice')
     expect(state.email).toBe('alice@example.com')

@@ -49,7 +49,7 @@ describe('MarkdownEditor', () => {
     expect(wrapper.find('.markdown-preview').exists()).toBe(true)
 
     // Buttons are rendered in modeOptions order: split, editor, preview.
-    const editorButton = wrapper.findAll('button')[1]
+    const editorButton = wrapper.findAll('button')[1]!
     await editorButton.trigger('click')
 
     expect(wrapper.find('textarea').exists()).toBe(true)
@@ -62,7 +62,7 @@ describe('MarkdownEditor', () => {
     })
 
     // Buttons are rendered in modeOptions order: split, editor, preview.
-    const previewButton = wrapper.findAll('button')[2]
+    const previewButton = wrapper.findAll('button')[2]!
     await previewButton.trigger('click')
 
     expect(wrapper.find('textarea').exists()).toBe(false)

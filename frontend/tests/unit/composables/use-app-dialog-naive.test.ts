@@ -33,7 +33,7 @@ describe('useAppDialogNaive', () => {
     )
 
     expect(mockCreate).toHaveBeenCalledTimes(1)
-    const options = mockCreate.mock.calls[0][0]
+    const options = mockCreate.mock.calls[0]![0]
     expect(options.title).toBe('Delete item')
     expect(options.class).toBe('my-dialog')
   })
@@ -44,7 +44,7 @@ describe('useAppDialogNaive', () => {
 
     result.open({} as never, { header: 'x', onConfirm: async () => {} })
 
-    const options = mockCreate.mock.calls[0][0]
+    const options = mockCreate.mock.calls[0]![0]
     expect(options.positiveText).toBe('Save')
     expect(options.negativeText).toBe('Cancel')
   })
@@ -58,7 +58,7 @@ describe('useAppDialogNaive', () => {
       { header: 'x', confirmLabel: 'Yes, delete', cancelLabel: 'Nope', onConfirm: async () => {} },
     )
 
-    const options = mockCreate.mock.calls[0][0]
+    const options = mockCreate.mock.calls[0]![0]
     expect(options.positiveText).toBe('Yes, delete')
     expect(options.negativeText).toBe('Nope')
   })
@@ -77,7 +77,7 @@ describe('useAppDialogNaive', () => {
     )
     result.open({} as never, { header: 'x', onConfirm })
 
-    const options = mockCreate.mock.calls[0][0]
+    const options = mockCreate.mock.calls[0]![0]
     const clickResult = options.onPositiveClick()
 
     expect(instance.loading).toBe(true)
@@ -99,7 +99,7 @@ describe('useAppDialogNaive', () => {
     )
     result.open({} as never, { header: 'x', onConfirm })
 
-    const options = mockCreate.mock.calls[0][0]
+    const options = mockCreate.mock.calls[0]![0]
     const first = options.onPositiveClick()
     const second = await options.onPositiveClick()
 
@@ -118,7 +118,7 @@ describe('useAppDialogNaive', () => {
     const onConfirm = vi.fn(() => Promise.reject(new Error('boom')))
     result.open({} as never, { header: 'x', onConfirm })
 
-    const options = mockCreate.mock.calls[0][0]
+    const options = mockCreate.mock.calls[0]![0]
     await expect(options.onPositiveClick()).rejects.toThrow('boom')
     expect(instance.loading).toBe(false)
   })
@@ -130,7 +130,7 @@ describe('useAppDialogNaive', () => {
 
     result.open({} as never, { header: 'x', onConfirm: async () => {} })
 
-    const options = mockCreate.mock.calls[0][0]
+    const options = mockCreate.mock.calls[0]![0]
     // `close` is exposed as a prop to the rendered content component's vnode.
     const vnode = options.content()
     vnode.props.close()
@@ -145,7 +145,7 @@ describe('useAppDialogNaive', () => {
 
     result.open({} as never, { header: 'x', onConfirm: async () => {}, onCancel })
 
-    const options = mockCreate.mock.calls[0][0]
+    const options = mockCreate.mock.calls[0]![0]
     options.onNegativeClick()
 
     expect(onCancel).toHaveBeenCalledTimes(1)
@@ -157,7 +157,7 @@ describe('useAppDialogNaive', () => {
 
     result.open({} as never, { header: 'x', onConfirm: async () => {} })
 
-    const options = mockCreate.mock.calls[0][0]
+    const options = mockCreate.mock.calls[0]![0]
     expect(() => options.onNegativeClick()).not.toThrow()
   })
 
@@ -168,7 +168,7 @@ describe('useAppDialogNaive', () => {
 
     result.open({} as never, { header: 'x', onConfirm: async () => {}, onCancel })
 
-    const options = mockCreate.mock.calls[0][0]
+    const options = mockCreate.mock.calls[0]![0]
     options.onClose()
 
     expect(onCancel).toHaveBeenCalledTimes(1)

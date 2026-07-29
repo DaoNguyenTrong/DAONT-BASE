@@ -83,13 +83,13 @@ describe('AppHeader', () => {
 
     const items = wrapper.findAll('.n-breadcrumb-item')
     expect(items).toHaveLength(2)
-    expect(items[1].text()).toContain('Accounts')
+    expect(items[1]!.text()).toContain('Accounts')
   })
 
   it('navigates to the clicked breadcrumb without a full page reload', async () => {
     const { wrapper, router } = await mountHeader('/accounts')
 
-    const homeCrumb = wrapper.findAll('.n-breadcrumb-item')[0]
+    const homeCrumb = wrapper.findAll('.n-breadcrumb-item')[0]!
     await homeCrumb.find('a').trigger('click')
     await flushPromises()
 
