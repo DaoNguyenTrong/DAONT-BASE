@@ -27,7 +27,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog((context, configuration) =>
     configuration
         .ReadFrom.Configuration(context.Configuration)
-        .WriteTo.Console());
+        .Enrich.FromLogContext());
 
 builder.Services.AddLocalization();
 builder.Services.AddControllers()
@@ -150,6 +150,8 @@ using (IServiceScope seedScope = app.Services.CreateScope())
 
 app.UseForwardedHeaders();
 app.UseHttpsRedirection();
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseSerilogRequestLogging();
 app.UseRequestLocalization();
 app.UseCors();
 app.UseMiddleware<ExceptionHandlingMiddleware>();

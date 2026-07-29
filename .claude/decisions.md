@@ -8,6 +8,14 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-07-29 — Serilog sinks are fully config-driven; no code-level Console fallback
+
+`Program.cs` hardcoded `.WriteTo.Console()` alongside `ReadFrom.Configuration(...)`, duplicating
+every console log line since `appsettings.Example.json` already configures a Console+File `WriteTo`
+block (confirmed against the local `appsettings.json`). Removed the hardcoded sink rather than the
+config block. Trade-off: a developer who strips the `Serilog` config section entirely now gets zero
+console output instead of a fallback — acceptable since the Example file ships the block by default.
+
 ### 2026-07-26 — Infrastructure/Services split into per-concern modules; avoided naming one "System"
 
 Flat Services/ folder mixed auth, email, storage, caching, security, and request-context concerns

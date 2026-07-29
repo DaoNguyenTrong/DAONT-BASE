@@ -37,6 +37,8 @@ git add <files>
 git commit -m "feat: add new feature"
 ```
 
+Git hooks (see README's "Git Hooks" section for the one-time `bun install` needed at the repo root) enforce this automatically: pre-commit blocks direct commits to `main`, unresolved conflict markers, and known secret formats, and auto-formats staged `frontend/src/` files with Prettier; commit-msg rejects messages that don't follow the `feat:`/`fix:`/... convention above.
+
 **Commit message format:**
 - `feat:` - New feature
 - `fix:` - Bug fix

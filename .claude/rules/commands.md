@@ -70,6 +70,22 @@ bun run --cwd frontend test:e2e
 bun run --cwd frontend format
 ```
 
+## Git Hooks
+
+Managed by [Lefthook](https://lefthook.dev) — config in root `lefthook.yml`, not `.husky/`.
+
+```bash
+# Run once at the repo root (not --cwd frontend) — installs git hooks (prepare script: lefthook install)
+bun install
+```
+
+- **pre-commit**: blocks direct commits to `main` (bypass: `git commit --no-verify` — needed by nothing in the documented workflow except tooling that intentionally commits there); blocks staged merge-conflict markers; runs `secretlint` on all staged files (known secret *formats* only — private keys, GitHub/Slack/npm tokens; does not catch arbitrary custom secrets); runs `prettier --write` on staged `frontend/src/**` files (mirrors `bun run --cwd frontend format`'s scope). No backend formatting hook yet (no `.editorconfig` to pin `dotnet format` behavior).
+- **commit-msg**: commitlint, Conventional Commits (`@commitlint/config-conventional`).
+
+Note: `dev` is intentionally **not** blocked by the branch guard — the `git-release` skill commits the CHANGELOG bump directly to `dev` before opening the release PR.
+
+Glob gotcha if you edit `lefthook.yml`: Lefthook's glob matcher (`gobwas/glob`) treats `dir/**/*` as requiring **at least one** intermediate directory — it silently skips files directly in `dir/` (e.g. `frontend/src/main.ts` under a `frontend/src/**/*` glob). Verified empirically (not from docs) while wiring this up. Match both depths with two patterns (see `prettier`'s glob list in `lefthook.yml`), or use a bare `**` when there's no path prefix to anchor (see `secretlint`'s glob).
+
 ## CI
 
 There is **no CI workflow that runs build/test on PR or push today** — `.github/workflows/` currently only has `release.yml` (used by the `git-release` skill). Nothing blocks a merge on a failing build or test yet; run the commands above locally before asking for review.

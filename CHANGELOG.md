@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Correlation ID middleware (`X-Correlation-Id`, validated inbound or generated) plus structured per-request logging (`UseSerilogRequestLogging`) for the backend API.
+- Repo-root Lefthook git hooks: pre-commit blocks direct commits to `main`, unresolved merge-conflict markers, and known secret formats (secretlint), and formats staged `frontend/src/` files with Prettier; commit-msg enforces Conventional Commits (commitlint).
+
 ### Changed
 
 - Split `StarterKit.Infrastructure`'s flat `Services/` folder into per-concern subfolders (Auth, Caching, Context, Email, Security, Storage), each with its own DI-registration `*Extensions` class.
