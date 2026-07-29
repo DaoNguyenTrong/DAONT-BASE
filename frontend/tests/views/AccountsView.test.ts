@@ -269,7 +269,7 @@ describe('AccountsView', () => {
       await wrapper.find('button').trigger('click')
 
       expect(mockOpen).toHaveBeenCalledTimes(1)
-      const [, options] = mockOpen.mock.calls[0]
+      const [, options] = mockOpen.mock.calls[0]!
       expect(options.data.isEditing).toBe(false)
       expect(options.data.state).toMatchObject({
         name: '',
@@ -299,7 +299,7 @@ describe('AccountsView', () => {
       expect(listCallCount).toBe(1)
 
       await wrapper.find('button').trigger('click')
-      const [, options] = mockOpen.mock.calls[0]
+      const [, options] = mockOpen.mock.calls[0]!
       options.data.state.name = 'Bob'
       options.data.state.username = 'bob'
       options.data.state.email = 'bob@example.com'
@@ -344,7 +344,7 @@ describe('AccountsView', () => {
       await editButton!.trigger('click')
 
       expect(mockOpen).toHaveBeenCalledTimes(1)
-      const [, options] = mockOpen.mock.calls[0]
+      const [, options] = mockOpen.mock.calls[0]!
       expect(options.data.isEditing).toBe(true)
       expect(options.data.state).toMatchObject({
         name: 'Carol',
@@ -379,7 +379,7 @@ describe('AccountsView', () => {
       const editButton = editButtons.find((b) => b.attributes('aria-label') === 'Edit account')
       await editButton!.trigger('click')
 
-      const [, options] = mockOpen.mock.calls[0]
+      const [, options] = mockOpen.mock.calls[0]!
       const close = vi.fn()
       await options.onConfirm(close)
 

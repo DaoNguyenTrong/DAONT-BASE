@@ -61,7 +61,7 @@ function placeholderInput(
   wrapper: Awaited<ReturnType<typeof openDialog>>['wrapper'],
   placeholder: string,
 ) {
-  return wrapper.find(`input[placeholder="${placeholder}"]`)
+  return wrapper.find<HTMLInputElement>(`input[placeholder="${placeholder}"]`)
 }
 
 async function openChangePasswordTab(wrapper: Awaited<ReturnType<typeof openDialog>>['wrapper']) {

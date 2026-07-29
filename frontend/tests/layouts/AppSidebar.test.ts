@@ -2,6 +2,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { createTestingPinia } from '@pinia/testing'
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import { Home, Users } from '@vicons/tabler'
 import AppSidebar from '@/layouts/AppSidebar.vue'
 import ProfileDialog from '@/components/ProfileDialog.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -22,13 +23,13 @@ async function buildRouter(initialPath = '/') {
             path: '',
             name: 'home',
             component: stub,
-            meta: { sidebar: { labelKey: 'nav.home', icon: 'home' } },
+            meta: { sidebar: { labelKey: 'nav.home', icon: Home } },
           },
           {
             path: 'accounts',
             name: 'accounts',
             component: stub,
-            meta: { sidebar: { labelKey: 'nav.accounts', icon: 'users' } },
+            meta: { sidebar: { labelKey: 'nav.accounts', icon: Users } },
           },
         ],
       },

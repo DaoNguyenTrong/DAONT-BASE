@@ -7,7 +7,6 @@ describe('GoogleLoginButton', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.unstubAllEnvs()
-    // @ts-expect-error test-only cleanup of a global stub
     delete window.google
   })
 
