@@ -19,6 +19,10 @@ All notable changes to this project will be documented in this file.
 
 - Frontend's `tests/` directory had never been type-checked (no script ran `vue-tsc -p tsconfig.vitest.json`), so it had accumulated ~85 type errors undetected. Fixed a generics bug in the shared `renderComponent` test helper that cascaded into most of them, plus stale sidebar icon fixtures, missing `node` types, and strict-null-check gaps; `tests/` now type-checks clean.
 
+### Removed
+
+- GitNexus code-intelligence tooling (no longer in use): the `.claude/skills/gitnexus/` skill package and all `gitnexus_*` references in `CLAUDE.md`, `AGENTS.md`, `serena.md`, and the pre-task-reminder hook, replaced with CodeGraph (`codegraph_explore`) for macro-orientation and impact checks.
+
 ## [v1.1.1] - 2026-07-25
 
 ### Fixed
