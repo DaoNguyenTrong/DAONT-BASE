@@ -6,6 +6,7 @@ using StarterKit.Application.Services.Accounts;
 using StarterKit.Application.Services.AuditLogs;
 using StarterKit.Application.Services.Auth;
 using StarterKit.Application.Services.Files;
+using StarterKit.Application.Services.Organizations;
 using StarterKit.Application.Services.SystemSettings;
 
 namespace StarterKit.Application;
@@ -19,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IFileService, FileService>();
+        services.AddScoped<IOrganizationService, OrganizationService>();
         services.AddScoped<ISystemSettingsService, SystemSettingsService>();
 
         return services;

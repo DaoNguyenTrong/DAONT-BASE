@@ -120,6 +120,24 @@
   <data name="ExternalLoginProviderUserIdRequired" xml:space="preserve">
     <value>External login provider user id is required.</value>
   </data>
+  <data name="OrganizationNameRequired" xml:space="preserve">
+    <value>Organization name is required.</value>
+  </data>
+  <data name="OrganizationSlugRequired" xml:space="preserve">
+    <value>Organization slug is required.</value>
+  </data>
+  <data name="OrganizationAccessDenied" xml:space="preserve">
+    <value>You do not have access to this organization.</value>
+  </data>
+  <data name="OrganizationMemberAlreadyExists" xml:space="preserve">
+    <value>This account is already a member of the organization.</value>
+  </data>
+  <data name="OrganizationCannotRemoveLastOwner" xml:space="preserve">
+    <value>Cannot remove or change the role of the last owner in an organization.</value>
+  </data>
+  <data name="OrganizationSlugAlreadyExists" xml:space="preserve">
+    <value>Organization slug already exists.</value>
+  </data>
   <data name="ExternalLoginEmailNotConfirmed" xml:space="preserve">
     <value>An account with this email already exists but has not been confirmed yet. Please confirm the email before linking an external login.</value>
   </data>

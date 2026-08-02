@@ -8,6 +8,16 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-08-02 — Organizations: JWT-embedded tenant claim, not a client-supplied header
+
+Each session is scoped to at most one organization, carried as a signed `org_id` claim on the
+access token rather than a client-supplied header — a header would let any caller assert tenant
+identity without re-authentication. Switching orgs re-issues tokens via a dedicated endpoint
+instead of requiring logout/login. Per-request access is still re-verified (org active, membership
+active) via a short-TTL in-memory cache, so revocation takes effect within seconds without a DB hit
+per request; acceptable only because the app runs single-instance today — a multi-instance
+deployment would need a distributed cache instead.
+
 ### 2026-07-29 — Serilog sinks are fully config-driven; no code-level Console fallback
 
 `Program.cs` hardcoded `.WriteTo.Console()` alongside `ReadFrom.Configuration(...)`, duplicating

@@ -2,16 +2,16 @@
 
 Call `serena__initial_instructions` at the start of any coding task to load Serena's working instructions.
 
-**When to reach for Serena:** after GitNexus has told you *which* module or class is involved. Serena is the drill; GitNexus is the map. If you don't yet know where to look, orient with GitNexus first.
+**When to reach for Serena:** after CodeGraph has told you *which* module or class is involved. Serena is the drill; CodeGraph is the map. If you don't yet know where to look, orient with CodeGraph first.
 
 | Tool                       | When to use                                                                                          |
 |----------------------------|------------------------------------------------------------------------------------------------------|
 | `find_symbol`              | Locate a class, method, or property by name; read its body                                           |
 | `find_referencing_symbols` | Find every caller or usage of a symbol                                                               |
 | `get_symbols_overview`     | Scan a file's public surface without reading its full body                                           |
-| `rename_symbol`            | Rename a symbol with LSP accuracy (use GitNexus `gitnexus_rename` for cross-file graph-aware rename) |
+| `rename_symbol`            | Rename a symbol with LSP accuracy — the only graph-aware rename tool available (CodeGraph has no rename tool); covers backend C# only |
 
-Serena operates at the LSP/symbol level — precise, file-scoped. For cross-module call graphs and service wiring, use GitNexus instead.
+Serena operates at the LSP/symbol level — precise, file-scoped. For cross-module call graphs and service wiring, use CodeGraph instead.
 
 ## Language Scope
 

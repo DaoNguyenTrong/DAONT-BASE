@@ -30,9 +30,12 @@ internal static class AuthExtensions
             throw new InvalidOperationException("JwtSettings:Audiences must contain at least one audience.");
 
         services.Configure<JwtSettings>(configuration.GetSection(nameof(JwtSettings)));
+        services.Configure<TenantAccessSettings>(configuration.GetSection(nameof(TenantAccessSettings)));
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<ICurrentTenantProvider, CurrentTenantProvider>();
+        services.AddScoped<ITenantAccessService, TenantAccessService>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>

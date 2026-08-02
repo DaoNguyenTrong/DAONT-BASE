@@ -8,10 +8,13 @@ public static class JsonTestExtensions
 {
     private const string ServerDateTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
-    private static readonly JsonSerializerOptions Options = new()
+    // Server serializes enums as strings (Newtonsoft StringEnumConverter, see
+    // ConfigureNewtonsoftJsonOptions) — mirror that here so request/response enum fields
+    // round-trip through System.Text.Json instead of the numeric default.
+    public static readonly JsonSerializerOptions Options = new()
     {
         PropertyNameCaseInsensitive = true,
-        Converters = { new TestDateTimeConverter(), new TestNullableDateTimeConverter() }
+        Converters = { new TestDateTimeConverter(), new TestNullableDateTimeConverter(), new JsonStringEnumConverter() }
     };
 
     public static async Task<T?> ReadJsonAsync<T>(this HttpContent content) =>

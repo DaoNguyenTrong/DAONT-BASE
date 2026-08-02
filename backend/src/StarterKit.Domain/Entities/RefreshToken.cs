@@ -9,7 +9,8 @@ public record RefreshTokenParams(
     string? DeviceInfo,
     string? IpAddress,
     bool IsPersistent,
-    DateTime LoginAt);
+    DateTime LoginAt,
+    Guid? OrganizationId = null);
 
 public sealed class RefreshToken : BaseEntity<long>
 {
@@ -42,7 +43,8 @@ public sealed class RefreshToken : BaseEntity<long>
             DeviceInfo = string.IsNullOrWhiteSpace(p.DeviceInfo) ? null : p.DeviceInfo.Trim(),
             IpAddress = string.IsNullOrWhiteSpace(p.IpAddress) ? null : p.IpAddress.Trim(),
             IsPersistent = p.IsPersistent,
-            LoginAt = p.LoginAt
+            LoginAt = p.LoginAt,
+            OrganizationId = p.OrganizationId
         };
     }
 
@@ -61,6 +63,8 @@ public sealed class RefreshToken : BaseEntity<long>
     public bool IsPersistent { get; private set; }
 
     public DateTime LoginAt { get; private set; }
+
+    public Guid? OrganizationId { get; private set; }
 
     public bool IsActive => !RevokedAt.HasValue && DateTime.UtcNow < ExpiresAt;
 

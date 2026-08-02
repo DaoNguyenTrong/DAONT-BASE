@@ -4,7 +4,9 @@ namespace StarterKit.Application.Common.Interfaces;
 
 public interface IJwtTokenService
 {
-    string GenerateAccessToken(Account account);
+    const string OrganizationIdClaimType = "org_id";
+
+    string GenerateAccessToken(Account account, Guid? organizationId);
 
     string GenerateRefreshToken();
 }

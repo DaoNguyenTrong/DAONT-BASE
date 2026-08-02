@@ -59,6 +59,46 @@ public class MemoryCacheServiceTests
     }
 
     [Fact]
+    public async Task GetOrSetAsync_Miss_ValueTypeFalse_StillInvokesFactory()
+    {
+        // Regression guard: for an unconstrained T instantiated with a value type, "T?" erases
+        // to plain T at runtime, so default(T) (false) must never be mistaken for a cache hit.
+        MemoryCacheService service = CreateService(out _);
+        int factoryCalls = 0;
+
+        bool result = await service.GetOrSetAsync("bool-key", _ =>
+        {
+            factoryCalls++;
+            return Task.FromResult(true);
+        });
+
+        Assert.True(result);
+        Assert.Equal(1, factoryCalls);
+    }
+
+    [Fact]
+    public async Task GetOrSetAsync_CachedValueTypeFalse_ReturnsCachedFalseWithoutRecalling()
+    {
+        MemoryCacheService service = CreateService(out _);
+        int factoryCalls = 0;
+
+        bool first = await service.GetOrSetAsync("bool-key-false", _ =>
+        {
+            factoryCalls++;
+            return Task.FromResult(false);
+        });
+        bool second = await service.GetOrSetAsync("bool-key-false", _ =>
+        {
+            factoryCalls++;
+            return Task.FromResult(true);
+        });
+
+        Assert.False(first);
+        Assert.False(second);
+        Assert.Equal(1, factoryCalls);
+    }
+
+    [Fact]
     public async Task RemoveAsync_EvictsKey()
     {
         MemoryCacheService service = CreateService(out _);

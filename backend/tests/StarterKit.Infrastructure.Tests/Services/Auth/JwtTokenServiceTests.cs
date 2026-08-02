@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
+using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Domain.Entities;
 using StarterKit.Infrastructure.Services.Auth;
@@ -35,7 +36,7 @@ public class JwtTokenServiceTests
         JwtTokenService service = CreateService(audiences: []);
         Account account = CreateAccount();
 
-        Assert.Throws<InvalidOperationException>(() => service.GenerateAccessToken(account));
+        Assert.Throws<InvalidOperationException>(() => service.GenerateAccessToken(account, null));
     }
 
     [Fact]
@@ -44,7 +45,7 @@ public class JwtTokenServiceTests
         JwtTokenService service = CreateService();
         Account account = CreateAccount();
 
-        string token = service.GenerateAccessToken(account);
+        string token = service.GenerateAccessToken(account, null);
 
         JwtSecurityToken parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
         Assert.Equal(account.Id.ToString(), parsed.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
@@ -52,8 +53,24 @@ public class JwtTokenServiceTests
         Assert.Equal(account.Email, parsed.Claims.First(c => c.Type == ClaimTypes.Email).Value);
         Assert.Equal("StarterKit.Tests", parsed.Issuer);
         Assert.Contains("StarterKit.Tests.Client", parsed.Audiences);
+        Assert.DoesNotContain(parsed.Claims, c => c.Type == IJwtTokenService.OrganizationIdClaimType);
         double diffSeconds = Math.Abs((parsed.ValidTo - DateTime.UtcNow.AddMinutes(15)).TotalSeconds);
         Assert.True(diffSeconds < 5, $"Expected expiry within 5s tolerance, was off by {diffSeconds}s");
+    }
+
+    [Fact]
+    public void GenerateAccessToken_WithOrganizationId_IncludesOrganizationClaim()
+    {
+        JwtTokenService service = CreateService();
+        Account account = CreateAccount();
+        Guid organizationId = Guid.NewGuid();
+
+        string token = service.GenerateAccessToken(account, organizationId);
+
+        JwtSecurityToken parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
+        Assert.Equal(
+            organizationId.ToString(),
+            parsed.Claims.First(c => c.Type == IJwtTokenService.OrganizationIdClaimType).Value);
     }
 
     [Fact]
@@ -62,7 +79,7 @@ public class JwtTokenServiceTests
         JwtTokenService service = CreateService(audiences: ["first-audience", "second-audience"]);
         Account account = CreateAccount();
 
-        string token = service.GenerateAccessToken(account);
+        string token = service.GenerateAccessToken(account, null);
 
         JwtSecurityToken parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
         Assert.Contains("first-audience", parsed.Audiences);

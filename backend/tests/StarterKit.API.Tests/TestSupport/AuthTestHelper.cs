@@ -44,10 +44,38 @@ public static class AuthTestHelper
         return account;
     }
 
-    public static string MintAccessToken(Account account)
+    public static string MintAccessToken(Account account, Guid? organizationId = null)
     {
         JwtTokenService jwtTokenService = new(Options.Create(JwtSettings));
-        return jwtTokenService.GenerateAccessToken(account);
+        return jwtTokenService.GenerateAccessToken(account, organizationId);
+    }
+
+    public static async Task<Organization> SeedOrganizationAsync(
+        AppDbContext context,
+        string name = "Acme Inc",
+        string? slug = null)
+    {
+        Organization organization = Organization.Create(new OrganizationParams(name, slug ?? $"acme-{Guid.NewGuid():N}"));
+
+        context.Organizations.Add(organization);
+        await context.SaveChangesAsync();
+
+        return organization;
+    }
+
+    public static async Task<OrganizationMember> SeedOrganizationMemberAsync(
+        AppDbContext context,
+        Guid organizationId,
+        Guid accountId,
+        OrganizationRole role = OrganizationRole.Owner)
+    {
+        OrganizationMember member = OrganizationMember.Create(
+            new OrganizationMemberParams(organizationId, accountId, role));
+
+        context.OrganizationMembers.Add(member);
+        await context.SaveChangesAsync();
+
+        return member;
     }
 
     // Signed with the real JwtSettings.SecretKey but already-expired — exercises the JwtBearer

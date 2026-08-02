@@ -53,11 +53,13 @@ internal sealed class MemoryCacheService(
         TimeSpan? expiration = null,
         CancellationToken cancellationToken = default)
     {
-        T? cachedValue = await GetAsync<T>(key, cancellationToken);
-
-        if (cachedValue is not null)
+        // Can't reuse GetAsync + null-check here: for an unconstrained T instantiated with a
+        // value type (e.g. bool), "T?" erases to plain T at runtime, so a cache MISS and a
+        // legitimately cached default(T) (false, 0, ...) are indistinguishable via nullability
+        // alone. TryGetValue's own bool result is the only reliable hit/miss signal for any T.
+        if (memoryCache.TryGetValue(key, out T? cachedValue))
         {
-            return cachedValue;
+            return cachedValue!;
         }
 
         T value = await factory(cancellationToken);
