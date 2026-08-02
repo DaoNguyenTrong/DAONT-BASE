@@ -8,6 +8,24 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-08-02 — OpenAPI enum schemas rewritten to strings via a schema transformer, not per-enum attributes
+
+The built-in OpenAPI generator is System.Text.Json-based and has no visibility into the app's
+actual formatter (Newtonsoft, with a global `StringEnumConverter`), so it declared every enum as
+`type: integer` — a real contract mismatch, since the API rejects integers on the wire. Fixed with
+a generic `EnumSchemaTransformer` that rewrites any enum schema to named strings, rather than a
+`[JsonConverter(JsonStringEnumConverter)]` attribute per enum — the attribute approach would need
+repeating for every enum added later and is easy to forget.
+
+### 2026-08-02 — Switch-organization endpoint accepts a null organizationId to return to "Personal"
+
+`SwitchOrganizationAsync`/`SwitchOrganizationRequest.OrganizationId` became nullable so a session
+can switch back to the account's personal (org-less) context, not just between organizations.
+Without this, the only way to leave an org-scoped session was to log out and back in, since
+`RefreshTokenAsync` always preserves whatever `org_id` the original token carried. A null target
+skips the membership check entirely — there's nothing to authorize, every account is implicitly
+authorized for its own personal context.
+
 ### 2026-08-02 — Organizations: JWT-embedded tenant claim, not a client-supplied header
 
 Each session is scoped to at most one organization, carried as a signed `org_id` claim on the
