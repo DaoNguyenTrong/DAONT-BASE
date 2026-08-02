@@ -1038,4 +1038,21 @@ public class AuthServiceTests
         Assert.Equal(organization.Name, result.OrganizationName);
         f.JwtTokenService.Received(1).GenerateAccessToken(account, organization.Id);
     }
+
+    [Fact]
+    public async Task SwitchOrganizationAsync_NullOrganizationId_IssuesTokenWithNoOrganizationWithoutMembershipCheck()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        f.CurrentUserService.UserId.Returns(account.Id.ToString());
+        f.AccountRepo.GetByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+
+        AuthResult result = await f.Service.SwitchOrganizationAsync(null, null, null, CancellationToken.None);
+
+        Assert.Null(result.OrganizationId);
+        Assert.Null(result.OrganizationName);
+        f.JwtTokenService.Received(1).GenerateAccessToken(account, null);
+        await f.OrganizationMemberRepo.DidNotReceive().FirstOrDefaultAsync(
+            Arg.Any<Expression<Func<OrganizationMember, bool>>>(), Arg.Any<CancellationToken>());
+    }
 }

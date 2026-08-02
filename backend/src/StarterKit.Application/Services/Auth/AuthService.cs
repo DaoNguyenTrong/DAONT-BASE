@@ -345,25 +345,28 @@ public sealed class AuthService(
 
 
     public async Task<AuthResult> SwitchOrganizationAsync(
-        Guid organizationId,
+        Guid? organizationId,
         string? deviceInfo,
         string? ipAddress,
         CancellationToken cancellationToken)
     {
         Guid accountId = GetCurrentAccountId();
 
-        OrganizationMember? member = await unitOfWork.Repository<OrganizationMember, Guid>()
-            .FirstOrDefaultAsync(
-                m => m.OrganizationId == organizationId && m.AccountId == accountId && m.IsActive,
-                cancellationToken);
-
-        Organization? organization = member is null
-            ? null
-            : await unitOfWork.Repository<Organization, Guid>().GetByIdAsync(organizationId, cancellationToken);
-
-        if (member is null || organization is null || !organization.Status)
+        if (organizationId is { } targetOrganizationId)
         {
-            throw new ForbiddenException(ApplicationMessages.OrganizationAccessDenied);
+            OrganizationMember? member = await unitOfWork.Repository<OrganizationMember, Guid>()
+                .FirstOrDefaultAsync(
+                    m => m.OrganizationId == targetOrganizationId && m.AccountId == accountId && m.IsActive,
+                    cancellationToken);
+
+            Organization? organization = member is null
+                ? null
+                : await unitOfWork.Repository<Organization, Guid>().GetByIdAsync(targetOrganizationId, cancellationToken);
+
+            if (member is null || organization is null || !organization.Status)
+            {
+                throw new ForbiddenException(ApplicationMessages.OrganizationAccessDenied);
+            }
         }
 
         Account account = await unitOfWork.Repository<Account, Guid>().GetByIdAsync(accountId, cancellationToken)

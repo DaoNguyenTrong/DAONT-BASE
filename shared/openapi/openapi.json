@@ -4287,7 +4287,12 @@
         }
       },
       "OrganizationRole": {
-        "type": "integer"
+        "enum": [
+          "Owner",
+          "Admin",
+          "Member"
+        ],
+        "type": "string"
       },
       "PagedResultOfAccountDto": {
         "required": [
@@ -4727,7 +4732,10 @@
         "type": "object",
         "properties": {
           "organizationId": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           }
         }

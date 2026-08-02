@@ -1,6 +1,6 @@
 import type { Component } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { Home, Users } from '@vicons/tabler'
+import { Building, Home, Users } from '@vicons/tabler'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -45,6 +45,19 @@ const router = createRouter({
             sidebar: {
               labelKey: 'nav.accounts',
               icon: Users,
+            },
+          },
+        },
+        {
+          path: 'organizations',
+          name: 'organizations',
+          component: () => import('@/views/OrganizationsView.vue'),
+          meta: {
+            requiresAuth: true,
+            breadcrumbKey: 'nav.organizations',
+            sidebar: {
+              labelKey: 'nav.organizations',
+              icon: Building,
             },
           },
         },

@@ -48,6 +48,7 @@ internal static class OpenApiExtensions
             options.AddOperationTransformer<JsonOnlyRequestBodyTransformer>();
             options.AddOperationTransformer<QueryParameterCasingTransformer>();
             options.AddOperationTransformer<TimeZoneHeaderOperationTransformer>();
+            options.AddSchemaTransformer<EnumSchemaTransformer>();
         });
 
         return services;
