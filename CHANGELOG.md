@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Organizations (multi-tenant) support for the backend: each session scopes to at most one organization via a signed `org_id` JWT claim, a dedicated `POST /api/auth/switch-organization` endpoint, and `/api/organizations` for creating/listing organizations and managing members. Per-request tenant access is re-verified through a short-TTL in-memory cache so revocation takes effect quickly.
+- Organizations UI: a sidebar switcher for the session's current organization (or personal workspace), and an `/organizations` page for creating organizations and managing members (add/remove/change role/deactivate).
 - Correlation ID middleware (`X-Correlation-Id`, validated inbound or generated) plus structured per-request logging (`UseSerilogRequestLogging`) for the backend API.
 - Repo-root Lefthook git hooks: pre-commit blocks direct commits to `main`, unresolved merge-conflict markers, and known secret formats (secretlint), and formats staged `frontend/src/` files with Prettier; commit-msg enforces Conventional Commits (commitlint).
 
@@ -20,6 +21,8 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - `MemoryCacheService.GetOrSetAsync` mistook a cache miss for a cached `false` when caching value types (e.g. `bool`) — an unconstrained generic `T?` erases to plain `T` for value types, so `default(T)` was indistinguishable from a real cached value, and the underlying factory was silently never invoked.
+- OpenAPI declared enums (e.g. `OrganizationRole`) as `integer`, since the built-in generator has no visibility into the API's actual Newtonsoft `StringEnumConverter` formatter — generated clients typed them as `number` while the API only ever accepted the named strings on the wire. Added a schema transformer so enum schemas match runtime behavior.
+- `POST /api/auth/switch-organization` had no way to return a session to its personal (org-less) context short of logging out, since token refresh always preserves the original `org_id`. `organizationId` is now nullable in the request.
 - Frontend's `tests/` directory had never been type-checked (no script ran `vue-tsc -p tsconfig.vitest.json`), so it had accumulated ~85 type errors undetected. Fixed a generics bug in the shared `renderComponent` test helper that cascaded into most of them, plus stale sidebar icon fixtures, missing `node` types, and strict-null-check gaps; `tests/` now type-checks clean.
 
 ### Removed
