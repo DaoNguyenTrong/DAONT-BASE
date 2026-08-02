@@ -24,10 +24,13 @@ public class AuthServiceTests
         IRepository<ExternalLogin, Guid> ExternalLoginRepo,
         IUnitOfWork UnitOfWork,
         IJwtTokenService JwtTokenService,
+        ITenantAccessService TenantAccessService,
         IPasswordHasher PasswordHasher,
         IEmailSender EmailSender,
         IExternalAuthProvider ExternalAuthProvider,
-        ICurrentUserService CurrentUserService);
+        ICurrentUserService CurrentUserService,
+        IRepository<OrganizationMember, Guid> OrganizationMemberRepo,
+        IRepository<Organization, Guid> OrganizationRepo);
 
     private static Fixture CreateFixture(
         int accessTokenExpiryMinutes = 15,
@@ -39,14 +42,27 @@ public class AuthServiceTests
         IRepository<EmailVerificationToken, Guid> emailVerificationTokenRepo =
             Substitute.For<IRepository<EmailVerificationToken, Guid>>();
         IRepository<ExternalLogin, Guid> externalLoginRepo = Substitute.For<IRepository<ExternalLogin, Guid>>();
+        IRepository<OrganizationMember, Guid> organizationMemberRepo = Substitute.For<IRepository<OrganizationMember, Guid>>();
+        IRepository<Organization, Guid> organizationRepo = Substitute.For<IRepository<Organization, Guid>>();
         unitOfWork.Repository<Account, Guid>().Returns(accountRepo);
         unitOfWork.Repository<RefreshToken, long>().Returns(refreshTokenRepo);
         unitOfWork.Repository<EmailVerificationToken, Guid>().Returns(emailVerificationTokenRepo);
         unitOfWork.Repository<ExternalLogin, Guid>().Returns(externalLoginRepo);
+        unitOfWork.Repository<OrganizationMember, Guid>().Returns(organizationMemberRepo);
+        unitOfWork.Repository<Organization, Guid>().Returns(organizationRepo);
+
+        // Default: account belongs to no organization, matching pre-multi-tenant behavior
+        // (tokens issued with no org claim) unless a test explicitly seeds memberships.
+        organizationMemberRepo.ListAsync(
+                Arg.Any<Expression<Func<OrganizationMember, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns([]);
 
         IJwtTokenService jwtTokenService = Substitute.For<IJwtTokenService>();
-        jwtTokenService.GenerateAccessToken(Arg.Any<Account>()).Returns("fake-access-token");
+        jwtTokenService.GenerateAccessToken(Arg.Any<Account>(), Arg.Any<Guid?>()).Returns("fake-access-token");
         jwtTokenService.GenerateRefreshToken().Returns(_ => Guid.NewGuid().ToString());
+
+        ITenantAccessService tenantAccessService = Substitute.For<ITenantAccessService>();
+        tenantAccessService.HasActiveAccessAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(true);
 
         IPasswordHasher passwordHasher = Substitute.For<IPasswordHasher>();
         IEmailSender emailSender = Substitute.For<IEmailSender>();
@@ -72,6 +88,7 @@ public class AuthServiceTests
             unitOfWork,
             currentUserService,
             jwtTokenService,
+            tenantAccessService,
             passwordHasher,
             emailSender,
             [externalAuthProvider],
@@ -86,10 +103,13 @@ public class AuthServiceTests
             externalLoginRepo,
             unitOfWork,
             jwtTokenService,
+            tenantAccessService,
             passwordHasher,
             emailSender,
             externalAuthProvider,
-            currentUserService);
+            currentUserService,
+            organizationMemberRepo,
+            organizationRepo);
     }
 
     private static Account CreateAccount(
@@ -872,5 +892,150 @@ public class AuthServiceTests
 
         Assert.NotNull(token1.RevokedAt);
         Assert.NotNull(token2.RevokedAt);
+    }
+
+    // Organization scoping
+
+    [Fact]
+    public async Task LoginAsync_AccountBelongsToExactlyOneOrganization_IssuesTokenScopedToThatOrganization()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+        f.PasswordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+
+        Organization organization = Organization.Create(new OrganizationParams("Acme", "acme"));
+        OrganizationMember membership = OrganizationMember.Create(
+            new OrganizationMemberParams(organization.Id, account.Id, OrganizationRole.Owner));
+        f.OrganizationMemberRepo.ListAsync(
+                Arg.Any<Expression<Func<OrganizationMember, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns([membership]);
+        f.OrganizationRepo.GetByIdAsync(organization.Id, Arg.Any<CancellationToken>()).Returns(organization);
+        LoginRequest request = new(account.Username, "correct-password");
+
+        AuthResult result = await f.Service.LoginAsync(request, null, null, CancellationToken.None);
+
+        Assert.Equal(organization.Id, result.OrganizationId);
+        Assert.Equal(organization.Name, result.OrganizationName);
+        f.JwtTokenService.Received(1).GenerateAccessToken(account, organization.Id);
+    }
+
+    [Fact]
+    public async Task LoginAsync_AccountBelongsToMultipleOrganizations_IssuesTokenWithNoOrganization()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+        f.PasswordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+
+        f.OrganizationMemberRepo.ListAsync(
+                Arg.Any<Expression<Func<OrganizationMember, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns([
+                OrganizationMember.Create(new OrganizationMemberParams(Guid.NewGuid(), account.Id, OrganizationRole.Member)),
+                OrganizationMember.Create(new OrganizationMemberParams(Guid.NewGuid(), account.Id, OrganizationRole.Member))
+            ]);
+        LoginRequest request = new(account.Username, "correct-password");
+
+        AuthResult result = await f.Service.LoginAsync(request, null, null, CancellationToken.None);
+
+        Assert.Null(result.OrganizationId);
+        f.JwtTokenService.Received(1).GenerateAccessToken(account, null);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_TokenHasOrganization_PreservesOrganizationOnNewToken()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        Guid organizationId = Guid.NewGuid();
+        RefreshToken oldToken = RefreshToken.Create(new RefreshTokenParams(
+            account.Id, ComputeSha256("old-token"), DateTime.UtcNow.AddDays(1), null, null, false, DateTime.UtcNow, organizationId));
+        RepositoryPredicateStub.StubFirstOrDefault(f.RefreshTokenRepo, [oldToken]);
+        f.AccountRepo.GetByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+        f.OrganizationRepo.GetByIdAsync(organizationId, Arg.Any<CancellationToken>())
+            .Returns(Organization.Create(new OrganizationParams("Acme", "acme")));
+
+        AuthResult result = await f.Service.RefreshTokenAsync("old-token", null, null, CancellationToken.None);
+
+        Assert.Equal(organizationId, result.OrganizationId);
+        f.JwtTokenService.Received(1).GenerateAccessToken(account, organizationId);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_TokenHasOrganization_AccessRevoked_ThrowsUnauthorized()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        Guid organizationId = Guid.NewGuid();
+        RefreshToken oldToken = RefreshToken.Create(new RefreshTokenParams(
+            account.Id, ComputeSha256("old-token"), DateTime.UtcNow.AddDays(1), null, null, false, DateTime.UtcNow, organizationId));
+        RepositoryPredicateStub.StubFirstOrDefault(f.RefreshTokenRepo, [oldToken]);
+        f.AccountRepo.GetByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+        f.TenantAccessService.HasActiveAccessAsync(account.Id, organizationId, Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        await ApplicationAssert.ThrowsWithMessageAsync<UnauthorizedException>(
+            ApplicationMessages.InvalidRefreshToken,
+            () => f.Service.RefreshTokenAsync("old-token", null, null, CancellationToken.None));
+    }
+
+    // SwitchOrganizationAsync
+
+    [Fact]
+    public async Task SwitchOrganizationAsync_NotAMember_ThrowsForbidden()
+    {
+        Fixture f = CreateFixture();
+        Guid accountId = Guid.NewGuid();
+        f.CurrentUserService.UserId.Returns(accountId.ToString());
+        f.OrganizationMemberRepo.FirstOrDefaultAsync(
+                Arg.Any<Expression<Func<OrganizationMember, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns((OrganizationMember?)null);
+
+        await ApplicationAssert.ThrowsWithMessageAsync<ForbiddenException>(
+            ApplicationMessages.OrganizationAccessDenied,
+            () => f.Service.SwitchOrganizationAsync(Guid.NewGuid(), null, null, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task SwitchOrganizationAsync_OrganizationInactive_ThrowsForbidden()
+    {
+        Fixture f = CreateFixture();
+        Guid accountId = Guid.NewGuid();
+        f.CurrentUserService.UserId.Returns(accountId.ToString());
+
+        Organization organization = Organization.Create(new OrganizationParams("Acme", "acme"));
+        organization.Deactivate();
+        OrganizationMember membership = OrganizationMember.Create(
+            new OrganizationMemberParams(organization.Id, accountId, OrganizationRole.Owner));
+        RepositoryPredicateStub.StubFirstOrDefault(f.OrganizationMemberRepo, [membership]);
+        f.OrganizationRepo.GetByIdAsync(organization.Id, Arg.Any<CancellationToken>()).Returns(organization);
+
+        await ApplicationAssert.ThrowsWithMessageAsync<ForbiddenException>(
+            ApplicationMessages.OrganizationAccessDenied,
+            () => f.Service.SwitchOrganizationAsync(organization.Id, null, null, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task SwitchOrganizationAsync_ActiveMember_IssuesTokenScopedToOrganization()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        f.CurrentUserService.UserId.Returns(account.Id.ToString());
+        f.AccountRepo.GetByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+
+        Organization organization = Organization.Create(new OrganizationParams("Acme", "acme"));
+        OrganizationMember membership = OrganizationMember.Create(
+            new OrganizationMemberParams(organization.Id, account.Id, OrganizationRole.Owner));
+        RepositoryPredicateStub.StubFirstOrDefault(f.OrganizationMemberRepo, [membership]);
+        f.OrganizationRepo.GetByIdAsync(organization.Id, Arg.Any<CancellationToken>()).Returns(organization);
+
+        AuthResult result = await f.Service.SwitchOrganizationAsync(
+            organization.Id, null, null, CancellationToken.None);
+
+        Assert.Equal(organization.Id, result.OrganizationId);
+        Assert.Equal(organization.Name, result.OrganizationName);
+        f.JwtTokenService.Received(1).GenerateAccessToken(account, organization.Id);
     }
 }

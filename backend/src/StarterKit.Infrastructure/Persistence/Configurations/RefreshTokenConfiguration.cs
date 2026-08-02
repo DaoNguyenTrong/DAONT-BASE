@@ -44,5 +44,10 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
             .WithMany()
             .HasForeignKey(token => token.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne<Organization>()
+            .WithMany()
+            .HasForeignKey(token => token.OrganizationId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

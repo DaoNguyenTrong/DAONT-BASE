@@ -20,4 +20,6 @@ public static class DomainMessages
     public const string EmailVerificationTokenExpiryFuture = nameof(EmailVerificationTokenExpiryFuture);
     public const string ExternalLoginProviderRequired = nameof(ExternalLoginProviderRequired);
     public const string ExternalLoginProviderUserIdRequired = nameof(ExternalLoginProviderUserIdRequired);
+    public const string OrganizationNameRequired = nameof(OrganizationNameRequired);
+    public const string OrganizationSlugRequired = nameof(OrganizationSlugRequired);
 }

@@ -23,4 +23,8 @@ public static class ApplicationMessages
     public const string ValidationFailed = nameof(ValidationFailed);
     public const string TooManyRequests = nameof(TooManyRequests);
     public const string InternalServerError = nameof(InternalServerError);
+    public const string OrganizationAccessDenied = nameof(OrganizationAccessDenied);
+    public const string OrganizationMemberAlreadyExists = nameof(OrganizationMemberAlreadyExists);
+    public const string OrganizationCannotRemoveLastOwner = nameof(OrganizationCannotRemoveLastOwner);
+    public const string OrganizationSlugAlreadyExists = nameof(OrganizationSlugAlreadyExists);
 }

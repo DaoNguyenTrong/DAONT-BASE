@@ -44,4 +44,10 @@ public interface IAuthService
     Task RevokeSessionAsync(long sessionId, CancellationToken cancellationToken);
 
     Task RevokeOtherSessionsAsync(string? currentRefreshToken, CancellationToken cancellationToken);
+
+    Task<AuthResult> SwitchOrganizationAsync(
+        Guid organizationId,
+        string? deviceInfo,
+        string? ipAddress,
+        CancellationToken cancellationToken);
 }
