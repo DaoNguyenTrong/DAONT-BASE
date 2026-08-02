@@ -49,6 +49,13 @@ export type { UpdateAccountRequest } from './generated/model/updateAccountReques
 export type { ProfileDto } from './generated/model/profileDto'
 export type { UpdateProfileRequest as ProfileUpdateRequest } from './generated/model/updateProfileRequest'
 export type { ChangePasswordRequest } from './generated/model/changePasswordRequest'
+export type { OrganizationDto } from './generated/model/organizationDto'
+export type { OrganizationMemberDto } from './generated/model/organizationMemberDto'
+export { OrganizationRole } from './generated/model/organizationRole'
+export type { CreateOrganizationRequest } from './generated/model/createOrganizationRequest'
+export type { AddMemberRequest } from './generated/model/addMemberRequest'
+export type { UpdateMemberRoleRequest } from './generated/model/updateMemberRoleRequest'
+export type { SwitchOrganizationRequest } from './generated/model/switchOrganizationRequest'
 
 import type { AccountDto as Account } from './generated/model/accountDto'
 

@@ -100,6 +100,7 @@ export interface LocaleSchema {
   nav: {
     home: string
     accounts: string
+    organizations: string
     profile: string
     toggleSidebar: string
     collapseSidebar: string
@@ -160,6 +161,47 @@ export interface LocaleSchema {
     signOutOtherDevicesConfirm: string
     deviceSignedOut: string
     otherDevicesSignedOut: string
+  }
+  organizations: {
+    title: string
+    personalWorkspace: string
+    switchOrganization: string
+    createNew: string
+    createTitle: string
+    manage: string
+    name: string
+    namePlaceholder: string
+    slug: string
+    slugPlaceholder: string
+    slugHint: string
+    myRole: string
+    status: string
+    active: string
+    inactive: string
+    roleOwner: string
+    roleAdmin: string
+    roleMember: string
+    empty: string
+    emptyHint: string
+    created: string
+    switchedTo: string
+    switchedToPersonal: string
+    members: string
+    membersTitle: string
+    membersEmpty: string
+    addMember: string
+    addMemberTitle: string
+    memberEmail: string
+    memberEmailPlaceholder: string
+    memberRole: string
+    memberAdded: string
+    removeMember: string
+    removeMemberConfirm: string
+    memberRemoved: string
+    roleUpdated: string
+    deactivate: string
+    deactivateConfirm: string
+    deactivated: string
   }
 }
 
@@ -274,6 +316,7 @@ const en: LocaleSchema = {
   nav: {
     home: 'Home',
     accounts: 'Accounts',
+    organizations: 'Organizations',
     profile: 'Profile',
     toggleSidebar: 'Toggle sidebar',
     collapseSidebar: 'Collapse sidebar',
@@ -334,6 +377,48 @@ const en: LocaleSchema = {
     signOutOtherDevicesConfirm: 'This will sign you out of every other device. Continue?',
     deviceSignedOut: 'Device signed out',
     otherDevicesSignedOut: 'Signed out of other devices',
+  },
+  organizations: {
+    title: 'Organizations',
+    personalWorkspace: 'Personal workspace',
+    switchOrganization: 'Switch organization',
+    createNew: 'New organization',
+    createTitle: 'Create organization',
+    manage: 'Manage organizations',
+    name: 'Name',
+    namePlaceholder: 'Enter the organization name',
+    slug: 'Slug',
+    slugPlaceholder: 'e.g. acme-inc',
+    slugHint: 'A unique, URL-safe identifier. Lowercase letters, numbers, and hyphens only.',
+    myRole: 'Your role',
+    status: 'Status',
+    active: 'Active',
+    inactive: 'Inactive',
+    roleOwner: 'Owner',
+    roleAdmin: 'Admin',
+    roleMember: 'Member',
+    empty: 'No organizations yet',
+    emptyHint: 'Create an organization to get started.',
+    created: 'Organization created',
+    switchedTo: 'Switched to {name}',
+    switchedToPersonal: 'Switched to your personal workspace',
+    members: 'Members',
+    membersTitle: 'Members of {name}',
+    membersEmpty: 'No members yet.',
+    addMember: 'Add member',
+    addMemberTitle: 'Add member',
+    memberEmail: 'Email',
+    memberEmailPlaceholder: "Enter the member's email address",
+    memberRole: 'Role',
+    memberAdded: 'Member added',
+    removeMember: 'Remove member',
+    removeMemberConfirm: 'Remove this member from the organization?',
+    memberRemoved: 'Member removed',
+    roleUpdated: 'Role updated',
+    deactivate: 'Deactivate organization',
+    deactivateConfirm:
+      'Deactivate this organization? All members will immediately lose access. This cannot be undone.',
+    deactivated: 'Organization deactivated',
   },
 }
 
