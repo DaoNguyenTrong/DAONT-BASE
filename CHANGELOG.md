@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Consolidated `frontend/.gitignore` and `backend/.gitignore` into a single root `.gitignore`.
 - Organization and role permission checks moved from inline service-layer checks to ASP.NET Core policy-based `[Authorize(Policy=...)]`, enforced in the authorization middleware before the action runs.
 - Reduced the sidebar's minimal-mode width from `5rem` to `4rem`.
+- All forms (login, register, resend-verification, profile, change-password, organization/role create-edit, add-member) now validate through naive-ui's `n-form`/`n-form-item`/`rules`/`FormInst` instead of hand-rolled `computed` error state; dialog-hosted forms block confirm on invalid input via a `validate()` exposed to `useAppDialogNaive`.
 
 ### Fixed
 
