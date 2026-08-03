@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Correlation ID middleware (`X-Correlation-Id`, validated inbound or generated) plus structured per-request logging (`UseSerilogRequestLogging`) for the backend API.
 - Repo-root Lefthook git hooks: pre-commit blocks direct commits to `main`, unresolved merge-conflict markers, and known secret formats (secretlint), and formats staged `frontend/src/` files with Prettier; commit-msg enforces Conventional Commits (commitlint).
 - Hangfire (PostgreSQL storage) as reusable background-job infrastructure: server, dashboard (`/hangfire`), and DI wiring in `StarterKit.Infrastructure`, ready for fire-and-forget/delayed/recurring jobs with automatic retries in future work.
+- Prometheus metrics endpoint (`/metrics`, via `prometheus-net.AspNetCore`) covering HTTP request rate/duration/errors and process/GC stats, plus a local docker-compose Prometheus + Grafana stack with a pre-provisioned datasource and "StarterKit API Overview" dashboard.
 
 ### Changed
 
