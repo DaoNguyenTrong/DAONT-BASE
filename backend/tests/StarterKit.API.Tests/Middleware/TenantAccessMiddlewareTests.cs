@@ -31,7 +31,7 @@ public sealed class TenantAccessMiddlewareTests(ApiFactoryFixture fixture) : IAs
         HttpClient client = fixture.CreateTestClient();
         client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(account, organization.Id));
 
-        HttpResponseMessage response = await client.GetAsync("/api/accounts");
+        HttpResponseMessage response = await client.GetAsync("/api/admin/api-keys");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -52,7 +52,7 @@ public sealed class TenantAccessMiddlewareTests(ApiFactoryFixture fixture) : IAs
         HttpClient client = fixture.CreateTestClient();
         client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(account, organization.Id));
 
-        HttpResponseMessage response = await client.GetAsync("/api/accounts");
+        HttpResponseMessage response = await client.GetAsync("/api/admin/api-keys");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }

@@ -15,7 +15,7 @@ public sealed class MiddlewareTests(ApiFactoryFixture fixture) : IAsyncLifetime
     {
         using HttpClient client = fixture.CreateClient();
 
-        HttpResponseMessage response = await client.GetAsync("/api/accounts");
+        HttpResponseMessage response = await client.GetAsync("/api/admin/api-keys");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         string body = await response.Content.ReadAsStringAsync();
@@ -28,7 +28,7 @@ public sealed class MiddlewareTests(ApiFactoryFixture fixture) : IAsyncLifetime
         using HttpClient client = fixture.CreateClient();
         client.DefaultRequestHeaders.Add("X-TimeZone", "Not/A_Real_Zone");
 
-        HttpResponseMessage response = await client.GetAsync("/api/accounts");
+        HttpResponseMessage response = await client.GetAsync("/api/admin/api-keys");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -37,7 +37,7 @@ public sealed class MiddlewareTests(ApiFactoryFixture fixture) : IAsyncLifetime
     public async Task OptionsRequest_BypassesTimeZoneCheck()
     {
         using HttpClient client = fixture.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Options, "/api/accounts");
+        using HttpRequestMessage request = new(HttpMethod.Options, "/api/admin/api-keys");
 
         HttpResponseMessage response = await client.SendAsync(request);
 
@@ -49,7 +49,7 @@ public sealed class MiddlewareTests(ApiFactoryFixture fixture) : IAsyncLifetime
     {
         HttpClient client = fixture.CreateTestClient();
 
-        HttpResponseMessage response = await client.GetAsync("/api/accounts");
+        HttpResponseMessage response = await client.GetAsync("/api/admin/api-keys");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }

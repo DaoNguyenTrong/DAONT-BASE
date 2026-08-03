@@ -223,13 +223,13 @@ watch(visible, (open) => {
         <form class="grid gap-3 pt-3 sm:grid-cols-2" @submit.prevent="updateProfile">
           <div class="space-y-1.5">
             <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
-              {{ t('accounts.name') }}<RequiredMark />
+              {{ t('profile.name') }}<RequiredMark />
             </label>
             <n-input
               v-model:value="profileForm.name"
               type="text"
               class="w-full"
-              :placeholder="t('accounts.namePlaceholder')"
+              :placeholder="t('profile.namePlaceholder')"
               :status="profileErrors.name ? 'error' : undefined"
             />
             <small v-if="profileErrors.name" class="text-red-500">{{ profileErrors.name }}</small>
@@ -237,13 +237,13 @@ watch(visible, (open) => {
 
           <div class="space-y-1.5">
             <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
-              {{ t('accounts.email') }}<RequiredMark />
+              {{ t('profile.email') }}<RequiredMark />
             </label>
             <n-input
               v-model:value="profileForm.email"
               type="text"
               class="w-full"
-              :placeholder="t('accounts.emailPlaceholder')"
+              :placeholder="t('profile.emailPlaceholder')"
               :status="profileErrors.email ? 'error' : undefined"
               :input-props="{ type: 'email' }"
             />
@@ -252,13 +252,13 @@ watch(visible, (open) => {
 
           <div class="space-y-1.5">
             <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
-              {{ t('accounts.phone') }}
+              {{ t('profile.phone') }}
             </label>
             <n-input
               v-model:value="profileForm.phone"
               type="text"
               class="w-full"
-              :placeholder="t('accounts.phonePlaceholder')"
+              :placeholder="t('profile.phonePlaceholder')"
               :status="profileErrors.phone ? 'error' : undefined"
             />
             <small v-if="profileErrors.phone" class="text-red-500">{{ profileErrors.phone }}</small>
@@ -266,13 +266,13 @@ watch(visible, (open) => {
 
           <div class="space-y-1.5">
             <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
-              {{ t('accounts.position') }}
+              {{ t('profile.position') }}
             </label>
             <n-input
               v-model:value="profileForm.position"
               type="text"
               class="w-full"
-              :placeholder="t('accounts.positionPlaceholder')"
+              :placeholder="t('profile.positionPlaceholder')"
               :status="profileErrors.position ? 'error' : undefined"
             />
             <small v-if="profileErrors.position" class="text-red-500">{{
@@ -282,13 +282,13 @@ watch(visible, (open) => {
 
           <div class="space-y-1.5 sm:col-span-2">
             <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
-              {{ t('accounts.address') }}
+              {{ t('profile.address') }}
             </label>
             <n-input
               v-model:value="profileForm.address"
               type="text"
               class="w-full"
-              :placeholder="t('accounts.addressPlaceholder')"
+              :placeholder="t('profile.addressPlaceholder')"
               :status="profileErrors.address ? 'error' : undefined"
             />
             <small v-if="profileErrors.address" class="text-red-500">{{
@@ -371,7 +371,9 @@ watch(visible, (open) => {
               :loading="revokingOthers"
               @click="confirmRevokeOtherSessions"
             >
-              <template #icon><n-icon><Logout /></n-icon></template>
+              <template #icon
+                ><n-icon><Logout /></n-icon
+              ></template>
               {{ t('profile.signOutOtherDevices') }}
             </n-button>
           </div>
@@ -423,7 +425,9 @@ watch(visible, (open) => {
                 :loading="revokingSessionId === session.id"
                 @click="confirmRevokeSession(session)"
               >
-                <template #icon><n-icon><Logout /></n-icon></template>
+                <template #icon
+                  ><n-icon><Logout /></n-icon
+                ></template>
               </n-button>
             </li>
           </ul>

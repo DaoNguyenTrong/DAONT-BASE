@@ -348,7 +348,7 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
     public async Task ApiKeyHeader_AuthenticatesAgainstCombinedPolicy()
     {
         // ApiKeyAuthenticationHandler issues no ClaimTypes.NameIdentifier claim, so a "current
-        // user"-scoped endpoint like /sessions can't be used here — GetAll on AccountsController
+        // user"-scoped endpoint like /sessions can't be used here — GetAll on ApiKeysController
         // only requires [Authorize], not ICurrentUserService.UserId, so it works for either scheme.
         HttpClient client = fixture.CreateTestClient();
         string rawKey;
@@ -358,7 +358,7 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         }
         client.DefaultRequestHeaders.Add("X-Api-Key", rawKey);
 
-        HttpResponseMessage response = await client.GetAsync("/api/accounts");
+        HttpResponseMessage response = await client.GetAsync("/api/admin/api-keys");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }

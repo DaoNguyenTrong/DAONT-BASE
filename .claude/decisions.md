@@ -8,6 +8,15 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-08-02 — Removed `AccountsController`: account management moved entirely into organization scope
+
+Dropped the global CRUD-any-account surface (no authorization beyond "logged in") — every capability
+already has a replacement: creation via `/api/auth/register`, profile edits are self-service only via
+`ProfileController` (no admin-edits-others-profile), and removal/deactivation happens by removing/
+deactivating an `OrganizationMember` (`RemoveMemberAsync`), not deleting or locking the `Account`
+itself. Eliminates the "every authenticated account has equal access to every other account" model,
+making enforcement consistent with the permission-based RBAC now applied to Organizations.
+
 ### 2026-08-02 — Authorization: organization/role permission checks moved to ASP.NET Core policy-based `[Authorize]`
 
 `EnsurePermissionAsync`/`EnsureActiveMemberAsync` moved out of `OrganizationService`/`RoleService` into a custom

@@ -165,14 +165,14 @@ async function handleSubmit() {
                   class="text-sm font-semibold text-surface-800 dark:text-surface-100"
                   for="name"
                 >
-                  {{ t('accounts.name') }}<RequiredMark />
+                  {{ t('auth.name') }}<RequiredMark />
                 </label>
                 <n-input
                   v-model:value="form.name"
                   type="text"
                   class="w-full"
                   :status="nameError ? 'error' : undefined"
-                  :placeholder="t('accounts.namePlaceholder')"
+                  :placeholder="t('auth.namePlaceholder')"
                   :input-props="{ id: 'name', autocomplete: 'name' }"
                   @update:value="clearFieldError('name')"
                 />
@@ -186,14 +186,14 @@ async function handleSubmit() {
                   class="text-sm font-semibold text-surface-800 dark:text-surface-100"
                   for="username"
                 >
-                  {{ t('accounts.username') }}<RequiredMark />
+                  {{ t('auth.username') }}<RequiredMark />
                 </label>
                 <n-input
                   v-model:value="form.username"
                   type="text"
                   class="w-full"
                   :status="usernameError ? 'error' : undefined"
-                  :placeholder="t('accounts.usernamePlaceholder')"
+                  :placeholder="t('auth.usernamePlaceholder')"
                   :input-props="{ id: 'username', autocomplete: 'username' }"
                   @update:value="clearFieldError('username')"
                 />
@@ -207,14 +207,14 @@ async function handleSubmit() {
                   class="text-sm font-semibold text-surface-800 dark:text-surface-100"
                   for="email"
                 >
-                  {{ t('accounts.email') }}<RequiredMark />
+                  {{ t('auth.email') }}<RequiredMark />
                 </label>
                 <n-input
                   v-model:value="form.email"
                   type="text"
                   class="w-full"
                   :status="emailError ? 'error' : undefined"
-                  :placeholder="t('accounts.emailPlaceholder')"
+                  :placeholder="t('auth.emailPlaceholder')"
                   :input-props="{ id: 'email', autocomplete: 'email' }"
                   @update:value="clearFieldError('email')"
                 />
@@ -228,7 +228,7 @@ async function handleSubmit() {
                   class="text-sm font-semibold text-surface-800 dark:text-surface-100"
                   for="password"
                 >
-                  {{ t('accounts.password') }}<RequiredMark />
+                  {{ t('auth.password') }}<RequiredMark />
                 </label>
                 <n-input
                   v-model:value="form.password"
@@ -236,7 +236,7 @@ async function handleSubmit() {
                   show-password-on="click"
                   class="w-full"
                   :status="passwordError ? 'error' : undefined"
-                  :placeholder="t('accounts.passwordPlaceholder')"
+                  :placeholder="t('auth.passwordPlaceholder')"
                   :input-props="{ id: 'password', autocomplete: 'new-password' }"
                   @update:value="clearFieldError('password')"
                 />
