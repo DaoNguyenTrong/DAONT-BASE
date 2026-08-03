@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Net;
 using System.Threading.RateLimiting;
+using Hangfire;
+using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -152,6 +154,8 @@ using (IServiceScope seedScope = app.Services.CreateScope())
     await SystemSettingSeeder.SeedAsync(seedDbContext);
 }
 
+app.UseBackgroundJobs();
+
 app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseMiddleware<CorrelationIdMiddleware>();
@@ -184,6 +188,15 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<TenantAccessMiddleware>();
+
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    // Access is restricted at the network layer (internal LAN only, not internet-exposed) —
+    // the default LocalRequestsOnlyAuthorizationFilter would incorrectly block real LAN
+    // clients once UseForwardedHeaders() rewrites RemoteIpAddress to the real client IP.
+    Authorization = []
+});
+
 app.MapControllers();
 
 app.Run();

@@ -1,9 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using NSubstitute;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Domain.Entities;
 using StarterKit.Infrastructure.Persistence;
@@ -13,17 +10,12 @@ using StarterKit.Infrastructure.Tests.TestSupport;
 namespace StarterKit.Infrastructure.Tests.Services.Auth;
 
 [Collection(nameof(PostgresCollection))]
-public sealed class RefreshTokenCleanupServiceTests(PostgresContainerFixture fixture) : IAsyncLifetime
+public sealed class RefreshTokenCleanupJobTests(PostgresContainerFixture fixture) : IAsyncLifetime
 {
-    private ServiceProvider serviceProvider = null!;
     private Account account = null!;
 
     public async Task InitializeAsync()
     {
-        ServiceCollection services = new();
-        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(fixture.ConnectionString));
-        serviceProvider = services.BuildServiceProvider();
-
         account = Account.Create(new AccountParams("Cleanup Target", "cleanup-target", "cleanup-target@example.com"));
         await using AppDbContext context = fixture.CreateDbContext();
         context.Accounts.Add(account);
@@ -35,20 +27,16 @@ public sealed class RefreshTokenCleanupServiceTests(PostgresContainerFixture fix
         await using AppDbContext context = fixture.CreateDbContext();
         context.Accounts.Remove(await context.Accounts.SingleAsync(a => a.Id == account.Id));
         await context.SaveChangesAsync();
-        await serviceProvider.DisposeAsync();
     }
 
-    private RefreshTokenCleanupService CreateService(int retentionDays = 7)
+    private RefreshTokenCleanupJob CreateJob(AppDbContext context, int retentionDays = 7)
     {
         IOptions<RefreshTokenCleanupSettings> options = Options.Create(new RefreshTokenCleanupSettings
         {
             RetentionDays = retentionDays
         });
 
-        return new RefreshTokenCleanupService(
-            serviceProvider.GetRequiredService<IServiceScopeFactory>(),
-            options,
-            NullLogger<RefreshTokenCleanupService>.Instance);
+        return new RefreshTokenCleanupJob(context, options, NullLogger<RefreshTokenCleanupJob>.Instance);
     }
 
     private static RefreshToken CreateToken(Guid accountId, string rawToken)
@@ -70,7 +58,7 @@ public sealed class RefreshTokenCleanupServiceTests(PostgresContainerFixture fix
         typeof(RefreshToken).GetProperty(nameof(RefreshToken.RevokedAt))!.SetValue(token, revokedAt);
 
     [Fact]
-    public async Task RunCleanupAsync_DeletesExpiredAndOldRevoked_KeepsValidAndRecentlyRevoked()
+    public async Task RunAsync_DeletesExpiredAndOldRevoked_KeepsValidAndRecentlyRevoked()
     {
         DateTime cutoff = DateTime.UtcNow.AddDays(-7);
 
@@ -91,8 +79,11 @@ public sealed class RefreshTokenCleanupServiceTests(PostgresContainerFixture fix
             await seedContext.SaveChangesAsync();
         }
 
-        RefreshTokenCleanupService service = CreateService(retentionDays: 7);
-        await service.RunCleanupAsync(CancellationToken.None);
+        await using (AppDbContext jobContext = fixture.CreateDbContext())
+        {
+            RefreshTokenCleanupJob job = CreateJob(jobContext, retentionDays: 7);
+            await job.RunAsync(CancellationToken.None);
+        }
 
         await using AppDbContext verifyContext = fixture.CreateDbContext();
         List<string> remainingTokenHashes = await verifyContext.RefreshTokens
@@ -107,7 +98,7 @@ public sealed class RefreshTokenCleanupServiceTests(PostgresContainerFixture fix
     }
 
     [Fact]
-    public async Task RunCleanupAsync_NothingToDelete_DoesNotThrow()
+    public async Task RunAsync_NothingToDelete_DoesNotThrow()
     {
         RefreshToken stillValid = CreateToken(account.Id, "nothing-to-delete");
         await using (AppDbContext seedContext = fixture.CreateDbContext())
@@ -116,32 +107,9 @@ public sealed class RefreshTokenCleanupServiceTests(PostgresContainerFixture fix
             await seedContext.SaveChangesAsync();
         }
 
-        RefreshTokenCleanupService service = CreateService();
+        await using AppDbContext jobContext = fixture.CreateDbContext();
+        RefreshTokenCleanupJob job = CreateJob(jobContext);
 
-        await service.RunCleanupAsync(CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task RunCleanupAsync_ScopeCreationFails_SwallowsExceptionAndLogsError()
-    {
-        // Simulates a DB-layer failure (e.g. connection loss) inside the try block — the
-        // BackgroundService must not crash the host on a transient cleanup failure.
-        IServiceScopeFactory scopeFactory = Substitute.For<IServiceScopeFactory>();
-        scopeFactory.CreateScope().Returns(_ => throw new InvalidOperationException("simulated DB failure"));
-        ILogger<RefreshTokenCleanupService> logger = Substitute.For<ILogger<RefreshTokenCleanupService>>();
-        RefreshTokenCleanupService service = new(
-            scopeFactory,
-            Options.Create(new RefreshTokenCleanupSettings { RetentionDays = 7 }),
-            logger);
-
-        Exception? thrown = await Record.ExceptionAsync(() => service.RunCleanupAsync(CancellationToken.None));
-
-        Assert.Null(thrown);
-        logger.Received(1).Log(
-            LogLevel.Error,
-            Arg.Any<EventId>(),
-            Arg.Any<object>(),
-            Arg.Any<Exception>(),
-            Arg.Any<Func<object, Exception?, string>>());
+        await job.RunAsync(CancellationToken.None);
     }
 }
