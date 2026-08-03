@@ -88,10 +88,6 @@ internal static class AuthExtensions
                 policy => policy.AddRequirements(new OrganizationMembershipRequirement()));
         });
 
-        services.Configure<RefreshTokenCleanupSettings>(
-            configuration.GetSection(nameof(RefreshTokenCleanupSettings)));
-        services.AddHostedService<RefreshTokenCleanupService>();
-
         return services;
     }
 }
