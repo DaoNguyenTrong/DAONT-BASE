@@ -116,10 +116,16 @@ export interface LocaleSchema {
     personalInfo: string
     currentPasswordPlaceholder: string
     newPasswordPlaceholder: string
+    currentPasswordRequired: string
+    newPasswordRequired: string
+    newPasswordTooShort: string
     name: string
     namePlaceholder: string
+    nameRequired: string
     email: string
     emailPlaceholder: string
+    emailRequired: string
+    emailInvalid: string
     phone: string
     phonePlaceholder: string
     position: string
@@ -150,9 +156,11 @@ export interface LocaleSchema {
     manage: string
     name: string
     namePlaceholder: string
+    nameRequired: string
     slug: string
     slugPlaceholder: string
     slugHint: string
+    slugRequired: string
     myRole: string
     status: string
     active: string
@@ -169,6 +177,8 @@ export interface LocaleSchema {
     addMemberTitle: string
     memberEmail: string
     memberEmailPlaceholder: string
+    memberEmailRequired: string
+    memberEmailInvalid: string
     memberAdded: string
     removeMember: string
     removeMemberConfirm: string
@@ -186,6 +196,7 @@ export interface LocaleSchema {
     editRoleTitle: string
     roleName: string
     roleNamePlaceholder: string
+    roleNameRequired: string
     rolePermissions: string
     roleDeleteConfirm: string
     roleCreated: string
@@ -325,10 +336,16 @@ const en: LocaleSchema = {
     personalInfo: 'Personal information',
     currentPasswordPlaceholder: 'Enter your current password',
     newPasswordPlaceholder: 'Enter a new password',
+    currentPasswordRequired: 'Current password is required.',
+    newPasswordRequired: 'New password is required.',
+    newPasswordTooShort: 'New password must be at least 8 characters.',
     name: 'Name',
     namePlaceholder: 'Enter the full name',
+    nameRequired: 'Name is required.',
     email: 'Email',
     emailPlaceholder: 'Enter the email address',
+    emailRequired: 'Email is required.',
+    emailInvalid: 'Enter a valid email address.',
     phone: 'Phone',
     phonePlaceholder: 'Enter the phone number',
     position: 'Position',
@@ -359,9 +376,11 @@ const en: LocaleSchema = {
     manage: 'Manage organizations',
     name: 'Name',
     namePlaceholder: 'Enter the organization name',
+    nameRequired: 'Organization name is required.',
     slug: 'Slug',
     slugPlaceholder: 'e.g. acme-inc',
     slugHint: 'A unique, URL-safe identifier. Lowercase letters, numbers, and hyphens only.',
+    slugRequired: 'Slug is required.',
     myRole: 'Your role',
     status: 'Status',
     active: 'Active',
@@ -378,6 +397,8 @@ const en: LocaleSchema = {
     addMemberTitle: 'Add member',
     memberEmail: 'Email',
     memberEmailPlaceholder: "Enter the member's email address",
+    memberEmailRequired: 'Email is required.',
+    memberEmailInvalid: 'Enter a valid email address.',
     memberAdded: 'Member added',
     removeMember: 'Remove member',
     removeMemberConfirm: 'Remove this member from the organization?',
@@ -396,6 +417,7 @@ const en: LocaleSchema = {
     editRoleTitle: 'Edit role',
     roleName: 'Name',
     roleNamePlaceholder: 'Enter the role name',
+    roleNameRequired: 'Role name is required.',
     rolePermissions: 'Permissions',
     roleDeleteConfirm:
       'Delete this role? Members holding only this role will lose its permissions.',

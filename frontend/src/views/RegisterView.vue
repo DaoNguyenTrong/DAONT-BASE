@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { FormInst, FormRules } from 'naive-ui'
+
 const { t } = useI18n()
 const { wordmarkSrc } = useBrandWordmark()
 
-const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
+const formRef = ref<FormInst | null>(null)
 const form = reactive({
   name: '',
   username: '',
@@ -11,7 +12,6 @@ const form = reactive({
   password: '',
 })
 
-const hasSubmitted = ref(false)
 const registered = ref<RegisterResult | null>(null)
 
 const {
@@ -22,72 +22,23 @@ const {
   clearFieldError,
 } = useApiAction()
 
-const nameClientError = computed(() => {
-  if (!hasSubmitted.value || form.name.trim().length > 0) {
-    return null
-  }
-
-  return t('auth.nameRequired')
-})
-
-const usernameClientError = computed(() => {
-  if (!hasSubmitted.value || form.username.trim().length > 0) {
-    return null
-  }
-
-  return t('auth.usernameRequired')
-})
-
-const emailClientError = computed(() => {
-  if (!hasSubmitted.value) {
-    return null
-  }
-
-  if (form.email.trim().length === 0) {
-    return t('auth.emailRequired')
-  }
-
-  if (!EMAIL_FORMAT.test(form.email.trim())) {
-    return t('auth.emailInvalid')
-  }
-
-  return null
-})
-
-const passwordClientError = computed(() => {
-  if (!hasSubmitted.value) {
-    return null
-  }
-
-  if (form.password.length === 0) {
-    return t('auth.passwordRequired')
-  }
-
-  if (form.password.length < 8) {
-    return t('auth.passwordTooShort')
-  }
-
-  return null
-})
-
-const nameError = computed(() => fieldErrors.value.name ?? nameClientError.value)
-const usernameError = computed(() => fieldErrors.value.username ?? usernameClientError.value)
-const emailError = computed(() => fieldErrors.value.email ?? emailClientError.value)
-const passwordError = computed(() => fieldErrors.value.password ?? passwordClientError.value)
-
-const hasValidationErrors = computed(() =>
-  Boolean(
-    nameClientError.value ||
-    usernameClientError.value ||
-    emailClientError.value ||
-    passwordClientError.value,
-  ),
-)
+const rules = computed<FormRules>(() => ({
+  name: [{ required: true, message: t('auth.nameRequired'), trigger: ['input', 'blur'] }],
+  username: [{ required: true, message: t('auth.usernameRequired'), trigger: ['input', 'blur'] }],
+  email: [
+    { required: true, message: t('auth.emailRequired'), trigger: ['input', 'blur'] },
+    { type: 'email', message: t('auth.emailInvalid'), trigger: ['input', 'blur'] },
+  ],
+  password: [
+    { required: true, message: t('auth.passwordRequired'), trigger: ['input', 'blur'] },
+    { min: 8, message: t('auth.passwordTooShort'), trigger: ['input', 'blur'] },
+  ],
+}))
 
 async function handleSubmit() {
-  hasSubmitted.value = true
-
-  if (hasValidationErrors.value) {
+  try {
+    await formRef.value?.validate()
+  } catch {
     return
   }
 
@@ -159,91 +110,113 @@ async function handleSubmit() {
           </div>
 
           <template v-else>
-            <form class="mt-8 space-y-5" @submit.prevent="handleSubmit">
-              <div class="space-y-3">
-                <label
-                  class="text-sm font-semibold text-surface-800 dark:text-surface-100"
-                  for="name"
-                >
-                  {{ t('auth.name') }}<RequiredMark />
-                </label>
-                <n-input
-                  v-model:value="form.name"
-                  type="text"
-                  class="w-full"
-                  :status="nameError ? 'error' : undefined"
-                  :placeholder="t('auth.namePlaceholder')"
-                  :input-props="{ id: 'name', autocomplete: 'name' }"
-                  @update:value="clearFieldError('name')"
-                />
-                <n-alert v-if="nameError" type="error" :show-icon="false">
-                  {{ nameError }}
-                </n-alert>
-              </div>
+            <n-form
+              ref="formRef"
+              :model="form"
+              :rules="rules"
+              class="mt-8 space-y-5"
+              @submit.prevent="handleSubmit"
+            >
+              <n-form-item
+                path="name"
+                :show-label="false"
+                first
+                :feedback="fieldErrors.name || undefined"
+                :validation-status="fieldErrors.name ? 'error' : undefined"
+              >
+                <div class="w-full space-y-3">
+                  <label
+                    class="text-sm font-semibold text-surface-800 dark:text-surface-100"
+                    for="name"
+                  >
+                    {{ t('auth.name') }}<RequiredMark />
+                  </label>
+                  <n-input
+                    v-model:value="form.name"
+                    type="text"
+                    class="w-full"
+                    :placeholder="t('auth.namePlaceholder')"
+                    :input-props="{ id: 'name', autocomplete: 'name' }"
+                    @update:value="clearFieldError('name')"
+                  />
+                </div>
+              </n-form-item>
 
-              <div class="space-y-3">
-                <label
-                  class="text-sm font-semibold text-surface-800 dark:text-surface-100"
-                  for="username"
-                >
-                  {{ t('auth.username') }}<RequiredMark />
-                </label>
-                <n-input
-                  v-model:value="form.username"
-                  type="text"
-                  class="w-full"
-                  :status="usernameError ? 'error' : undefined"
-                  :placeholder="t('auth.usernamePlaceholder')"
-                  :input-props="{ id: 'username', autocomplete: 'username' }"
-                  @update:value="clearFieldError('username')"
-                />
-                <n-alert v-if="usernameError" type="error" :show-icon="false">
-                  {{ usernameError }}
-                </n-alert>
-              </div>
+              <n-form-item
+                path="username"
+                :show-label="false"
+                first
+                :feedback="fieldErrors.username || undefined"
+                :validation-status="fieldErrors.username ? 'error' : undefined"
+              >
+                <div class="w-full space-y-3">
+                  <label
+                    class="text-sm font-semibold text-surface-800 dark:text-surface-100"
+                    for="username"
+                  >
+                    {{ t('auth.username') }}<RequiredMark />
+                  </label>
+                  <n-input
+                    v-model:value="form.username"
+                    type="text"
+                    class="w-full"
+                    :placeholder="t('auth.usernamePlaceholder')"
+                    :input-props="{ id: 'username', autocomplete: 'username' }"
+                    @update:value="clearFieldError('username')"
+                  />
+                </div>
+              </n-form-item>
 
-              <div class="space-y-3">
-                <label
-                  class="text-sm font-semibold text-surface-800 dark:text-surface-100"
-                  for="email"
-                >
-                  {{ t('auth.email') }}<RequiredMark />
-                </label>
-                <n-input
-                  v-model:value="form.email"
-                  type="text"
-                  class="w-full"
-                  :status="emailError ? 'error' : undefined"
-                  :placeholder="t('auth.emailPlaceholder')"
-                  :input-props="{ id: 'email', autocomplete: 'email' }"
-                  @update:value="clearFieldError('email')"
-                />
-                <n-alert v-if="emailError" type="error" :show-icon="false">
-                  {{ emailError }}
-                </n-alert>
-              </div>
+              <n-form-item
+                path="email"
+                :show-label="false"
+                first
+                :feedback="fieldErrors.email || undefined"
+                :validation-status="fieldErrors.email ? 'error' : undefined"
+              >
+                <div class="w-full space-y-3">
+                  <label
+                    class="text-sm font-semibold text-surface-800 dark:text-surface-100"
+                    for="email"
+                  >
+                    {{ t('auth.email') }}<RequiredMark />
+                  </label>
+                  <n-input
+                    v-model:value="form.email"
+                    type="text"
+                    class="w-full"
+                    :placeholder="t('auth.emailPlaceholder')"
+                    :input-props="{ id: 'email', autocomplete: 'email' }"
+                    @update:value="clearFieldError('email')"
+                  />
+                </div>
+              </n-form-item>
 
-              <div class="space-y-3">
-                <label
-                  class="text-sm font-semibold text-surface-800 dark:text-surface-100"
-                  for="password"
-                >
-                  {{ t('auth.password') }}<RequiredMark />
-                </label>
-                <n-input
-                  v-model:value="form.password"
-                  type="password"
-                  show-password-on="click"
-                  class="w-full"
-                  :status="passwordError ? 'error' : undefined"
-                  :placeholder="t('auth.passwordPlaceholder')"
-                  :input-props="{ id: 'password', autocomplete: 'new-password' }"
-                  @update:value="clearFieldError('password')"
-                />
-                <n-alert v-if="passwordError" type="error" :show-icon="false">
-                  {{ passwordError }}
-                </n-alert>
-              </div>
+              <n-form-item
+                path="password"
+                :show-label="false"
+                first
+                :feedback="fieldErrors.password || undefined"
+                :validation-status="fieldErrors.password ? 'error' : undefined"
+              >
+                <div class="w-full space-y-3">
+                  <label
+                    class="text-sm font-semibold text-surface-800 dark:text-surface-100"
+                    for="password"
+                  >
+                    {{ t('auth.password') }}<RequiredMark />
+                  </label>
+                  <n-input
+                    v-model:value="form.password"
+                    type="password"
+                    show-password-on="click"
+                    class="w-full"
+                    :placeholder="t('auth.passwordPlaceholder')"
+                    :input-props="{ id: 'password', autocomplete: 'new-password' }"
+                    @update:value="clearFieldError('password')"
+                  />
+                </div>
+              </n-form-item>
 
               <n-alert v-if="submitError" type="error" :show-icon="false">
                 {{ submitError }}
@@ -264,7 +237,7 @@ async function handleSubmit() {
               >
                 {{ t('auth.backToLogin') }}
               </RouterLink>
-            </form>
+            </n-form>
 
             <SocialLoginDivider class="mt-5" />
             <GoogleLoginButton class="mt-3" />

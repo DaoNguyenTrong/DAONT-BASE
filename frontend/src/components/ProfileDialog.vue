@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Logout } from '@vicons/tabler'
+import type { FormInst, FormRules } from 'naive-ui'
 import { getProfile } from '@/api/generated/profile/profile'
 import type {
   ChangePasswordRequest,
@@ -19,10 +20,30 @@ const loading = ref(false)
 const savingProfile = ref(false)
 const savingPassword = ref(false)
 const loadError = ref<string | null>(null)
+const profileFormRef = ref<FormInst | null>(null)
+const passwordFormRef = ref<FormInst | null>(null)
 const profileErrors = ref<Record<string, string>>({})
 const passwordErrors = ref<Record<string, string>>({})
 const activeTab = ref<'personalInfo' | 'changePassword' | 'sessions'>('personalInfo')
 const hasPassword = ref(true)
+
+const profileRules = computed<FormRules>(() => ({
+  name: [{ required: true, message: t('profile.nameRequired'), trigger: ['input', 'blur'] }],
+  email: [
+    { required: true, message: t('profile.emailRequired'), trigger: ['input', 'blur'] },
+    { type: 'email', message: t('profile.emailInvalid'), trigger: ['input', 'blur'] },
+  ],
+}))
+
+const passwordRules = computed<FormRules>(() => ({
+  currentPassword: [
+    { required: true, message: t('profile.currentPasswordRequired'), trigger: ['input', 'blur'] },
+  ],
+  newPassword: [
+    { required: true, message: t('profile.newPasswordRequired'), trigger: ['input', 'blur'] },
+    { min: 8, message: t('profile.newPasswordTooShort'), trigger: ['input', 'blur'] },
+  ],
+}))
 
 const sessions = ref<SessionDto[]>([])
 const sessionsLoading = ref(true)
@@ -70,6 +91,13 @@ async function loadProfile() {
 
 async function updateProfile() {
   if (savingProfile.value) return
+
+  try {
+    await profileFormRef.value?.validate()
+  } catch {
+    return
+  }
+
   savingProfile.value = true
   profileErrors.value = {}
   try {
@@ -96,6 +124,13 @@ async function updateProfile() {
 
 async function changePassword() {
   if (savingPassword.value) return
+
+  try {
+    await passwordFormRef.value?.validate()
+  } catch {
+    return
+  }
+
   savingPassword.value = true
   passwordErrors.value = {}
   try {
@@ -220,81 +255,108 @@ watch(visible, (open) => {
 
     <n-tabs v-else v-model:value="activeTab" type="line" class="pt-1">
       <n-tab-pane name="personalInfo" :tab="t('profile.personalInfo')">
-        <form class="grid gap-3 pt-3 sm:grid-cols-2" @submit.prevent="updateProfile">
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
-              {{ t('profile.name') }}<RequiredMark />
-            </label>
-            <n-input
-              v-model:value="profileForm.name"
-              type="text"
-              class="w-full"
-              :placeholder="t('profile.namePlaceholder')"
-              :status="profileErrors.name ? 'error' : undefined"
-            />
-            <small v-if="profileErrors.name" class="text-red-500">{{ profileErrors.name }}</small>
-          </div>
+        <n-form
+          ref="profileFormRef"
+          :model="profileForm"
+          :rules="profileRules"
+          class="grid gap-3 pt-3 sm:grid-cols-2"
+          @submit.prevent="updateProfile"
+        >
+          <n-form-item
+            path="name"
+            :show-label="false"
+            first
+            :feedback="profileErrors.name || undefined"
+            :validation-status="profileErrors.name ? 'error' : undefined"
+          >
+            <div class="w-full space-y-1.5">
+              <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
+                {{ t('profile.name') }}<RequiredMark />
+              </label>
+              <n-input
+                v-model:value="profileForm.name"
+                type="text"
+                class="w-full"
+                :placeholder="t('profile.namePlaceholder')"
+              />
+            </div>
+          </n-form-item>
 
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
-              {{ t('profile.email') }}<RequiredMark />
-            </label>
-            <n-input
-              v-model:value="profileForm.email"
-              type="text"
-              class="w-full"
-              :placeholder="t('profile.emailPlaceholder')"
-              :status="profileErrors.email ? 'error' : undefined"
-              :input-props="{ type: 'email' }"
-            />
-            <small v-if="profileErrors.email" class="text-red-500">{{ profileErrors.email }}</small>
-          </div>
+          <n-form-item
+            path="email"
+            :show-label="false"
+            first
+            :feedback="profileErrors.email || undefined"
+            :validation-status="profileErrors.email ? 'error' : undefined"
+          >
+            <div class="w-full space-y-1.5">
+              <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
+                {{ t('profile.email') }}<RequiredMark />
+              </label>
+              <n-input
+                v-model:value="profileForm.email"
+                type="text"
+                class="w-full"
+                :placeholder="t('profile.emailPlaceholder')"
+                :input-props="{ type: 'email' }"
+              />
+            </div>
+          </n-form-item>
 
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
-              {{ t('profile.phone') }}
-            </label>
-            <n-input
-              v-model:value="profileForm.phone"
-              type="text"
-              class="w-full"
-              :placeholder="t('profile.phonePlaceholder')"
-              :status="profileErrors.phone ? 'error' : undefined"
-            />
-            <small v-if="profileErrors.phone" class="text-red-500">{{ profileErrors.phone }}</small>
-          </div>
+          <n-form-item
+            :show-label="false"
+            :feedback="profileErrors.phone || undefined"
+            :validation-status="profileErrors.phone ? 'error' : undefined"
+          >
+            <div class="w-full space-y-1.5">
+              <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
+                {{ t('profile.phone') }}
+              </label>
+              <n-input
+                v-model:value="profileForm.phone"
+                type="text"
+                class="w-full"
+                :placeholder="t('profile.phonePlaceholder')"
+              />
+            </div>
+          </n-form-item>
 
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
-              {{ t('profile.position') }}
-            </label>
-            <n-input
-              v-model:value="profileForm.position"
-              type="text"
-              class="w-full"
-              :placeholder="t('profile.positionPlaceholder')"
-              :status="profileErrors.position ? 'error' : undefined"
-            />
-            <small v-if="profileErrors.position" class="text-red-500">{{
-              profileErrors.position
-            }}</small>
-          </div>
+          <n-form-item
+            :show-label="false"
+            :feedback="profileErrors.position || undefined"
+            :validation-status="profileErrors.position ? 'error' : undefined"
+          >
+            <div class="w-full space-y-1.5">
+              <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
+                {{ t('profile.position') }}
+              </label>
+              <n-input
+                v-model:value="profileForm.position"
+                type="text"
+                class="w-full"
+                :placeholder="t('profile.positionPlaceholder')"
+              />
+            </div>
+          </n-form-item>
 
-          <div class="space-y-1.5 sm:col-span-2">
-            <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
-              {{ t('profile.address') }}
-            </label>
-            <n-input
-              v-model:value="profileForm.address"
-              type="text"
-              class="w-full"
-              :placeholder="t('profile.addressPlaceholder')"
-              :status="profileErrors.address ? 'error' : undefined"
-            />
-            <small v-if="profileErrors.address" class="text-red-500">{{
-              profileErrors.address
-            }}</small>
-          </div>
+          <n-form-item
+            class="sm:col-span-2"
+            :show-label="false"
+            :feedback="profileErrors.address || undefined"
+            :validation-status="profileErrors.address ? 'error' : undefined"
+          >
+            <div class="w-full space-y-1.5">
+              <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
+                {{ t('profile.address') }}
+              </label>
+              <n-input
+                v-model:value="profileForm.address"
+                type="text"
+                class="w-full"
+                :placeholder="t('profile.addressPlaceholder')"
+              />
+            </div>
+          </n-form-item>
 
           <div class="sm:col-span-2">
             <n-button
@@ -306,46 +368,60 @@ watch(visible, (open) => {
               {{ t('common.save') }}
             </n-button>
           </div>
-        </form>
+        </n-form>
       </n-tab-pane>
 
       <n-tab-pane v-if="hasPassword" name="changePassword" :tab="t('profile.changePassword')">
-        <form class="grid gap-3 pt-3 sm:grid-cols-2" @submit.prevent="changePassword">
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
-              {{ t('profile.currentPassword') }}<RequiredMark />
-            </label>
-            <n-input
-              v-model:value="passwordForm.currentPassword"
-              type="password"
-              show-password-on="click"
-              class="w-full"
-              :placeholder="t('profile.currentPasswordPlaceholder')"
-              :status="passwordErrors.currentpassword ? 'error' : undefined"
-              :input-props="{ autocomplete: 'current-password' }"
-            />
-            <small v-if="passwordErrors.currentpassword" class="text-red-500">
-              {{ passwordErrors.currentpassword }}
-            </small>
-          </div>
+        <n-form
+          ref="passwordFormRef"
+          :model="passwordForm"
+          :rules="passwordRules"
+          class="grid gap-3 pt-3 sm:grid-cols-2"
+          @submit.prevent="changePassword"
+        >
+          <n-form-item
+            path="currentPassword"
+            :show-label="false"
+            first
+            :feedback="passwordErrors.currentpassword || undefined"
+            :validation-status="passwordErrors.currentpassword ? 'error' : undefined"
+          >
+            <div class="w-full space-y-1.5">
+              <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
+                {{ t('profile.currentPassword') }}<RequiredMark />
+              </label>
+              <n-input
+                v-model:value="passwordForm.currentPassword"
+                type="password"
+                show-password-on="click"
+                class="w-full"
+                :placeholder="t('profile.currentPasswordPlaceholder')"
+                :input-props="{ autocomplete: 'current-password' }"
+              />
+            </div>
+          </n-form-item>
 
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
-              {{ t('profile.newPassword') }}<RequiredMark />
-            </label>
-            <n-input
-              v-model:value="passwordForm.newPassword"
-              type="password"
-              show-password-on="click"
-              class="w-full"
-              :placeholder="t('profile.newPasswordPlaceholder')"
-              :status="passwordErrors.newpassword ? 'error' : undefined"
-              :input-props="{ autocomplete: 'new-password' }"
-            />
-            <small v-if="passwordErrors.newpassword" class="text-red-500">
-              {{ passwordErrors.newpassword }}
-            </small>
-          </div>
+          <n-form-item
+            path="newPassword"
+            :show-label="false"
+            first
+            :feedback="passwordErrors.newpassword || undefined"
+            :validation-status="passwordErrors.newpassword ? 'error' : undefined"
+          >
+            <div class="w-full space-y-1.5">
+              <label class="text-sm font-medium text-surface-700 dark:text-surface-200">
+                {{ t('profile.newPassword') }}<RequiredMark />
+              </label>
+              <n-input
+                v-model:value="passwordForm.newPassword"
+                type="password"
+                show-password-on="click"
+                class="w-full"
+                :placeholder="t('profile.newPasswordPlaceholder')"
+                :input-props="{ autocomplete: 'new-password' }"
+              />
+            </div>
+          </n-form-item>
 
           <div class="sm:col-span-2">
             <n-button
@@ -357,7 +433,7 @@ watch(visible, (open) => {
               {{ t('profile.changePassword') }}
             </n-button>
           </div>
-        </form>
+        </n-form>
       </n-tab-pane>
 
       <n-tab-pane name="sessions" :tab="t('profile.sessionsTitle')">
