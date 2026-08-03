@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.2.0] - 2026-08-03
+
 ### Added
 
 - Organizations (multi-tenant) support for the backend: each session scopes to at most one organization via a signed `org_id` JWT claim, a dedicated `POST /api/auth/switch-organization` endpoint, and `/api/organizations` for creating/listing organizations and managing members. Per-request tenant access is re-verified through a short-TTL in-memory cache so revocation takes effect quickly.
