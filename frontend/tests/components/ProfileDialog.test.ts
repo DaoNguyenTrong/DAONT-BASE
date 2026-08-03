@@ -61,7 +61,7 @@ function placeholderInput(
   wrapper: Awaited<ReturnType<typeof openDialog>>['wrapper'],
   placeholder: string,
 ) {
-  return wrapper.find(`input[placeholder="${placeholder}"]`)
+  return wrapper.find<HTMLInputElement>(`input[placeholder="${placeholder}"]`)
 }
 
 async function openChangePasswordTab(wrapper: Awaited<ReturnType<typeof openDialog>>['wrapper']) {
@@ -235,6 +235,8 @@ describe('ProfileDialog', () => {
 
     const { wrapper } = await openDialog()
     await openChangePasswordTab(wrapper)
+    await placeholderInput(wrapper, 'Enter your current password').setValue('old-pass')
+    await placeholderInput(wrapper, 'Enter a new password').setValue('new-pass')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
@@ -255,6 +257,8 @@ describe('ProfileDialog', () => {
 
     const { wrapper } = await openDialog()
     await openChangePasswordTab(wrapper)
+    await placeholderInput(wrapper, 'Enter your current password').setValue('old-pass')
+    await placeholderInput(wrapper, 'Enter a new password').setValue('new-pass')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
@@ -272,6 +276,8 @@ describe('ProfileDialog', () => {
 
     const { wrapper } = await openDialog()
     await openChangePasswordTab(wrapper)
+    await placeholderInput(wrapper, 'Enter your current password').setValue('old-pass')
+    await placeholderInput(wrapper, 'Enter a new password').setValue('new-pass')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 

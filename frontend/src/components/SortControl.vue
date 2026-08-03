@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { SortAscending, SortDescending } from '@vicons/tabler'
+
 interface SortOption {
   label: string
   value: string
@@ -52,7 +54,7 @@ function toggleDirection() {
       @click="toggleDirection"
     >
       <template #icon>
-        <SvgIcon :name="descending ? 'sort-descending' : 'sort-ascending'" />
+        <n-icon><component :is="descending ? SortDescending : SortAscending" /></n-icon>
       </template>
     </n-button>
   </div>

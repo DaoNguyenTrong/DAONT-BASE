@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ArrowRight } from '@vicons/tabler'
+
 const router = useRouter()
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -56,7 +58,7 @@ async function handlePrimaryAction() {
             @click="handlePrimaryAction"
           >
             {{ primaryLabel }}
-            <template #icon><SvgIcon name="arrow-right" /></template>
+            <template #icon><n-icon><ArrowRight /></n-icon></template>
           </n-button>
         </div>
       </div>

@@ -7,4 +7,7 @@ public sealed record AuthResult(
     string RefreshToken,
     DateTime AccessTokenExpiry,
     AccountDto Account,
-    bool IsPersistent);
+    bool IsPersistent,
+    Guid? OrganizationId,
+    string? OrganizationName,
+    IReadOnlyList<string> Permissions);

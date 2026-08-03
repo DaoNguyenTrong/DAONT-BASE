@@ -211,6 +211,29 @@ public sealed class AuthController(
         return NoContent();
     }
 
+
+    /// <summary>Switches the active organization for the current session. Issues a new access/refresh token pair scoped to the target organization — the caller must be an active member.</summary>
+    /// <remarks>Tokens are also set as HttpOnly cookies (`access_token` and `refresh_token`) for browser client support.</remarks>
+    [Authorize]
+    [HttpPost("switch-organization")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<LoginResponse>> SwitchOrganization(
+        SwitchOrganizationRequest request,
+        CancellationToken cancellationToken)
+    {
+        AuthResult result = await authService.SwitchOrganizationAsync(
+            request.OrganizationId,
+            Request.Headers.UserAgent.ToString(),
+            HttpContext.Connection.RemoteIpAddress?.ToString(),
+            cancellationToken);
+
+        SetAuthCookies(result);
+
+        return Ok(ToResponse(result));
+    }
+
     private void SetAuthCookies(AuthResult result)
     {
         Response.Cookies.Append(
@@ -267,6 +290,9 @@ public sealed class AuthController(
             result.AccessToken,
             result.RefreshToken,
             result.AccessTokenExpiry,
-            result.Account);
+            result.Account,
+            result.OrganizationId,
+            result.OrganizationName,
+            result.Permissions);
     }
 }

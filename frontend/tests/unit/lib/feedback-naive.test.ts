@@ -52,7 +52,7 @@ describe('feedback-naive', () => {
       requestConfirmationNaive({ header: 'Delete?', message: 'This is permanent' })
 
       expect(warningSpy).toHaveBeenCalledTimes(1)
-      const options = warningSpy.mock.calls[0][0]
+      const options = warningSpy.mock.calls[0]![0]
       expect(options.title).toBe('Delete?')
       expect(options.content).toBe('This is permanent')
     })
@@ -62,7 +62,7 @@ describe('feedback-naive', () => {
 
       requestConfirmationNaive({ header: 'Delete?', message: 'Sure?' })
 
-      const options = warningSpy.mock.calls[0][0]
+      const options = warningSpy.mock.calls[0]![0]
       expect(options.positiveText).toBe('Yes')
       expect(options.negativeText).toBe('No')
     })
@@ -77,7 +77,7 @@ describe('feedback-naive', () => {
         rejectLabel: 'Cancel',
       })
 
-      const options = warningSpy.mock.calls[0][0]
+      const options = warningSpy.mock.calls[0]![0]
       expect(options.positiveText).toBe('Delete')
       expect(options.negativeText).toBe('Cancel')
     })
@@ -88,8 +88,8 @@ describe('feedback-naive', () => {
 
       requestConfirmationNaive({ header: 'Delete?', message: 'Sure?', accept })
 
-      const options = warningSpy.mock.calls[0][0]
-      options.onPositiveClick?.()
+      const options = warningSpy.mock.calls[0]![0]
+      options.onPositiveClick?.(new MouseEvent('click'))
 
       expect(accept).toHaveBeenCalledTimes(1)
     })
@@ -100,8 +100,8 @@ describe('feedback-naive', () => {
 
       requestConfirmationNaive({ header: 'Delete?', message: 'Sure?', reject })
 
-      const options = warningSpy.mock.calls[0][0]
-      options.onNegativeClick?.()
+      const options = warningSpy.mock.calls[0]![0]
+      options.onNegativeClick?.(new MouseEvent('click'))
 
       expect(reject).toHaveBeenCalledTimes(1)
     })

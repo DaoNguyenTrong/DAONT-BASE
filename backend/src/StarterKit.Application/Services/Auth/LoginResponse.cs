@@ -6,4 +6,7 @@ public sealed record LoginResponse(
     string AccessToken,
     string RefreshToken,
     DateTime AccessTokenExpiry,
-    AccountDto Account);
+    AccountDto Account,
+    Guid? OrganizationId,
+    string? OrganizationName,
+    IReadOnlyList<string> Permissions);

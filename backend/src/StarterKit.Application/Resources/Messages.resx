@@ -120,6 +120,39 @@
   <data name="ExternalLoginProviderUserIdRequired" xml:space="preserve">
     <value>Mã người dùng từ nhà cung cấp là bắt buộc.</value>
   </data>
+  <data name="OrganizationNameRequired" xml:space="preserve">
+    <value>Tên tổ chức là bắt buộc.</value>
+  </data>
+  <data name="OrganizationSlugRequired" xml:space="preserve">
+    <value>Slug tổ chức là bắt buộc.</value>
+  </data>
+  <data name="RoleNameRequired" xml:space="preserve">
+    <value>Tên vai trò là bắt buộc.</value>
+  </data>
+  <data name="OrganizationAccessDenied" xml:space="preserve">
+    <value>Bạn không có quyền truy cập tổ chức này.</value>
+  </data>
+  <data name="OrganizationMemberAlreadyExists" xml:space="preserve">
+    <value>Tài khoản đã là thành viên của tổ chức này.</value>
+  </data>
+  <data name="OrganizationCannotRemoveLastOwner" xml:space="preserve">
+    <value>Không thể xóa hoặc đổi vai trò của chủ sở hữu cuối cùng trong tổ chức.</value>
+  </data>
+  <data name="OrganizationSlugAlreadyExists" xml:space="preserve">
+    <value>Slug tổ chức đã tồn tại.</value>
+  </data>
+  <data name="OrganizationRoleNameAlreadyExists" xml:space="preserve">
+    <value>Tên vai trò đã tồn tại trong tổ chức này.</value>
+  </data>
+  <data name="OrganizationSystemRoleImmutable" xml:space="preserve">
+    <value>Không thể sửa hoặc xóa vai trò hệ thống.</value>
+  </data>
+  <data name="OrganizationMemberRequiresAtLeastOneRole" xml:space="preserve">
+    <value>Thành viên phải có ít nhất một vai trò.</value>
+  </data>
+  <data name="UnknownPermissionCode" xml:space="preserve">
+    <value>Mã quyền không hợp lệ.</value>
+  </data>
   <data name="ExternalLoginEmailNotConfirmed" xml:space="preserve">
     <value>Đã có tài khoản dùng email này nhưng chưa được xác thực. Vui lòng xác thực email trước khi liên kết đăng nhập.</value>
   </data>

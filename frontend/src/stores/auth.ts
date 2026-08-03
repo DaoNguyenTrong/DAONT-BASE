@@ -11,21 +11,38 @@ import type {
   RegisterResult,
   ResendVerificationRequest,
   SessionDto,
+  SwitchOrganizationRequest,
   VerifyEmailRequest,
 } from '@/api/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const account = ref<Account | null>(null)
+  const organizationId = ref<string | null>(null)
+  const organizationName = ref<string | null>(null)
+  // Active-org permission set — refreshed on login/switchOrganization/refreshToken, same
+  // staleness characteristics organizationId/organizationName already have. A UI-only gate;
+  // the real authorization boundary is always the server's per-request permission check.
+  const permissions = ref<string[]>([])
   const client = getAuth()
 
   const isAuthenticated = computed(() => account.value !== null)
 
   function setAuth(response: AuthResponse) {
     account.value = response.account
+    organizationId.value = response.organizationId
+    organizationName.value = response.organizationName
+    permissions.value = response.permissions
   }
 
   function clearAuth() {
     account.value = null
+    organizationId.value = null
+    organizationName.value = null
+    permissions.value = []
+  }
+
+  function hasPermission(code: string): boolean {
+    return permissions.value.includes(code)
   }
 
   async function login(data: LoginRequest): Promise<AuthResponse> {
@@ -48,7 +65,10 @@ export const useAuthStore = defineStore('auth', () => {
     await client.authResendVerification(data)
   }
 
-  async function externalLogin(provider: string, data: ExternalLoginRequest): Promise<AuthResponse> {
+  async function externalLogin(
+    provider: string,
+    data: ExternalLoginRequest,
+  ): Promise<AuthResponse> {
     const response = await client.authExternalLogin(provider, data)
     setAuth(response)
     return response
@@ -85,11 +105,21 @@ export const useAuthStore = defineStore('auth', () => {
     await client.authRevokeOtherSessions()
   }
 
+  async function switchOrganization(data: SwitchOrganizationRequest): Promise<AuthResponse> {
+    const response = await client.authSwitchOrganization(data)
+    setAuth(response)
+    return response
+  }
+
   return {
     account,
+    organizationId,
+    organizationName,
+    permissions,
     isAuthenticated,
     setAuth,
     clearAuth,
+    hasPermission,
     login,
     register,
     verifyEmail,
@@ -100,5 +130,6 @@ export const useAuthStore = defineStore('auth', () => {
     getSessions,
     revokeSession,
     revokeOtherSessions,
+    switchOrganization,
   }
 })

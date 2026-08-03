@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Home, Menu2 } from '@vicons/tabler'
+
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -44,7 +46,7 @@ function navigateTo(routeName: string, event: MouseEvent) {
       class="h-9 w-9 lg:h-8 lg:w-8"
       @click="handleToggle"
     >
-      <template #icon><SvgIcon name="bars" /></template>
+      <template #icon><n-icon><Menu2 /></n-icon></template>
     </n-button>
 
     <n-breadcrumb class="hidden! lg:flex! breadcrumb-align-fix">
@@ -54,7 +56,7 @@ function navigateTo(routeName: string, event: MouseEvent) {
         :href="breadcrumbHref(item.routeName)"
         @click="navigateTo(item.routeName, $event)"
       >
-        <SvgIcon v-if="item.home" name="home" />
+        <n-icon v-if="item.home"><Home /></n-icon>
         <template v-else>{{ item.label }}</template>
       </n-breadcrumb-item>
     </n-breadcrumb>

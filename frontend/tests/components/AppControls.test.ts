@@ -5,7 +5,7 @@ import { DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '@/lib/font-size
 import { renderComponent } from '../helpers/render'
 
 async function openFontMenu(wrapper: Awaited<ReturnType<typeof renderComponent>>['wrapper']) {
-  await wrapper.findAll('button')[1].trigger('click')
+  await wrapper.findAll('button')[1]!.trigger('click')
 }
 
 function fontMenuButton(
@@ -100,13 +100,14 @@ describe('AppControls', () => {
     const { wrapper } = await renderComponent(AppControls, {
       global: { stubs: { teleport: true } },
     })
+    const themeButton = () => wrapper.findAll('button')[0]!
 
     // Light mode renders the sun icon (a <circle>), no <circle> in dark mode.
-    expect(wrapper.find('circle').exists()).toBe(true)
+    expect(themeButton().find('circle').exists()).toBe(true)
 
-    await wrapper.findAll('button')[0].trigger('click')
+    await themeButton().trigger('click')
 
-    expect(wrapper.find('circle').exists()).toBe(false)
+    expect(themeButton().find('circle').exists()).toBe(false)
   })
 
   it('toggles the locale on click, updating the language button label', async () => {
@@ -114,7 +115,7 @@ describe('AppControls', () => {
       global: { stubs: { teleport: true } },
     })
 
-    const localeButton = () => wrapper.findAll('button')[2]
+    const localeButton = () => wrapper.findAll('button')[2]!
     expect(localeButton().attributes('aria-label')).toContain('VI')
 
     await localeButton().trigger('click')

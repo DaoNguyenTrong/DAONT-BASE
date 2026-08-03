@@ -38,13 +38,21 @@ For layer/rule details for each part, see `CLAUDE.md` / `AGENTS.md` and `.claude
 
 ## Getting Started
 
-### 1. Local Infrastructure (Postgres + Mailpit)
+### 1. Local Infrastructure (Postgres + Mailpit + Prometheus + Grafana)
 
 ```bash
 docker compose up -d
 ```
 
 Account verification email is required even in the dev environment — there is no seeder/bypass. Use Mailpit (`http://localhost:8025`) to view the verification email sent out when testing local registration, instead of needing a real SMTP server.
+
+**Monitoring:** the API exposes Prometheus metrics at `/metrics` (`prometheus-net.AspNetCore`). Grafana (`http://localhost:3000`, `admin`/`admin`) comes pre-provisioned with a Prometheus datasource and a "StarterKit API Overview" dashboard (request rate/errors/latency, process CPU/memory, GC) — see `monitoring/`. Since the API isn't containerized, Prometheus reaches it via `host.docker.internal`, which requires running it bound to all interfaces instead of the default loopback-only bind:
+
+```bash
+dotnet run --project backend/src/StarterKit.API --urls http://0.0.0.0:7000
+```
+
+Without this, the Prometheus target reads as `down` and the Grafana dashboard stays empty. Binding to `0.0.0.0` also exposes the API to your LAN while it's running — fine for local monitoring, just don't leave it running unattended.
 
 ### 2. Backend (`backend/`)
 
@@ -83,6 +91,17 @@ bun run --cwd frontend format         # prettier — there is no ESLint config i
 ### 4. Try the Registration Flow
 
 `POST /api/auth/register` → open Mailpit (`localhost:8025`) → click the verification link → log in.
+
+### Git Hooks (once, at the repo root)
+
+```bash
+bun install   # run at the repo root (not --cwd frontend) — wires up git hooks via Lefthook
+```
+
+Hooks installed:
+
+- **pre-commit**: blocks direct commits to `main` (release only happens via `gh pr merge` — see the `git-release` skill; bypass with `git commit --no-verify` for tooling that legitimately needs it); blocks staged changes containing unresolved merge-conflict markers (`<<<<<<<`/`=======`/`>>>>>>>`); runs `secretlint` on all staged files (catches known secret *formats* — private keys, GitHub/Slack/npm tokens; it does **not** catch arbitrary custom secrets like a hardcoded `JwtSettings:SecretKey` or `DB_PASSWORD=...` — keep those in the gitignored `appsettings.json`, not in source); runs `prettier --write` on staged `frontend/src/**` files (same scope as `bun run --cwd frontend format`). Backend files aren't formatted (no `.editorconfig` exists yet to pin `dotnet format`'s behavior).
+- **commit-msg**: enforces Conventional Commits (`feat:`, `fix:`, `docs:`, ... — see CONTRIBUTING.md) via commitlint.
 
 ### Updating the API Contract
 

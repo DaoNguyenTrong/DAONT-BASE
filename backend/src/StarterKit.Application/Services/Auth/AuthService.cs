@@ -15,6 +15,8 @@ public sealed class AuthService(
     IUnitOfWork unitOfWork,
     ICurrentUserService currentUserService,
     IJwtTokenService jwtTokenService,
+    ITenantAccessService tenantAccessService,
+    IPermissionResolver permissionResolver,
     IPasswordHasher passwordHasher,
     IEmailSender emailSender,
     IEnumerable<IExternalAuthProvider> externalAuthProviders,
@@ -46,8 +48,11 @@ public sealed class AuthService(
             throw new UnauthorizedException(ApplicationMessages.EmailNotConfirmed);
         }
 
+        Guid? organizationId = await ResolveDefaultOrganizationIdAsync(account.Id, cancellationToken);
+
         return await IssueTokensAsync(
             account,
+            organizationId,
             deviceInfo,
             ipAddress,
             request.KeepLoggedIn,
@@ -102,7 +107,9 @@ public sealed class AuthService(
         token.Consume();
         tokenRepository.Update(token);
 
-        return await IssueTokensAsync(account, deviceInfo, ipAddress, false, DateTime.UtcNow, cancellationToken);
+        Guid? organizationId = await ResolveDefaultOrganizationIdAsync(account.Id, cancellationToken);
+
+        return await IssueTokensAsync(account, organizationId, deviceInfo, ipAddress, false, DateTime.UtcNow, cancellationToken);
     }
 
     public async Task ResendVerificationEmailAsync(
@@ -157,11 +164,18 @@ public sealed class AuthService(
             throw new UnauthorizedException(ApplicationMessages.InvalidRefreshToken);
         }
 
+        if (storedToken.OrganizationId is { } organizationId &&
+            !await tenantAccessService.HasActiveAccessAsync(account.Id, organizationId, cancellationToken))
+        {
+            throw new UnauthorizedException(ApplicationMessages.InvalidRefreshToken);
+        }
+
         storedToken.Revoke();
         refreshTokenRepository.Update(storedToken);
 
         return await IssueTokensAsync(
             account,
+            storedToken.OrganizationId,
             deviceInfo,
             ipAddress,
             storedToken.IsPersistent,
@@ -235,7 +249,9 @@ public sealed class AuthService(
             await externalLoginRepository.AddAsync(login, cancellationToken);
         }
 
-        return await IssueTokensAsync(account, deviceInfo, ipAddress, false, DateTime.UtcNow, cancellationToken);
+        Guid? organizationId = await ResolveDefaultOrganizationIdAsync(account.Id, cancellationToken);
+
+        return await IssueTokensAsync(account, organizationId, deviceInfo, ipAddress, false, DateTime.UtcNow, cancellationToken);
     }
 
     public async Task RevokeTokenAsync(string refreshToken, CancellationToken cancellationToken)
@@ -328,6 +344,38 @@ public sealed class AuthService(
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
+
+    public async Task<AuthResult> SwitchOrganizationAsync(
+        Guid? organizationId,
+        string? deviceInfo,
+        string? ipAddress,
+        CancellationToken cancellationToken)
+    {
+        Guid accountId = GetCurrentAccountId();
+
+        if (organizationId is { } targetOrganizationId)
+        {
+            OrganizationMember? member = await unitOfWork.Repository<OrganizationMember, Guid>()
+                .FirstOrDefaultAsync(
+                    m => m.OrganizationId == targetOrganizationId && m.AccountId == accountId && m.IsActive,
+                    cancellationToken);
+
+            Organization? organization = member is null
+                ? null
+                : await unitOfWork.Repository<Organization, Guid>().GetByIdAsync(targetOrganizationId, cancellationToken);
+
+            if (member is null || organization is null || !organization.Status)
+            {
+                throw new ForbiddenException(ApplicationMessages.OrganizationAccessDenied);
+            }
+        }
+
+        Account account = await unitOfWork.Repository<Account, Guid>().GetByIdAsync(accountId, cancellationToken)
+            ?? throw new UnauthorizedException(ApplicationMessages.AuthenticatedUserRequired);
+
+        return await IssueTokensAsync(account, organizationId, deviceInfo, ipAddress, true, DateTime.UtcNow, cancellationToken);
+    }
+
     private Guid GetCurrentAccountId()
     {
         if (!Guid.TryParse(currentUserService.UserId, out Guid accountId))
@@ -336,6 +384,15 @@ public sealed class AuthService(
         }
 
         return accountId;
+    }
+
+
+    private async Task<Guid?> ResolveDefaultOrganizationIdAsync(Guid accountId, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<OrganizationMember> memberships = await unitOfWork.Repository<OrganizationMember, Guid>()
+            .ListAsync(m => m.AccountId == accountId && m.IsActive, cancellationToken);
+
+        return memberships.Count == 1 ? memberships[0].OrganizationId : null;
     }
 
     private static async Task EnsureUniqueAccountAsync(
@@ -403,13 +460,14 @@ public sealed class AuthService(
 
     private async Task<AuthResult> IssueTokensAsync(
         Account account,
+        Guid? organizationId,
         string? deviceInfo,
         string? ipAddress,
         bool isPersistent,
         DateTime loginAt,
         CancellationToken cancellationToken)
     {
-        string accessToken = jwtTokenService.GenerateAccessToken(account);
+        string accessToken = jwtTokenService.GenerateAccessToken(account, organizationId);
         string refreshToken = jwtTokenService.GenerateRefreshToken();
         DateTime accessTokenExpiry = DateTime.UtcNow.AddMinutes(jwtSettings.AccessTokenExpiryMinutes);
         DateTime refreshTokenExpiry = DateTime.UtcNow.AddDays(jwtSettings.RefreshTokenExpiryDays);
@@ -421,12 +479,29 @@ public sealed class AuthService(
             deviceInfo,
             ipAddress,
             isPersistent,
-            loginAt));
+            loginAt,
+            organizationId));
 
         await unitOfWork.Repository<RefreshToken, long>().AddAsync(token, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new AuthResult(accessToken, refreshToken, accessTokenExpiry, EntityMapper.ToDto(account), isPersistent);
+        string? organizationName = organizationId is { } orgId
+            ? (await unitOfWork.Repository<Organization, Guid>().GetByIdAsync(orgId, cancellationToken))?.Name
+            : null;
+
+        IReadOnlyList<string> permissions = organizationId is { } permissionOrgId
+            ? (await permissionResolver.GetEffectivePermissionsAsync(permissionOrgId, account.Id, cancellationToken)).ToList()
+            : [];
+
+        return new AuthResult(
+            accessToken,
+            refreshToken,
+            accessTokenExpiry,
+            EntityMapper.ToDto(account),
+            isPersistent,
+            organizationId,
+            organizationName,
+            permissions);
     }
 
     private static string GenerateRawToken()

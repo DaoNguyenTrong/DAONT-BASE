@@ -1,0 +1,36 @@
+pre-commit:
+  commands:
+    branch-guard:
+      priority: 1
+      run: |
+        branch=$(git rev-parse --abbrev-ref HEAD)
+        if [ "$branch" = "main" ]; then
+          echo "Blocked: direct commits to 'main' aren't allowed — release via 'gh pr merge' (see CONTRIBUTING.md / git-release skill)."
+          echo "Bypass (rare): git commit --no-verify"
+          exit 1
+        fi
+    conflict-markers:
+      priority: 2
+      run: |
+        if git diff --cached -U0 | grep -qE '^\+(<{7}|={7}|>{7})( |$)'; then
+          echo "Blocked: staged changes contain unresolved merge-conflict markers."
+          exit 1
+        fi
+    secretlint:
+      priority: 3
+      glob: "**"
+      run: bunx secretlint {staged_files}
+    prettier:
+      priority: 4
+      # gobwas/glob's `dir/**/*` requires >=1 intermediate directory — doesn't match files
+      # directly in frontend/src/ (e.g. main.ts). Two patterns cover both depths.
+      glob:
+        - "frontend/src/*.{ts,vue,js,cjs,mjs,json,css,scss,md}"
+        - "frontend/src/**/*.{ts,vue,js,cjs,mjs,json,css,scss,md}"
+      run: bunx prettier --write {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bunx commitlint --edit {1}

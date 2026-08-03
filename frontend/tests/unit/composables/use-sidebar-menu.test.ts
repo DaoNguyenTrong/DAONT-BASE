@@ -16,7 +16,7 @@ describe('useSidebarMenu', () => {
         path: 'dashboard',
         name: 'dashboard',
         component: stub,
-        meta: { sidebar: { labelKey: 'nav.dashboard', icon: 'home', order: 0 } },
+        meta: { sidebar: { labelKey: 'nav.dashboard', icon: stub, order: 0 } },
       },
       { path: 'hidden', name: 'hidden', component: stub, meta: {} },
       { path: 'chat', name: 'chat', component: stub },
@@ -33,19 +33,19 @@ describe('useSidebarMenu', () => {
         path: 'third',
         name: 'third',
         component: stub,
-        meta: { sidebar: { labelKey: 'nav.third', icon: 'c', order: 5 } },
+        meta: { sidebar: { labelKey: 'nav.third', icon: stub, order: 5 } },
       },
       {
         path: 'first',
         name: 'first',
         component: stub,
-        meta: { sidebar: { labelKey: 'nav.first', icon: 'a', order: -1 } },
+        meta: { sidebar: { labelKey: 'nav.first', icon: stub, order: -1 } },
       },
       {
         path: 'second',
         name: 'second',
         component: stub,
-        meta: { sidebar: { labelKey: 'nav.second', icon: 'b' } },
+        meta: { sidebar: { labelKey: 'nav.second', icon: stub } },
       },
     ])
 
@@ -60,19 +60,19 @@ describe('useSidebarMenu', () => {
         path: 'settings',
         name: 'settings',
         component: stub,
-        meta: { sidebar: { labelKey: 'nav.settings', icon: 'gear', order: 0 } },
+        meta: { sidebar: { labelKey: 'nav.settings', icon: stub, order: 0 } },
         children: [
           {
             path: 'profile',
             name: 'settings-profile',
             component: stub,
-            meta: { sidebar: { labelKey: 'nav.profile', icon: 'user', order: 0 } },
+            meta: { sidebar: { labelKey: 'nav.profile', icon: stub, order: 0 } },
           },
           {
             path: 'security',
             name: 'settings-security',
             component: stub,
-            meta: { sidebar: { labelKey: 'nav.security', icon: 'lock', order: 1 } },
+            meta: { sidebar: { labelKey: 'nav.security', icon: stub, order: 1 } },
           },
         ],
       },
@@ -81,7 +81,7 @@ describe('useSidebarMenu', () => {
     const { result } = await withSetup(() => useSidebarMenu(), '/', routes)
 
     expect(result.value).toHaveLength(1)
-    const submenu = result.value[0]
+    const submenu = result.value[0]!
     expect(submenu.routeName).toBeUndefined()
     expect(submenu.labelKey).toBe('nav.settings')
     expect(submenu.items?.map((item) => item.routeName)).toEqual([
@@ -96,13 +96,13 @@ describe('useSidebarMenu', () => {
         path: 'legacy',
         name: 'legacy',
         redirect: '/dashboard',
-        meta: { sidebar: { labelKey: 'nav.legacy', icon: 'link', order: 0 } },
+        meta: { sidebar: { labelKey: 'nav.legacy', icon: stub, order: 0 } },
       },
       {
         path: 'dashboard',
         name: 'dashboard',
         component: stub,
-        meta: { sidebar: { labelKey: 'nav.dashboard', icon: 'home', order: 1 } },
+        meta: { sidebar: { labelKey: 'nav.dashboard', icon: stub, order: 1 } },
       },
     ])
 

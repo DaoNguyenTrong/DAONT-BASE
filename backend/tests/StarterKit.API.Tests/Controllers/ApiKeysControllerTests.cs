@@ -108,7 +108,7 @@ public sealed class ApiKeysControllerTests(ApiFactoryFixture fixture) : IAsyncLi
 
         using HttpClient apiKeyClient = fixture.CreateTestClient();
         apiKeyClient.DefaultRequestHeaders.Add("X-Api-Key", rawKey);
-        HttpResponseMessage authedResponse = await apiKeyClient.GetAsync("/api/accounts");
+        HttpResponseMessage authedResponse = await apiKeyClient.GetAsync("/api/admin/api-keys");
         Assert.Equal(HttpStatusCode.Unauthorized, authedResponse.StatusCode);
     }
 }

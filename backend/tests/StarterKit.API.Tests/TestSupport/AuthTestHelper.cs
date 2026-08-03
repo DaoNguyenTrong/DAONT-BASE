@@ -4,11 +4,12 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using StarterKit.Application.Common.Authorization;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Services.ApiKeys;
 using StarterKit.Domain.Entities;
 using StarterKit.Infrastructure.Persistence;
-using StarterKit.Infrastructure.Services;
+using StarterKit.Infrastructure.Services.Auth;
 
 namespace StarterKit.API.Tests.TestSupport;
 
@@ -44,10 +45,100 @@ public static class AuthTestHelper
         return account;
     }
 
-    public static string MintAccessToken(Account account)
+    public static string MintAccessToken(Account account, Guid? organizationId = null)
     {
         JwtTokenService jwtTokenService = new(Options.Create(JwtSettings));
-        return jwtTokenService.GenerateAccessToken(account);
+        return jwtTokenService.GenerateAccessToken(account, organizationId);
+    }
+
+    public static async Task<Organization> SeedOrganizationAsync(
+        AppDbContext context,
+        string name = "Acme Inc",
+        string? slug = null)
+    {
+        Organization organization = Organization.Create(new OrganizationParams(name, slug ?? $"acme-{Guid.NewGuid():N}"));
+
+        context.Organizations.Add(organization);
+        await context.SaveChangesAsync();
+
+        return organization;
+    }
+
+    public static async Task<OrganizationMember> SeedOrganizationMemberAsync(
+        AppDbContext context,
+        Guid organizationId,
+        Guid accountId,
+        SystemRoleKind role = SystemRoleKind.Owner)
+    {
+        IReadOnlyDictionary<SystemRoleKind, Role> systemRoles = await SeedSystemRolesAsync(context, organizationId);
+
+        OrganizationMember member = OrganizationMember.Create(new OrganizationMemberParams(organizationId, accountId));
+        context.OrganizationMembers.Add(member);
+        context.OrganizationMemberRoles.Add(
+            OrganizationMemberRole.Create(new OrganizationMemberRoleParams(member.Id, systemRoles[role].Id)));
+
+        await context.SaveChangesAsync();
+
+        return member;
+    }
+
+    // Idempotent: seeds the 3 system roles for an org (mirrors RoleService.SeedSystemRolesAsync,
+    // hand-rolled against the raw AppDbContext since pulling in the full DI-wired service isn't
+    // worth it in a test helper) or returns the existing ones if already seeded.
+    public static async Task<IReadOnlyDictionary<SystemRoleKind, Role>> SeedSystemRolesAsync(
+        AppDbContext context, Guid organizationId)
+    {
+        List<Role> existing = await context.Roles
+            .Where(role => role.OrganizationId == organizationId && role.SystemRoleKind != null)
+            .ToListAsync();
+
+        if (existing.Count == 3)
+        {
+            return existing.ToDictionary(role => role.SystemRoleKind!.Value);
+        }
+
+        Dictionary<SystemRoleKind, Role> roles = [];
+
+        foreach (SystemRoleKind kind in Enum.GetValues<SystemRoleKind>())
+        {
+            Role role = Role.Create(new RoleParams(organizationId, kind.ToString(), kind));
+            context.Roles.Add(role);
+            roles[kind] = role;
+
+            if (kind == SystemRoleKind.Admin)
+            {
+                context.RolePermissions.Add(
+                    RolePermission.Create(new RolePermissionParams(role.Id, Permissions.OrganizationMembersManage)));
+            }
+        }
+
+        await context.SaveChangesAsync();
+
+        return roles;
+    }
+
+    public static async Task<Role> SeedCustomRoleAsync(
+        AppDbContext context, Guid organizationId, string name, IReadOnlyList<string> permissionCodes)
+    {
+        Role role = Role.Create(new RoleParams(organizationId, name));
+        context.Roles.Add(role);
+
+        foreach (string code in permissionCodes)
+        {
+            context.RolePermissions.Add(RolePermission.Create(new RolePermissionParams(role.Id, code)));
+        }
+
+        await context.SaveChangesAsync();
+
+        return role;
+    }
+
+    public static async Task AssignRoleAsync(AppDbContext context, Guid organizationMemberId, Guid roleId)
+    {
+        context.OrganizationMemberRoles.Add(
+            OrganizationMemberRole.Create(new OrganizationMemberRoleParams(organizationMemberId, roleId)));
+
+        await context.SaveChangesAsync();
     }
 
     // Signed with the real JwtSettings.SecretKey but already-expired — exercises the JwtBearer

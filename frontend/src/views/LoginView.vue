@@ -1,40 +1,36 @@
 <script setup lang="ts">
+import type { FormInst, FormRules } from 'naive-ui'
+
 const router = useRouter()
 const { t } = useI18n()
 const { wordmarkSrc } = useBrandWordmark()
 
-const username = ref('')
-const password = ref('')
+const formRef = ref<FormInst | null>(null)
+const form = reactive({
+  username: '',
+  password: '',
+})
 const keepLogin = ref(getKeepLoginPreference(true))
-const hasSubmitted = ref(false)
 const isSubmitting = ref(false)
 const submitError = ref<string | null>(null)
 const showResendVerification = ref(false)
 
-const usernameError = computed(() => {
-  if (!hasSubmitted.value || username.value.trim().length > 0) {
-    return null
-  }
-
-  return t('auth.usernameRequired')
-})
-
-const passwordError = computed(() => {
-  if (!hasSubmitted.value || password.value.length > 0) {
-    return null
-  }
-
-  return t('auth.passwordRequired')
-})
-
-const hasValidationErrors = computed(() => Boolean(usernameError.value || passwordError.value))
+const rules = computed<FormRules>(() => ({
+  username: [{ required: true, message: t('auth.usernameRequired'), trigger: ['input', 'blur'] }],
+  password: [{ required: true, message: t('auth.passwordRequired'), trigger: ['input', 'blur'] }],
+}))
 
 async function handleSubmit() {
-  hasSubmitted.value = true
   submitError.value = null
   showResendVerification.value = false
 
-  if (isSubmitting.value || hasValidationErrors.value) {
+  try {
+    await formRef.value?.validate()
+  } catch {
+    return
+  }
+
+  if (isSubmitting.value) {
     return
   }
 
@@ -42,8 +38,8 @@ async function handleSubmit() {
 
   try {
     await useAuthStore().login({
-      username: username.value.trim(),
-      password: password.value,
+      username: form.username.trim(),
+      password: form.password,
       keepLoggedIn: keepLogin.value,
     })
     setKeepLoginPreference(keepLogin.value)
@@ -83,47 +79,49 @@ async function handleSubmit() {
             <img :alt="t('app.name')" class="h-12 w-auto" :src="wordmarkSrc" />
           </div>
 
-          <form class="mt-8 space-y-5" @submit.prevent="handleSubmit">
-            <div class="space-y-3">
-              <label
-                class="text-sm font-semibold text-surface-800 dark:text-surface-100"
-                for="username"
-              >
-                {{ t('auth.username') }}<RequiredMark />
-              </label>
-              <n-input
-                v-model:value="username"
-                type="text"
-                class="w-full"
-                :status="usernameError ? 'error' : undefined"
-                :placeholder="t('auth.usernamePlaceholder')"
-                :input-props="{ id: 'username', autocomplete: 'username' }"
-              />
-              <n-alert v-if="usernameError" type="error" :show-icon="false">
-                {{ usernameError }}
-              </n-alert>
-            </div>
+          <n-form
+            ref="formRef"
+            :model="form"
+            :rules="rules"
+            class="mt-8 space-y-5"
+            @submit.prevent="handleSubmit"
+          >
+            <n-form-item path="username" :show-label="false" first>
+              <div class="w-full space-y-3">
+                <label
+                  class="text-sm font-semibold text-surface-800 dark:text-surface-100"
+                  for="username"
+                >
+                  {{ t('auth.username') }}<RequiredMark />
+                </label>
+                <n-input
+                  v-model:value="form.username"
+                  type="text"
+                  class="w-full"
+                  :placeholder="t('auth.usernamePlaceholder')"
+                  :input-props="{ id: 'username', autocomplete: 'username' }"
+                />
+              </div>
+            </n-form-item>
 
-            <div class="space-y-3">
-              <label
-                class="text-sm font-semibold text-surface-800 dark:text-surface-100"
-                for="password"
-              >
-                {{ t('auth.password') }}<RequiredMark />
-              </label>
-              <n-input
-                v-model:value="password"
-                type="password"
-                show-password-on="click"
-                class="w-full"
-                :status="passwordError ? 'error' : undefined"
-                :placeholder="t('auth.passwordPlaceholder')"
-                :input-props="{ id: 'password', autocomplete: 'current-password' }"
-              />
-              <n-alert v-if="passwordError" type="error" :show-icon="false">
-                {{ passwordError }}
-              </n-alert>
-            </div>
+            <n-form-item path="password" :show-label="false" first>
+              <div class="w-full space-y-3">
+                <label
+                  class="text-sm font-semibold text-surface-800 dark:text-surface-100"
+                  for="password"
+                >
+                  {{ t('auth.password') }}<RequiredMark />
+                </label>
+                <n-input
+                  v-model:value="form.password"
+                  type="password"
+                  show-password-on="click"
+                  class="w-full"
+                  :placeholder="t('auth.passwordPlaceholder')"
+                  :input-props="{ id: 'password', autocomplete: 'current-password' }"
+                />
+              </div>
+            </n-form-item>
 
             <div class="flex items-end gap-2 rounded-2xl px-4 dark:border-surface-800">
               <n-checkbox v-model:checked="keepLogin">{{ t('auth.keepLogin') }}</n-checkbox>
@@ -150,7 +148,7 @@ async function handleSubmit() {
             >
               {{ t('auth.registerLink') }}
             </RouterLink>
-          </form>
+          </n-form>
 
           <SocialLoginDivider class="mt-5" />
           <GoogleLoginButton class="mt-3" />

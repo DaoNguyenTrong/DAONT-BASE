@@ -1,12 +1,17 @@
 using System.Globalization;
 using System.Net;
 using System.Threading.RateLimiting;
+using Hangfire;
+using Hangfire.Dashboard;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using StarterKit.API.Authorization;
 using StarterKit.API.Common;
 using StarterKit.API.Extensions;
 using StarterKit.API.Middleware;
@@ -17,6 +22,7 @@ using StarterKit.Application.Resources;
 using StarterKit.Infrastructure;
 using StarterKit.Infrastructure.Persistence;
 using StarterKit.Infrastructure.Persistence.Seeding;
+using Prometheus;
 using Serilog;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
@@ -27,7 +33,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog((context, configuration) =>
     configuration
         .ReadFrom.Configuration(context.Configuration)
-        .WriteTo.Console());
+        .Enrich.FromLogContext());
 
 builder.Services.AddLocalization();
 builder.Services.AddControllers()
@@ -101,6 +107,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddOpenApiWithAuth();
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationResultHandler>();
 RateLimiterSettings rateLimiterSettings = builder.Configuration
     .GetSection(nameof(RateLimiterSettings)).Get<RateLimiterSettings>() ?? new RateLimiterSettings();
 
@@ -148,10 +155,17 @@ using (IServiceScope seedScope = app.Services.CreateScope())
     await SystemSettingSeeder.SeedAsync(seedDbContext);
 }
 
+app.UseBackgroundJobs();
+
 app.UseForwardedHeaders();
 app.UseHttpsRedirection();
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseSerilogRequestLogging();
 app.UseRequestLocalization();
 app.UseCors();
+// Registered before ExceptionHandlingMiddleware so it observes the final status code
+// after exception-to-status-code translation, not the pre-exception one.
+app.UseHttpMetrics();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<UserTimeZoneMiddleware>();
 app.UseRateLimiter();
@@ -177,6 +191,20 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<TenantAccessMiddleware>();
+
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    // Access is restricted at the network layer (internal LAN only, not internet-exposed) —
+    // the default LocalRequestsOnlyAuthorizationFilter would incorrectly block real LAN
+    // clients once UseForwardedHeaders() rewrites RemoteIpAddress to the real client IP.
+    Authorization = []
+});
+
 app.MapControllers();
+
+// Not under /api, so it already skips UserTimeZoneMiddleware/rate limiting/auth like /hangfire —
+// restrict at the network layer (internal only) the same way, not exposed to the internet.
+app.MapMetrics();
 
 app.Run();

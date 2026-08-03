@@ -2,7 +2,6 @@ import App from './App.vue'
 
 import './assets/styles/tailwind.css'
 import './assets/styles/main.scss'
-import 'virtual:svg-icons-register'
 
 // The app uses hash-based routing (createWebHashHistory), and MSAL's popup sign-in
 // also returns its response as a URL hash fragment ("#code=...&client_info=...").

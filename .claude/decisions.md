@@ -8,6 +8,89 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-08-03 — Prometheus/Grafana monitoring: prometheus-net over OpenTelemetry, local-dev scope only
+
+Chọn prometheus-net.AspNetCore thay vì OpenTelemetry .NET — exporter Prometheus chính thức của OTel (`OpenTelemetry.Exporter.Prometheus.AspNetCore`) vẫn đang beta (1.17.0-beta.1) tại thời điểm này, không phù hợp để ship trong một starter kit dùng lại cho nhiều project. `/metrics` không đặt dưới `/api` nên tự động bỏ qua `UserTimeZoneMiddleware`/rate limiter/auth giống `/hangfire` — giữ nguyên mô hình "mở, chặn ở network layer" thay vì thêm auth code. Phạm vi lần này chỉ local dev (docker-compose scrape qua host.docker.internal) — chưa containerize API cho production.
+
+### 2026-08-03 — Add Hangfire (PostgreSQL storage) as reusable background-job infrastructure
+
+Wired ahead of any concrete job need, since this repo is a starter kit reused across future projects — one-time setup beats redoing it per project. Rejected keeping the existing `BackgroundService`/`PeriodicTimer` pattern as the general answer: it doesn't survive restarts and would double-run under multiple instances, which Hangfire's storage-backed scheduling avoids for free (same Postgres DB, no new infra). Dashboard (`/hangfire`) has no app-level identity check — access is restricted at the network layer (internal LAN only, not internet-exposed) per explicit instruction, so Hangfire's default loopback-only filter was replaced with none rather than left in (it would wrongly block real LAN clients once `UseForwardedHeaders()` rewrites the client IP). Migrated `RefreshTokenCleanupService` to a Hangfire recurring job as the reference example; this also changes its failure handling from log-and-swallow to Hangfire's own retry-and-surface-in-dashboard model.
+
+### 2026-08-02 — Removed `AccountsController`: account management moved entirely into organization scope
+
+Dropped the global CRUD-any-account surface (no authorization beyond "logged in") — every capability
+already has a replacement: creation via `/api/auth/register`, profile edits are self-service only via
+`ProfileController` (no admin-edits-others-profile), and removal/deactivation happens by removing/
+deactivating an `OrganizationMember` (`RemoveMemberAsync`), not deleting or locking the `Account`
+itself. Eliminates the "every authenticated account has equal access to every other account" model,
+making enforcement consistent with the permission-based RBAC now applied to Organizations.
+
+### 2026-08-02 — Authorization: organization/role permission checks moved to ASP.NET Core policy-based `[Authorize]`
+
+`EnsurePermissionAsync`/`EnsureActiveMemberAsync` moved out of `OrganizationService`/`RoleService` into a custom
+`IAuthorizationRequirement`+`IAuthorizationHandler`+`IAuthorizationPolicyProvider`, triggered via
+`[Authorize(Policy=...)]` on controller actions — enforcement now runs in ASP.NET Core's authorization
+middleware before the action executes, not inline in application code. No change to what's checked, the
+cache, or JWT contents — only where the check happens. Also required a custom
+`IAuthorizationMiddlewareResultHandler`: the framework's default handler writes an empty 403 body, which
+would have silently dropped the existing localized `CodedProblemDetails` error shown in the frontend.
+
+### 2026-08-02 — Authorization: switch to RBAC with per-organization custom roles
+
+Replaces the hardcoded `OrganizationRole` enum (Owner/Admin/Member) with configurable Role/Permission,
+each org authoring its own roles — chosen over a global role catalog or a seed-only hybrid to maximize
+per-tenant flexibility, accepting the heavier cost (Role CRUD API+UI required from v1). Permissions stay
+a fixed code-defined catalog (not user-creatable); only Roles (permission bundles) are configurable.
+Effective permissions resolve per-request via a short-TTL cache + invalidation (same pattern as the
+existing `org_id`/`TenantAccessService` decision), not embedded in the JWT, to keep revocation near-instant.
+
+### 2026-08-02 — OpenAPI enum schemas rewritten to strings via a schema transformer, not per-enum attributes
+
+The built-in OpenAPI generator is System.Text.Json-based and has no visibility into the app's
+actual formatter (Newtonsoft, with a global `StringEnumConverter`), so it declared every enum as
+`type: integer` — a real contract mismatch, since the API rejects integers on the wire. Fixed with
+a generic `EnumSchemaTransformer` that rewrites any enum schema to named strings, rather than a
+`[JsonConverter(JsonStringEnumConverter)]` attribute per enum — the attribute approach would need
+repeating for every enum added later and is easy to forget.
+
+### 2026-08-02 — Switch-organization endpoint accepts a null organizationId to return to "Personal"
+
+`SwitchOrganizationAsync`/`SwitchOrganizationRequest.OrganizationId` became nullable so a session
+can switch back to the account's personal (org-less) context, not just between organizations.
+Without this, the only way to leave an org-scoped session was to log out and back in, since
+`RefreshTokenAsync` always preserves whatever `org_id` the original token carried. A null target
+skips the membership check entirely — there's nothing to authorize, every account is implicitly
+authorized for its own personal context.
+
+### 2026-08-02 — Organizations: JWT-embedded tenant claim, not a client-supplied header
+
+Each session is scoped to at most one organization, carried as a signed `org_id` claim on the
+access token rather than a client-supplied header — a header would let any caller assert tenant
+identity without re-authentication. Switching orgs re-issues tokens via a dedicated endpoint
+instead of requiring logout/login. Per-request access is still re-verified (org active, membership
+active) via a short-TTL in-memory cache, so revocation takes effect within seconds without a DB hit
+per request; acceptable only because the app runs single-instance today — a multi-instance
+deployment would need a distributed cache instead.
+
+### 2026-07-29 — Serilog sinks are fully config-driven; no code-level Console fallback
+
+`Program.cs` hardcoded `.WriteTo.Console()` alongside `ReadFrom.Configuration(...)`, duplicating
+every console log line since `appsettings.Example.json` already configures a Console+File `WriteTo`
+block (confirmed against the local `appsettings.json`). Removed the hardcoded sink rather than the
+config block. Trade-off: a developer who strips the `Serilog` config section entirely now gets zero
+console output instead of a fallback — acceptable since the Example file ships the block by default.
+
+### 2026-07-26 — Infrastructure/Services split into per-concern modules; avoided naming one "System"
+
+Flat Services/ folder mixed auth, email, storage, caching, security, and request-context concerns
+with no grouping. Split into per-concern subfolders, namespace mirroring folder path (matches the
+existing Persistence/Repositories convention); DI-registration `*Extensions` classes keep the root
+`StarterKit.Infrastructure` namespace so `DependencyInjection.cs` needs only one `using`. Rejected
+naming the clock/timezone module "System" — it shadowed the BCL `System` namespace for sibling
+files, breaking unqualified `System.*` references; renamed to `Context`. Also moved cache/timezone/
+current-user/secret-protector/cleanup DI registrations out of `PersistenceExtensions` into their
+owning module.
+
 ### 2026-07-25 — Microsoft external login: multi-tenant issuer validated by regex, no email_verified check
 
 `common` tenant's OIDC discovery document reports `issuer` as a literal `{tenantid}` placeholder

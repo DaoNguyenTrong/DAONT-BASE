@@ -3,3 +3,109 @@ node_modules/
 
 # Playwright MCP scratch snapshots/logs
 .playwright-mcp/
+
+# lock files — this is a starter-kit template, each downstream project
+# generates its own on first install rather than inheriting ours
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lock
+
+# agent tooling
+.codegraph/
+.serena/
+.codex/*
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.e2e.example
+
+# Editor directories and files
+frontend/.vscode/*
+!frontend/.vscode/extensions.json
+.idea
+*.sw?
+
+# OS
+.DS_Store
+
+# ---- frontend/ (Vue 3 + Vite + TypeScript) ----
+dist
+dist-ssr
+coverage
+*.local
+*.tsbuildinfo
+.eslintcache
+frontend/src/typings/
+
+# orval — regenerated from shared/openapi/openapi.json via `postinstall` / `bun run codegen`
+frontend/src/api/generated/
+
+# Vitest
+__screenshots__/
+
+# Playwright
+/frontend/test-results/
+/frontend/playwright-report/
+
+# Vite
+*.timestamp-*-*.mjs
+
+# runtime config (deploy-time only — see frontend/public/config.example.json)
+/frontend/public/config.json
+
+# ---- backend/ (.NET 10, Clean Architecture) ----
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+
+# Others
+~$*
+*~
+CodeCoverage/
+
+# MSBuild Binary and Structured Log
+*.binlog
+
+# MSTest / NUnit test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+# app settings
+appsettings.json
+appsettings.Development.json
+appsettings.Backup.json
+appsettings.Production.json

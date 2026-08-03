@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { Logout, User } from '@vicons/tabler'
 import type { SidebarMenuItem } from './sidebar-menu'
 import AppSidebarItem from './AppSidebarItem.vue'
 import ProfileDialog from '@/components/ProfileDialog.vue'
+import OrganizationSwitcher from '@/components/OrganizationSwitcher.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -121,6 +123,11 @@ const profileVisible = ref(false)
         />
       </nav>
 
+      <!-- Organization switcher -->
+      <div class="px-3 pb-1" :class="sidebar.isMinimal ? 'flex justify-center' : ''">
+        <OrganizationSwitcher :minimal="sidebar.isMinimal" />
+      </div>
+
       <!-- User section -->
       <div class="p-3">
         <div
@@ -135,7 +142,7 @@ const profileVisible = ref(false)
                 class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 dark:bg-surface-600 dark:hover:bg-primary-400/20"
                 @click="viewProfile()"
               >
-                <SvgIcon name="user" class="text-sm text-white/80 dark:text-surface-300" />
+                <n-icon class="text-sm text-white/80 dark:text-surface-300"><User /></n-icon>
               </button>
             </template>
             {{ t('nav.profile') }}
@@ -147,7 +154,7 @@ const profileVisible = ref(false)
             class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 dark:bg-surface-600 dark:hover:bg-primary-400/20"
             @click="viewProfile()"
           >
-            <SvgIcon name="user" class="text-sm text-white/80 dark:text-surface-300" />
+            <n-icon class="text-sm text-white/80 dark:text-surface-300"><User /></n-icon>
           </button>
 
           <button
@@ -171,7 +178,9 @@ const profileVisible = ref(false)
                 class="cursor-pointer"
                 @click="handleLogout"
               >
-                <template #icon><SvgIcon name="sign-out" class="text-sm" /></template>
+                <template #icon
+                  ><n-icon class="text-sm"><Logout /></n-icon
+                ></template>
               </n-button>
             </template>
             {{ t('auth.logout') }}
@@ -208,6 +217,9 @@ const profileVisible = ref(false)
         </nav>
 
         <template #footer>
+          <div class="border-t border-white/10 px-4 py-2 dark:border-surface-800">
+            <OrganizationSwitcher />
+          </div>
           <div
             class="flex w-full items-center gap-2 border-t border-white/10 px-4 py-3 dark:border-surface-800"
           >
@@ -217,7 +229,7 @@ const profileVisible = ref(false)
               class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 dark:bg-surface-600 dark:hover:bg-primary-400/20"
               @click="viewProfile()"
             >
-              <SvgIcon name="user" class="text-sm text-white/80 dark:text-surface-300" />
+              <n-icon class="text-sm text-white/80 dark:text-surface-300"><User /></n-icon>
             </button>
             <button
               type="button"
@@ -237,7 +249,9 @@ const profileVisible = ref(false)
               class="h-8 w-8 cursor-pointer"
               @click="handleLogout"
             >
-              <template #icon><SvgIcon name="sign-out" class="text-sm" /></template>
+              <template #icon
+                ><n-icon class="text-sm"><Logout /></n-icon
+              ></template>
             </n-button>
           </div>
         </template>
