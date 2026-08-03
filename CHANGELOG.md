@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - Organizations (multi-tenant) support for the backend: each session scopes to at most one organization via a signed `org_id` JWT claim, a dedicated `POST /api/auth/switch-organization` endpoint, and `/api/organizations` for creating/listing organizations and managing members. Per-request tenant access is re-verified through a short-TTL in-memory cache so revocation takes effect quickly.
 - Organizations UI: a sidebar switcher for the session's current organization (or personal workspace), and an `/organizations` page for creating organizations and managing members (add/remove/change role/deactivate).
+- Custom RBAC: per-organization, configurable roles built from a fixed permission catalog, replacing the hardcoded Owner/Admin/Member enum. Effective permissions resolve per-request via a short-TTL cache and are never embedded in the JWT. Includes a role-management UI (create/edit/delete roles, assign multiple roles per member) and the active organization's permission set on the auth store.
 - Correlation ID middleware (`X-Correlation-Id`, validated inbound or generated) plus structured per-request logging (`UseSerilogRequestLogging`) for the backend API.
 - Repo-root Lefthook git hooks: pre-commit blocks direct commits to `main`, unresolved merge-conflict markers, and known secret formats (secretlint), and formats staged `frontend/src/` files with Prettier; commit-msg enforces Conventional Commits (commitlint).
 
@@ -17,6 +18,8 @@ All notable changes to this project will be documented in this file.
 - Replaced the custom `SvgIcon`/`vite-plugin-svg-icons` sprite system with `@vicons/tabler`.
 - The `git-release` skill's hotfix workflow no longer back-merges `main` into `dev` after tagging.
 - Consolidated `frontend/.gitignore` and `backend/.gitignore` into a single root `.gitignore`.
+- Organization and role permission checks moved from inline service-layer checks to ASP.NET Core policy-based `[Authorize(Policy=...)]`, enforced in the authorization middleware before the action runs.
+- Reduced the sidebar's minimal-mode width from `5rem` to `4rem`.
 
 ### Fixed
 
@@ -28,6 +31,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 - GitNexus code-intelligence tooling (no longer in use): the `.claude/skills/gitnexus/` skill package and all `gitnexus_*` references in `CLAUDE.md`, `AGENTS.md`, `serena.md`, and the pre-task-reminder hook, replaced with CodeGraph (`codegraph_explore`) for macro-orientation and impact checks.
+- `AccountsController` and the global admin CRUD-any-account surface: account creation goes through registration, profile edits are self-service only, and removal happens via organization membership, not the account itself.
 
 ## [v1.1.1] - 2026-07-25
 

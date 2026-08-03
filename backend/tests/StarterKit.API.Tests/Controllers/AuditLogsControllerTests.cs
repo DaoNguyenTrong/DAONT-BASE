@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using StarterKit.API.Tests.TestSupport;
 using StarterKit.Application.Common.Models;
-using StarterKit.Application.Services.Accounts;
+using StarterKit.Application.Services.Auth;
 using StarterKit.Application.Services.AuditLogs;
 using StarterKit.Domain.Entities;
 using StarterKit.Infrastructure.Persistence;
@@ -46,18 +46,18 @@ public sealed class AuditLogsControllerTests(ApiFactoryFixture fixture) : IAsync
     public async Task RealMutation_ProducesAuditLogEntry()
     {
         HttpClient client = await CreateAuthedClientAsync();
-        CreateAccountRequest createRequest = new(
-            "Audited Account", null, null, null, "audited-account-user", "audited-account@example.com", "password123");
+        RegisterRequest registerRequest = new(
+            "Audited Account", $"audited-account-user-{Guid.NewGuid():N}", $"audited-account-{Guid.NewGuid():N}@example.com", "password123");
 
-        HttpResponseMessage createResponse = await client.PostAsJsonAsync("/api/accounts", createRequest);
-        AccountDto? created = await createResponse.Content.ReadJsonAsync<AccountDto>();
+        HttpResponseMessage createResponse = await client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        RegisterResult? created = await createResponse.Content.ReadJsonAsync<RegisterResult>();
 
         HttpResponseMessage listResponse = await client.GetAsync("/api/admin/audit-logs?pageSize=100");
 
         Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
         PagedResult<AuditLogDto>? auditLogs = await listResponse.Content.ReadJsonAsync<PagedResult<AuditLogDto>>();
         Assert.Contains(auditLogs!.Items, log =>
-            log.EntityName == "Account" && log.EntityId == created!.Id.ToString() && log.Action == "Added");
+            log.EntityName == "Account" && log.EntityId == created!.AccountId.ToString() && log.Action == "Added");
     }
 
     [Fact]
@@ -87,9 +87,9 @@ public sealed class AuditLogsControllerTests(ApiFactoryFixture fixture) : IAsync
     public async Task GetById_Found_ReturnsAuditLog()
     {
         HttpClient client = await CreateAuthedClientAsync();
-        CreateAccountRequest createRequest = new(
-            "GetById Audited", null, null, null, "getbyid-audited-user", "getbyid-audited@example.com", "password123");
-        await client.PostAsJsonAsync("/api/accounts", createRequest);
+        RegisterRequest registerRequest = new(
+            "GetById Audited", $"getbyid-audited-user-{Guid.NewGuid():N}", $"getbyid-audited-{Guid.NewGuid():N}@example.com", "password123");
+        await client.PostAsJsonAsync("/api/auth/register", registerRequest);
 
         HttpResponseMessage listResponse = await client.GetAsync("/api/admin/audit-logs?pageSize=100");
         PagedResult<AuditLogDto>? auditLogs = await listResponse.Content.ReadJsonAsync<PagedResult<AuditLogDto>>();

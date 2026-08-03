@@ -2,7 +2,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { createTestingPinia } from '@pinia/testing'
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { Home, Users } from '@vicons/tabler'
+import { Building, Home } from '@vicons/tabler'
 import AppSidebar from '@/layouts/AppSidebar.vue'
 import ProfileDialog from '@/components/ProfileDialog.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -26,10 +26,10 @@ async function buildRouter(initialPath = '/') {
             meta: { sidebar: { labelKey: 'nav.home', icon: Home } },
           },
           {
-            path: 'accounts',
-            name: 'accounts',
+            path: 'organizations',
+            name: 'organizations',
             component: stub,
-            meta: { sidebar: { labelKey: 'nav.accounts', icon: Users } },
+            meta: { sidebar: { labelKey: 'nav.organizations', icon: Building } },
           },
         ],
       },
@@ -60,7 +60,7 @@ describe('AppSidebar', () => {
     const { wrapper } = await mountSidebar()
 
     const links = wrapper.findAll('nav a')
-    expect(links.map((l) => l.text())).toEqual(['Home', 'Accounts'])
+    expect(links.map((l) => l.text())).toEqual(['Home', 'Organizations'])
   })
 
   it('shows the logged-in account name', async () => {
@@ -96,7 +96,7 @@ describe('AppSidebar', () => {
 
   it('navigates home and closes the mobile drawer when the logo button is clicked', async () => {
     const { wrapper, router } = await mountSidebar()
-    await router.push('/accounts')
+    await router.push('/organizations')
     const sidebar = useSidebarStore()
     sidebar.openMobile()
 

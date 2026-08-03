@@ -1,6 +1,6 @@
 namespace StarterKit.Domain.Entities;
 
-public record OrganizationMemberParams(Guid OrganizationId, Guid AccountId, OrganizationRole Role);
+public record OrganizationMemberParams(Guid OrganizationId, Guid AccountId);
 
 public sealed class OrganizationMember : BaseEntity<Guid>
 {
@@ -22,15 +22,12 @@ public sealed class OrganizationMember : BaseEntity<Guid>
 
     public Guid AccountId { get; private set; }
 
-    public OrganizationRole Role { get; private set; }
-
     public bool IsActive { get; private set; } = true;
 
     public void Update(OrganizationMemberParams p)
     {
         OrganizationId = p.OrganizationId;
         AccountId = p.AccountId;
-        Role = p.Role;
     }
 
     public void Deactivate() => IsActive = false;

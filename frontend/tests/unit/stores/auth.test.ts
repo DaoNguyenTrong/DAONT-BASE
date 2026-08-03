@@ -31,4 +31,25 @@ describe('useAuthStore', () => {
     expect(auth.account).toBeNull()
     expect(auth.isAuthenticated).toBe(false)
   })
+
+  it('setAuth stores the active-org permission set', () => {
+    const auth = useAuthStore()
+    auth.setAuth({
+      ...makeAuthResponse(),
+      permissions: ['organizations.members.manage'],
+    })
+
+    expect(auth.permissions).toEqual(['organizations.members.manage'])
+    expect(auth.hasPermission('organizations.members.manage')).toBe(true)
+    expect(auth.hasPermission('organizations.manage')).toBe(false)
+  })
+
+  it('clearAuth empties the permission set', () => {
+    const auth = useAuthStore()
+    auth.setAuth({ ...makeAuthResponse(), permissions: ['organizations.manage'] })
+    auth.clearAuth()
+
+    expect(auth.permissions).toEqual([])
+    expect(auth.hasPermission('organizations.manage')).toBe(false)
+  })
 })

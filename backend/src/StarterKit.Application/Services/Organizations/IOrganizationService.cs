@@ -10,10 +10,10 @@ public interface IOrganizationService
 
     Task AddMemberAsync(Guid organizationId, AddMemberRequest request, CancellationToken cancellationToken);
 
-    Task UpdateMemberRoleAsync(
+    Task UpdateMemberRolesAsync(
         Guid organizationId,
         Guid accountId,
-        UpdateMemberRoleRequest request,
+        UpdateMemberRolesRequest request,
         CancellationToken cancellationToken);
 
     Task RemoveMemberAsync(Guid organizationId, Guid accountId, CancellationToken cancellationToken);

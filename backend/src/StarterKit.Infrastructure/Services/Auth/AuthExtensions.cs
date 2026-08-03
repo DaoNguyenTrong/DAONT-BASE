@@ -31,11 +31,16 @@ internal static class AuthExtensions
 
         services.Configure<JwtSettings>(configuration.GetSection(nameof(JwtSettings)));
         services.Configure<TenantAccessSettings>(configuration.GetSection(nameof(TenantAccessSettings)));
+        services.Configure<PermissionResolverSettings>(configuration.GetSection(nameof(PermissionResolverSettings)));
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<ICurrentTenantProvider, CurrentTenantProvider>();
         services.AddScoped<ITenantAccessService, TenantAccessService>();
+        services.AddScoped<IPermissionResolver, PermissionResolver>();
+        services.AddSingleton<IAuthorizationPolicyProvider, OrganizationPermissionPolicyProvider>();
+        services.AddScoped<IAuthorizationHandler, OrganizationPermissionAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, OrganizationMembershipAuthorizationHandler>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -77,6 +82,10 @@ internal static class AuthExtensions
                     JwtBearerDefaults.AuthenticationScheme,
                     ApiKeyAuthenticationHandler.SchemeName)
                 .Build();
+
+            options.AddPolicy(
+                AuthorizationPolicies.OrganizationMember,
+                policy => policy.AddRequirements(new OrganizationMembershipRequirement()));
         });
 
         services.Configure<RefreshTokenCleanupSettings>(

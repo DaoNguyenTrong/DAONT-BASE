@@ -22,7 +22,7 @@ describe('useSidebarStore', () => {
 
     expect(sidebar.mode).toBe('minimal')
     expect(sidebar.isMinimal).toBe(true)
-    expect(sidebar.sidebarWidth).toBe('5rem')
+    expect(sidebar.sidebarWidth).toBe('4rem')
   })
 
   it('toggleMode flips mode and persists to localStorage', () => {

@@ -23,10 +23,10 @@ function buildRouter(initialPath = '/') {
             meta: { breadcrumbKey: 'nav.home' },
           },
           {
-            path: 'accounts',
-            name: 'accounts',
+            path: 'organizations',
+            name: 'organizations',
             component: stub,
-            meta: { breadcrumbKey: 'nav.accounts' },
+            meta: { breadcrumbKey: 'nav.organizations' },
           },
         ],
       },
@@ -79,15 +79,15 @@ describe('AppHeader', () => {
   })
 
   it('shows a home breadcrumb plus one entry per matched route with a breadcrumbKey', async () => {
-    const { wrapper } = await mountHeader('/accounts')
+    const { wrapper } = await mountHeader('/organizations')
 
     const items = wrapper.findAll('.n-breadcrumb-item')
     expect(items).toHaveLength(2)
-    expect(items[1]!.text()).toContain('Accounts')
+    expect(items[1]!.text()).toContain('Organizations')
   })
 
   it('navigates to the clicked breadcrumb without a full page reload', async () => {
-    const { wrapper, router } = await mountHeader('/accounts')
+    const { wrapper, router } = await mountHeader('/organizations')
 
     const homeCrumb = wrapper.findAll('.n-breadcrumb-item')[0]!
     await homeCrumb.find('a').trigger('click')

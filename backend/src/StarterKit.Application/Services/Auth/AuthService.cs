@@ -16,6 +16,7 @@ public sealed class AuthService(
     ICurrentUserService currentUserService,
     IJwtTokenService jwtTokenService,
     ITenantAccessService tenantAccessService,
+    IPermissionResolver permissionResolver,
     IPasswordHasher passwordHasher,
     IEmailSender emailSender,
     IEnumerable<IExternalAuthProvider> externalAuthProviders,
@@ -488,6 +489,10 @@ public sealed class AuthService(
             ? (await unitOfWork.Repository<Organization, Guid>().GetByIdAsync(orgId, cancellationToken))?.Name
             : null;
 
+        IReadOnlyList<string> permissions = organizationId is { } permissionOrgId
+            ? (await permissionResolver.GetEffectivePermissionsAsync(permissionOrgId, account.Id, cancellationToken)).ToList()
+            : [];
+
         return new AuthResult(
             accessToken,
             refreshToken,
@@ -495,7 +500,8 @@ public sealed class AuthService(
             EntityMapper.ToDto(account),
             isPersistent,
             organizationId,
-            organizationName);
+            organizationName,
+            permissions);
     }
 
     private static string GenerateRawToken()
