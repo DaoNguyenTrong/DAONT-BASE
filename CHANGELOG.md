@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - OpenAPI declared enums (e.g. `OrganizationRole`) as `integer`, since the built-in generator has no visibility into the API's actual Newtonsoft `StringEnumConverter` formatter — generated clients typed them as `number` while the API only ever accepted the named strings on the wire. Added a schema transformer so enum schemas match runtime behavior.
 - `POST /api/auth/switch-organization` had no way to return a session to its personal (org-less) context short of logging out, since token refresh always preserves the original `org_id`. `organizationId` is now nullable in the request.
 - Frontend's `tests/` directory had never been type-checked (no script ran `vue-tsc -p tsconfig.vitest.json`), so it had accumulated ~85 type errors undetected. Fixed a generics bug in the shared `renderComponent` test helper that cascaded into most of them, plus stale sidebar icon fixtures, missing `node` types, and strict-null-check gaps; `tests/` now type-checks clean.
+- Toast messages and confirm dialogs (Naive UI's discrete `message`/`dialog` API) always rendered with a light background, since the isolated Vue app instance they mount into was hardcoded to the light theme overrides regardless of the user's dark mode preference. Now stays in sync with the app's light/dark toggle.
 
 ### Removed
 
