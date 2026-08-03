@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { FormInst, FormRules } from 'naive-ui'
 import type { PermissionDto } from '@/api/types'
 import { permissionLabel } from '@/lib/permission-label'
 
@@ -9,6 +10,13 @@ const props = defineProps<{
 }>()
 const state = props.state
 
+const formRef = ref<FormInst | null>(null)
+const rules = computed<FormRules>(() => ({
+  name: [
+    { required: true, message: t('organizations.roleNameRequired'), trigger: ['input', 'blur'] },
+  ],
+}))
+
 function togglePermission(code: string, checked: boolean) {
   const index = state.permissionCodes.indexOf(code)
   if (checked && index === -1) {
@@ -17,21 +25,30 @@ function togglePermission(code: string, checked: boolean) {
     state.permissionCodes.splice(index, 1)
   }
 }
+
+// Called by useAppDialogNaive's open() before onConfirm — see
+// src/composables/use-app-dialog-naive.ts.
+async function validate() {
+  await formRef.value?.validate()
+}
+defineExpose({ validate })
 </script>
 
 <template>
-  <div class="grid gap-4 pt-2">
-    <div class="space-y-2">
-      <label class="text-sm font-medium text-surface-800 dark:text-surface-100">
-        {{ t('organizations.roleName') }}<RequiredMark />
-      </label>
-      <n-input
-        v-model:value="state.name"
-        type="text"
-        class="w-full"
-        :placeholder="t('organizations.roleNamePlaceholder')"
-      />
-    </div>
+  <n-form ref="formRef" :model="state" :rules="rules" class="grid gap-4 pt-2">
+    <n-form-item path="name" :show-label="false" first>
+      <div class="w-full space-y-2">
+        <label class="text-sm font-medium text-surface-800 dark:text-surface-100">
+          {{ t('organizations.roleName') }}<RequiredMark />
+        </label>
+        <n-input
+          v-model:value="state.name"
+          type="text"
+          class="w-full"
+          :placeholder="t('organizations.roleNamePlaceholder')"
+        />
+      </div>
+    </n-form-item>
     <div class="space-y-2">
       <label class="text-sm font-medium text-surface-800 dark:text-surface-100">
         {{ t('organizations.rolePermissions') }}
@@ -47,5 +64,5 @@ function togglePermission(code: string, checked: boolean) {
         </n-checkbox>
       </div>
     </div>
-  </div>
+  </n-form>
 </template>

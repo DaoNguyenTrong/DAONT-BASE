@@ -1,32 +1,38 @@
 <script setup lang="ts">
+import type { FormInst, FormRules } from 'naive-ui'
+
 const { t } = useI18n()
 
-const email = ref('')
-const hasSubmitted = ref(false)
+const formRef = ref<FormInst | null>(null)
+const form = reactive({ email: '' })
 const isSubmitting = ref(false)
 const isSent = ref(false)
 const submitError = ref<string | null>(null)
 
-const emailError = computed(() => {
-  if (!hasSubmitted.value || email.value.trim().length > 0) {
-    return null
-  }
-
-  return t('auth.emailRequired')
-})
+const rules = computed<FormRules>(() => ({
+  email: [
+    { required: true, message: t('auth.emailRequired'), trigger: ['input', 'blur'] },
+    { type: 'email', message: t('auth.emailInvalid'), trigger: ['input', 'blur'] },
+  ],
+}))
 
 async function handleSubmit() {
-  hasSubmitted.value = true
   submitError.value = null
 
-  if (isSubmitting.value || emailError.value) {
+  try {
+    await formRef.value?.validate()
+  } catch {
+    return
+  }
+
+  if (isSubmitting.value) {
     return
   }
 
   isSubmitting.value = true
 
   try {
-    await useAuthStore().resendVerification({ email: email.value.trim() })
+    await useAuthStore().resendVerification({ email: form.email.trim() })
     isSent.value = true
   } catch (error) {
     submitError.value =
@@ -44,26 +50,31 @@ async function handleSubmit() {
     <n-alert v-if="isSent" type="success" :show-icon="false">
       {{ t('auth.resendVerificationSuccess') }}
     </n-alert>
-    <form v-else class="space-y-3" @submit.prevent="handleSubmit">
-      <div class="space-y-2">
-        <label
-          class="text-sm font-medium text-surface-800 dark:text-surface-100"
-          for="resend-verification-email"
-        >
-          {{ t('auth.email') }}<RequiredMark />
-        </label>
-        <n-input
-          v-model:value="email"
-          type="text"
-          class="w-full"
-          :status="emailError ? 'error' : undefined"
-          :placeholder="t('auth.emailPlaceholder')"
-          :input-props="{ id: 'resend-verification-email', autocomplete: 'email' }"
-        />
-        <n-alert v-if="emailError" type="error" :show-icon="false">
-          {{ emailError }}
-        </n-alert>
-      </div>
+    <n-form
+      v-else
+      ref="formRef"
+      :model="form"
+      :rules="rules"
+      class="space-y-3"
+      @submit.prevent="handleSubmit"
+    >
+      <n-form-item path="email" :show-label="false" first>
+        <div class="w-full space-y-2">
+          <label
+            class="text-sm font-medium text-surface-800 dark:text-surface-100"
+            for="resend-verification-email"
+          >
+            {{ t('auth.email') }}<RequiredMark />
+          </label>
+          <n-input
+            v-model:value="form.email"
+            type="text"
+            class="w-full"
+            :placeholder="t('auth.emailPlaceholder')"
+            :input-props="{ id: 'resend-verification-email', autocomplete: 'email' }"
+          />
+        </div>
+      </n-form-item>
 
       <n-alert v-if="submitError" type="error" :show-icon="false">
         {{ submitError }}
@@ -77,6 +88,6 @@ async function handleSubmit() {
         :disabled="isSubmitting"
         >{{ t('auth.resendVerification') }}</n-button
       >
-    </form>
+    </n-form>
   </div>
 </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Plus, Trash } from '@vicons/tabler'
+import type { FormInst, FormRules } from 'naive-ui'
 import { getOrganizations } from '@/api/generated/organizations/organizations'
 import type { AddMemberRequest, OrganizationDto, OrganizationMemberDto } from '@/api/types'
 import { Permissions } from '@/lib/permissions'
@@ -22,10 +23,18 @@ const removingId = ref<string | null>(null)
 const updatingRolesId = ref<string | null>(null)
 const deactivating = ref(false)
 
+const addFormRef = ref<FormInst | null>(null)
 const addForm = reactive<AddMemberRequest>({
   email: '',
   roleIds: [],
 })
+
+const addFormRules = computed<FormRules>(() => ({
+  email: [
+    { required: true, message: t('organizations.memberEmailRequired'), trigger: ['input', 'blur'] },
+    { type: 'email', message: t('organizations.memberEmailInvalid'), trigger: ['input', 'blur'] },
+  ],
+}))
 
 const roleOptions = computed(() =>
   rolesStore.roles.map((role) => ({ label: role.name, value: role.id })),
@@ -68,6 +77,13 @@ async function loadMembers() {
 
 async function addMember() {
   if (!props.organization || adding.value) return
+
+  try {
+    await addFormRef.value?.validate()
+  } catch {
+    return
+  }
+
   adding.value = true
   try {
     await client.organizationsAddMember(props.organization.id, {
@@ -219,18 +235,23 @@ watch(visible, (open) => {
         {{ t('organizations.membersEmpty') }}
       </p>
 
-      <form
+      <n-form
         v-if="canManage"
-        class="mt-4 flex flex-col gap-2 sm:flex-row"
+        ref="addFormRef"
+        :model="addForm"
+        :rules="addFormRules"
+        class="mt-4 flex flex-col items-start gap-2 sm:flex-row"
         @submit.prevent="addMember"
       >
-        <n-input
-          v-model:value="addForm.email"
-          type="text"
-          class="w-full flex-1"
-          :placeholder="t('organizations.memberEmailPlaceholder')"
-          :input-props="{ type: 'email' }"
-        />
+        <n-form-item path="email" :show-label="false" class="w-full flex-1">
+          <n-input
+            v-model:value="addForm.email"
+            type="text"
+            class="w-full"
+            :placeholder="t('organizations.memberEmailPlaceholder')"
+            :input-props="{ type: 'email' }"
+          />
+        </n-form-item>
         <n-select
           v-model:value="addForm.roleIds"
           :options="roleOptions"
@@ -243,7 +264,7 @@ watch(visible, (open) => {
           ></template>
           {{ t('organizations.addMember') }}
         </n-button>
-      </form>
+      </n-form>
 
       <div v-if="isOwner" class="mt-6 border-t border-surface-200 pt-4 dark:border-surface-800">
         <n-button

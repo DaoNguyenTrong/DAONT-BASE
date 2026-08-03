@@ -34,6 +34,15 @@ interface AppDialogOptionsNaive<T = Record<string, unknown>> {
   onCancel?: () => void
 }
 
+// Optional public surface a dialog's content component can expose (via
+// `defineExpose`) to hook into the confirm flow — currently just a
+// naive-ui `FormInst.validate()`-shaped method. `open()` calls it (if
+// present) before `onConfirm`, so a rendered `<n-form>` blocks the confirm
+// on invalid fields the same way it would for an inline page form.
+interface AppDialogContentExpose {
+  validate?: () => Promise<unknown>
+}
+
 export function useAppDialogNaive() {
   const { t } = useI18n()
   const dialog = useDialog()
@@ -44,6 +53,7 @@ export function useAppDialogNaive() {
   ): DialogReactive {
     const loading = ref(false)
     const rawComponent = markRaw(component)
+    const contentRef = ref<AppDialogContentExpose | null>(null)
 
     const close = () => {
       instance.destroy()
@@ -71,11 +81,20 @@ export function useAppDialogNaive() {
       // expect to work — same as the header's X close button.
       maskClosable: false,
       closeOnEsc: true,
-      content: () => h(rawComponent, props),
+      content: () => h(rawComponent, { ...props, ref: contentRef }),
       onPositiveClick: async () => {
         // Guard against double-submit while a previous onConfirm is pending —
         // mirrors the original's `if (loading.value) return` in `_onConfirm`.
         if (loading.value) return false
+
+        if (contentRef.value?.validate) {
+          try {
+            await contentRef.value.validate()
+          } catch {
+            return false
+          }
+        }
+
         loading.value = true
         instance.loading = true
         try {
