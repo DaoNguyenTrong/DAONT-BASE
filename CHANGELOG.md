@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Custom RBAC: per-organization, configurable roles built from a fixed permission catalog, replacing the hardcoded Owner/Admin/Member enum. Effective permissions resolve per-request via a short-TTL cache and are never embedded in the JWT. Includes a role-management UI (create/edit/delete roles, assign multiple roles per member) and the active organization's permission set on the auth store.
 - Correlation ID middleware (`X-Correlation-Id`, validated inbound or generated) plus structured per-request logging (`UseSerilogRequestLogging`) for the backend API.
 - Repo-root Lefthook git hooks: pre-commit blocks direct commits to `main`, unresolved merge-conflict markers, and known secret formats (secretlint), and formats staged `frontend/src/` files with Prettier; commit-msg enforces Conventional Commits (commitlint).
+- Hangfire (PostgreSQL storage) as reusable background-job infrastructure: server, dashboard (`/hangfire`), and DI wiring in `StarterKit.Infrastructure`, ready for fire-and-forget/delayed/recurring jobs with automatic retries in future work.
 
 ### Changed
 
@@ -22,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - Reduced the sidebar's minimal-mode width from `5rem` to `4rem`.
 - All forms (login, register, resend-verification, profile, change-password, organization/role create-edit, add-member) now validate through naive-ui's `n-form`/`n-form-item`/`rules`/`FormInst` instead of hand-rolled `computed` error state; dialog-hosted forms block confirm on invalid input via a `validate()` exposed to `useAppDialogNaive`.
 - `CLAUDE.md`/`serena.md` agent workflow guidance now routes caller-search and rename (Serena's `find_referencing_symbols`/`rename_symbol`) to backend C# only and to CodeGraph for any frontend symbol, based on empirical testing showing Serena silently misses callers inside `.vue` files regardless of import style.
+- Refresh token cleanup moved from a `BackgroundService`/`PeriodicTimer` to a Hangfire recurring job; failures now retry automatically and surface in the Hangfire dashboard instead of being logged and swallowed.
 
 ### Fixed
 
