@@ -14,7 +14,7 @@ Three top-level trees, each with its own stack and rule surface:
 
 `shared/openapi/` is the reason this is a monorepo rather than two separate repos: the backend's OpenAPI export is meant to be the single source of truth the frontend generates its client/types from (see `.claude/decisions.md` — "Monorepo: backend/frontend/shared, overriding..."). Codegen isn't wired up yet — see `api-contract.md` for the current state and what changes when it is.
 
-CodeGraph is indexed repo-wide (backend + frontend); Serena's symbol-navigation LSP is configured for `backend/` (C#) only today — see `serena.md` for how to navigate `frontend/` until that's extended.
+CodeGraph is indexed repo-wide (backend + frontend) and is the tool for cross-file impact-check on both sides. Serena's symbol-navigation LSP covers `backend/` (C#), plus `frontend/` TypeScript and Vue for read-only symbol lookup — but its caller-search/rename tools (`find_referencing_symbols`, `rename_symbol`) are reliable for `backend/` (C#) only; see `serena.md` for why.
 
 ## Agent Workflow
 
@@ -25,32 +25,33 @@ Follow this order for every non-trivial task:
 1. **Memory** — check `.claude/decisions.md` and project memory for relevant prior decisions
 2. **Live state** — run `git status` + `git diff` to understand current working state
 3. **Orient (macro)** — CodeGraph (`codegraph_explore`) to understand module boundaries, data flow, and cross-service relationships across both backend and frontend
-4. **Orient (micro)** — Serena to locate and read specific symbols once the relevant module is known (backend C# only)
-5. **Impact check** — run `codegraph_explore` on every symbol you plan to modify and review the returned blast-radius/callers before editing
+4. **Orient (micro)** — for backend C#, use Serena (`find_symbol`/`get_symbols_overview`) to drill into a specific symbol once CodeGraph has located the module. For frontend, CodeGraph's step-3 response already includes verbatim source — skip a separate Serena call unless you need `find_declaration` to confirm what a specific template-tag usage resolves to.
+5. **Impact check** — before editing, review every caller of the symbol you plan to modify. For backend C# symbols, prefer Serena's `find_referencing_symbols` (exact call sites with line-level snippets); fall back to `codegraph_explore` only when the symbol has dynamic dispatch across multiple implementations (interface/base-class methods). For any frontend symbol (`.ts` or `.vue`), use `codegraph_explore`'s blast-radius — never Serena's `find_referencing_symbols`/`rename_symbol`, which silently miss any caller inside a `.vue` file regardless of import style (verified, not a config gap).
 6. **Execute** — make changes
 7. **Verify** — run the test suite for whichever side you touched (`dotnet test backend/StarterKit.sln --no-restore -m:1` for `backend/`, `bun run --cwd frontend test:run` for `frontend/` — see `commands.md`); it must pass before considering the task done
 8. **Log decisions** — record only choices that affect system design (architecture, contracts, security posture) in `.claude/decisions.md`, titled `### YYYY-MM-DD — <decision>`; skip branding/UI/copy calls and routine bug fixes. **Gate: before writing, show the user the proposed entry and get explicit confirmation — never write to `.claude/decisions.md` unprompted.**
 
 ### Tool Selection
 
-Two-tier model: **CodeGraph first** when you need orientation; **Serena next** when you know what to look at (backend C# only).
+Two-tier model: **CodeGraph first** when you need orientation; **Serena next** when you know what to look at. Serena's reliable scope differs per capability — see the Scope column below, not just "is the language server configured."
 
 | When you don't yet know where to look…           | Use                                                        |
 | ------------------------------------------------ | ----------------------------------------------------------- |
 | How do modules / services connect?               | CodeGraph `codegraph_explore` (natural-language query)     |
 | What calls what across layers?                   | CodeGraph `codegraph_explore`                               |
-| What breaks if I change this?                    | CodeGraph `codegraph_explore` (blast-radius in the response) |
-| Rename a symbol safely across the whole codebase | Serena `rename_symbol` (backend C# only — CodeGraph has no rename tool) |
+| What breaks if I change this?                    | CodeGraph `codegraph_explore` (blast-radius in the response) — the default for frontend impact-check too |
 
-| When you already know which symbol to inspect… | Use                                            |
-| ---------------------------------------------- | ---------------------------------------------- |
-| Read a class or method body                    | Serena `find_symbol` with `include_body=true`  |
-| Find every caller / usage of a symbol          | Serena `find_referencing_symbols`              |
-| Scan a file's public surface                   | Serena `get_symbols_overview`                  |
-| Broad keyword / file search                    | `grep` (quick), Explore agent (broad)          |
-| Read implementation line-by-line               | `Read` — only after Serena identified the file |
+| When you already know which symbol to inspect…   | Use                                                       | Scope |
+| -------------------------------------------------- | ---------------------------------------------------------- | ----- |
+| Read a class or method body                        | Serena `find_symbol` with `include_body=true`              | backend + frontend |
+| Confirm what a specific usage resolves to           | Serena `find_declaration`                                  | backend + frontend |
+| Scan a file's public surface                        | Serena `get_symbols_overview`                               | backend + frontend |
+| Find every caller / usage of a symbol               | Serena `find_referencing_symbols`                            | **backend C# only** — for frontend use CodeGraph's blast-radius (verified 0% recall on `.vue` callers otherwise, even with explicit imports) |
+| Rename a symbol safely across the whole codebase    | Serena `rename_symbol`                                       | **backend C# only** — CodeGraph has no rename tool, and no frontend rename tool here is reliable; rename manually against CodeGraph's blast-radius file list, then run `test:run` |
+| Broad keyword / file search                         | `grep` (quick), Explore agent (broad)                        | — |
+| Read implementation line-by-line                    | `Read` — only after CodeGraph/Serena identified the file    | — |
 
-Never grep first. Never open a file to orient — orient with CodeGraph, then drill with Serena, then `Read`.
+Never grep first. Never open a file to orient — orient with CodeGraph, then drill with Serena (backend, or `find_declaration` anywhere), then `Read`.
 
 ### Context Layers
 
@@ -90,4 +91,4 @@ All rule files in `.claude/rules/` are auto-loaded. This table documents when ea
 | `commands.md`             | Building/running/testing the backend or the frontend             |
 | `frontend-conventions.md` | Writing Vue/TypeScript — components, stores, api client patterns |
 | `localization.md`         | Adding or editing user-facing messages (backend and/or frontend) |
-| `serena.md`               | Using Serena symbol navigation tools (backend C# only, for now)  |
+| `serena.md`               | Using Serena symbol navigation tools — read-only lookup works backend + frontend, caller-search/rename is backend C# only |

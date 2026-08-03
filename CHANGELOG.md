@@ -21,6 +21,7 @@ All notable changes to this project will be documented in this file.
 - Organization and role permission checks moved from inline service-layer checks to ASP.NET Core policy-based `[Authorize(Policy=...)]`, enforced in the authorization middleware before the action runs.
 - Reduced the sidebar's minimal-mode width from `5rem` to `4rem`.
 - All forms (login, register, resend-verification, profile, change-password, organization/role create-edit, add-member) now validate through naive-ui's `n-form`/`n-form-item`/`rules`/`FormInst` instead of hand-rolled `computed` error state; dialog-hosted forms block confirm on invalid input via a `validate()` exposed to `useAppDialogNaive`.
+- `CLAUDE.md`/`serena.md` agent workflow guidance now routes caller-search and rename (Serena's `find_referencing_symbols`/`rename_symbol`) to backend C# only and to CodeGraph for any frontend symbol, based on empirical testing showing Serena silently misses callers inside `.vue` files regardless of import style.
 
 ### Fixed
 
