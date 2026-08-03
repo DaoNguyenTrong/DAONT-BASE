@@ -22,6 +22,7 @@ using StarterKit.Application.Resources;
 using StarterKit.Infrastructure;
 using StarterKit.Infrastructure.Persistence;
 using StarterKit.Infrastructure.Persistence.Seeding;
+using Prometheus;
 using Serilog;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
@@ -162,6 +163,9 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging();
 app.UseRequestLocalization();
 app.UseCors();
+// Registered before ExceptionHandlingMiddleware so it observes the final status code
+// after exception-to-status-code translation, not the pre-exception one.
+app.UseHttpMetrics();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<UserTimeZoneMiddleware>();
 app.UseRateLimiter();
@@ -198,5 +202,9 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 });
 
 app.MapControllers();
+
+// Not under /api, so it already skips UserTimeZoneMiddleware/rate limiting/auth like /hangfire —
+// restrict at the network layer (internal only) the same way, not exposed to the internet.
+app.MapMetrics();
 
 app.Run();

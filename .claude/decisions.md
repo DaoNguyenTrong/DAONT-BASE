@@ -8,6 +8,10 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-08-03 — Prometheus/Grafana monitoring: prometheus-net over OpenTelemetry, local-dev scope only
+
+Chọn prometheus-net.AspNetCore thay vì OpenTelemetry .NET — exporter Prometheus chính thức của OTel (`OpenTelemetry.Exporter.Prometheus.AspNetCore`) vẫn đang beta (1.17.0-beta.1) tại thời điểm này, không phù hợp để ship trong một starter kit dùng lại cho nhiều project. `/metrics` không đặt dưới `/api` nên tự động bỏ qua `UserTimeZoneMiddleware`/rate limiter/auth giống `/hangfire` — giữ nguyên mô hình "mở, chặn ở network layer" thay vì thêm auth code. Phạm vi lần này chỉ local dev (docker-compose scrape qua host.docker.internal) — chưa containerize API cho production.
+
 ### 2026-08-03 — Add Hangfire (PostgreSQL storage) as reusable background-job infrastructure
 
 Wired ahead of any concrete job need, since this repo is a starter kit reused across future projects — one-time setup beats redoing it per project. Rejected keeping the existing `BackgroundService`/`PeriodicTimer` pattern as the general answer: it doesn't survive restarts and would double-run under multiple instances, which Hangfire's storage-backed scheduling avoids for free (same Postgres DB, no new infra). Dashboard (`/hangfire`) has no app-level identity check — access is restricted at the network layer (internal LAN only, not internet-exposed) per explicit instruction, so Hangfire's default loopback-only filter was replaced with none rather than left in (it would wrongly block real LAN clients once `UseForwardedHeaders()` rewrites the client IP). Migrated `RefreshTokenCleanupService` to a Hangfire recurring job as the reference example; this also changes its failure handling from log-and-swallow to Hangfire's own retry-and-surface-in-dashboard model.
