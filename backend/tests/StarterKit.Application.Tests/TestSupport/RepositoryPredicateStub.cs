@@ -19,6 +19,10 @@ internal static class RepositoryPredicateStub
         where T : BaseEntity<int>
         => Stub(repo, seed);
 
+    public static void StubListAsync<T>(IRepository<T, Guid> repo, IReadOnlyList<T> seed)
+        where T : BaseEntity<Guid>
+        => StubList(repo, seed);
+
     private static void Stub<T, TId>(IRepository<T, TId> repo, IReadOnlyList<T> seed)
         where T : BaseEntity<TId>
         where TId : notnull
@@ -28,6 +32,18 @@ internal static class RepositoryPredicateStub
             {
                 Expression<Func<T, bool>> predicate = callInfo.Arg<Expression<Func<T, bool>>>()!;
                 return Task.FromResult(seed.AsQueryable().Where(predicate).FirstOrDefault());
+            });
+    }
+
+    private static void StubList<T, TId>(IRepository<T, TId> repo, IReadOnlyList<T> seed)
+        where T : BaseEntity<TId>
+        where TId : notnull
+    {
+        repo.ListAsync(Arg.Any<Expression<Func<T, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                Expression<Func<T, bool>> predicate = callInfo.Arg<Expression<Func<T, bool>>>()!;
+                return Task.FromResult<IReadOnlyList<T>>(seed.AsQueryable().Where(predicate).ToList());
             });
     }
 }

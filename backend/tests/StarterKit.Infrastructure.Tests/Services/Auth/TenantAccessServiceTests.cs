@@ -56,7 +56,7 @@ public class TenantAccessServiceTests
         f.MemberRepo.FirstOrDefaultAsync(
                 Arg.Any<Expression<Func<OrganizationMember, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(OrganizationMember.Create(
-                new OrganizationMemberParams(organizationId, accountId, OrganizationRole.Member)));
+                new OrganizationMemberParams(organizationId, accountId)));
 
         f.OrganizationRepo.GetByIdAsync(organizationId, Arg.Any<CancellationToken>())
             .Returns(Organization.Create(new OrganizationParams("Acme", "acme")));
@@ -90,7 +90,7 @@ public class TenantAccessServiceTests
         f.MemberRepo.FirstOrDefaultAsync(
                 Arg.Any<Expression<Func<OrganizationMember, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(OrganizationMember.Create(
-                new OrganizationMemberParams(organizationId, accountId, OrganizationRole.Member)));
+                new OrganizationMemberParams(organizationId, accountId)));
 
         Organization organization = Organization.Create(new OrganizationParams("Acme", "acme"));
         organization.Deactivate();

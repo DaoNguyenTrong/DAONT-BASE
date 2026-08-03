@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Plus, Trash } from '@vicons/tabler'
 import { getOrganizations } from '@/api/generated/organizations/organizations'
-import { OrganizationRole } from '@/api/types'
 import type { AddMemberRequest, OrganizationDto, OrganizationMemberDto } from '@/api/types'
+import { Permissions } from '@/lib/permissions'
 
 const props = defineProps<{
   organization: OrganizationDto | null
@@ -12,31 +12,31 @@ const visible = defineModel<boolean>('visible', { required: true })
 const { t } = useI18n()
 const client = getOrganizations()
 const organizationsStore = useOrganizationsStore()
+const rolesStore = useRolesStore()
 
 const members = ref<OrganizationMemberDto[]>([])
 const loading = ref(true)
 const loadError = ref<string | null>(null)
 const adding = ref(false)
 const removingId = ref<string | null>(null)
-const updatingRoleId = ref<string | null>(null)
+const updatingRolesId = ref<string | null>(null)
 const deactivating = ref(false)
 
 const addForm = reactive<AddMemberRequest>({
   email: '',
-  role: OrganizationRole.Member,
+  roleIds: [],
 })
 
-const roleOptions = computed(() => [
-  { label: t(organizationRoleLabelKey(OrganizationRole.Owner)), value: OrganizationRole.Owner },
-  { label: t(organizationRoleLabelKey(OrganizationRole.Admin)), value: OrganizationRole.Admin },
-  { label: t(organizationRoleLabelKey(OrganizationRole.Member)), value: OrganizationRole.Member },
-])
+const roleOptions = computed(() =>
+  rolesStore.roles.map((role) => ({ label: role.name, value: role.id })),
+)
 
-const isOwner = computed(() => props.organization?.myRole === OrganizationRole.Owner)
+const isOwner = computed(
+  () => props.organization?.myPermissionCodes.includes(Permissions.OrganizationManage) ?? false,
+)
 const canManage = computed(
   () =>
-    props.organization?.myRole === OrganizationRole.Owner ||
-    props.organization?.myRole === OrganizationRole.Admin,
+    props.organization?.myPermissionCodes.includes(Permissions.OrganizationMembersManage) ?? false,
 )
 
 function reportError(error: unknown) {
@@ -52,7 +52,10 @@ async function loadMembers() {
   loading.value = true
   loadError.value = null
   try {
-    members.value = await client.organizationsGetMembers(props.organization.id)
+    ;[members.value] = await Promise.all([
+      client.organizationsGetMembers(props.organization.id),
+      rolesStore.fetchRoles(props.organization.id),
+    ])
   } catch (error) {
     loadError.value =
       error instanceof ApiError
@@ -73,7 +76,7 @@ async function addMember() {
     })
     showSuccessMessage(t('organizations.memberAdded'))
     addForm.email = ''
-    addForm.role = OrganizationRole.Member
+    addForm.roleIds = []
     await loadMembers()
   } catch (error) {
     reportError(error)
@@ -82,17 +85,22 @@ async function addMember() {
   }
 }
 
-async function changeRole(member: OrganizationMemberDto, role: OrganizationRole) {
-  if (!props.organization || role === member.role) return
-  updatingRoleId.value = member.accountId
+async function changeRoles(member: OrganizationMemberDto, roleIds: string[]) {
+  if (!props.organization || roleIds.length === 0) return
+  updatingRolesId.value = member.accountId
   try {
-    await client.organizationsUpdateMemberRole(props.organization.id, member.accountId, { role })
-    member.role = role
-    showSuccessMessage(t('organizations.roleUpdated'))
+    await client.organizationsUpdateMemberRoles(props.organization.id, member.accountId, {
+      roleIds,
+    })
+    member.roleIds = roleIds
+    member.roleNames = rolesStore.roles
+      .filter((role) => roleIds.includes(role.id))
+      .map((role) => role.name)
+    showSuccessMessage(t('organizations.memberRolesUpdated'))
   } catch (error) {
     reportError(error)
   } finally {
-    updatingRoleId.value = null
+    updatingRolesId.value = null
   }
 }
 
@@ -183,12 +191,13 @@ watch(visible, (open) => {
             </p>
           </div>
           <n-select
-            :value="member.role"
+            :value="member.roleIds"
             :options="roleOptions"
+            multiple
             :disabled="!canManage"
-            :loading="updatingRoleId === member.accountId"
-            class="w-36! shrink-0"
-            @update:value="(role) => changeRole(member, role)"
+            :loading="updatingRolesId === member.accountId"
+            class="w-48! shrink-0"
+            @update:value="(roleIds) => changeRoles(member, roleIds)"
           />
           <n-button
             v-if="canManage"
@@ -222,7 +231,12 @@ watch(visible, (open) => {
           :placeholder="t('organizations.memberEmailPlaceholder')"
           :input-props="{ type: 'email' }"
         />
-        <n-select v-model:value="addForm.role" :options="roleOptions" class="w-full! sm:w-36!" />
+        <n-select
+          v-model:value="addForm.roleIds"
+          :options="roleOptions"
+          multiple
+          class="w-full! sm:w-48!"
+        />
         <n-button type="primary" attr-type="submit" :loading="adding" class="min-h-11 shrink-0">
           <template #icon
             ><n-icon><Plus /></n-icon

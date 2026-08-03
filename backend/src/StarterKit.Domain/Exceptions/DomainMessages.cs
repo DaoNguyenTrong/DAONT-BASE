@@ -22,4 +22,5 @@ public static class DomainMessages
     public const string ExternalLoginProviderUserIdRequired = nameof(ExternalLoginProviderUserIdRequired);
     public const string OrganizationNameRequired = nameof(OrganizationNameRequired);
     public const string OrganizationSlugRequired = nameof(OrganizationSlugRequired);
+    public const string RoleNameRequired = nameof(RoleNameRequired);
 }

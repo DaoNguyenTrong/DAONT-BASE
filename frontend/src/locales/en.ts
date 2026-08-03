@@ -38,6 +38,7 @@ export interface LocaleSchema {
     password: string
     email: string
     name: string
+    namePlaceholder: string
     loginTitle: string
     loginHint: string
     registerTitle: string
@@ -99,43 +100,11 @@ export interface LocaleSchema {
   }
   nav: {
     home: string
-    accounts: string
     organizations: string
     profile: string
     toggleSidebar: string
     collapseSidebar: string
     expandSidebar: string
-  }
-  accounts: {
-    title: string
-    searchPlaceholder: string
-    namePlaceholder: string
-    usernamePlaceholder: string
-    emailPlaceholder: string
-    passwordPlaceholder: string
-    phonePlaceholder: string
-    positionPlaceholder: string
-    addressPlaceholder: string
-    createNew: string
-    name: string
-    username: string
-    email: string
-    password: string
-    phone: string
-    position: string
-    address: string
-    status: string
-    active: string
-    inactive: string
-    empty: string
-    emptyHint: string
-    createTitle: string
-    editTitle: string
-    deleteConfirm: string
-    created: string
-    updated: string
-    deleted: string
-    updatedAtLabel: string
   }
   profile: {
     title: string
@@ -147,6 +116,16 @@ export interface LocaleSchema {
     personalInfo: string
     currentPasswordPlaceholder: string
     newPasswordPlaceholder: string
+    name: string
+    namePlaceholder: string
+    email: string
+    emailPlaceholder: string
+    phone: string
+    phonePlaceholder: string
+    position: string
+    positionPlaceholder: string
+    address: string
+    addressPlaceholder: string
     sessionsTitle: string
     sessionsEmpty: string
     currentDevice: string
@@ -178,9 +157,6 @@ export interface LocaleSchema {
     status: string
     active: string
     inactive: string
-    roleOwner: string
-    roleAdmin: string
-    roleMember: string
     empty: string
     emptyHint: string
     created: string
@@ -193,15 +169,32 @@ export interface LocaleSchema {
     addMemberTitle: string
     memberEmail: string
     memberEmailPlaceholder: string
-    memberRole: string
     memberAdded: string
     removeMember: string
     removeMemberConfirm: string
     memberRemoved: string
-    roleUpdated: string
+    memberRolesUpdated: string
     deactivate: string
     deactivateConfirm: string
     deactivated: string
+    roles: string
+    rolesTitle: string
+    rolesEmpty: string
+    roleNoPermissions: string
+    createRole: string
+    createRoleTitle: string
+    editRoleTitle: string
+    roleName: string
+    roleNamePlaceholder: string
+    rolePermissions: string
+    roleDeleteConfirm: string
+    roleCreated: string
+    roleUpdated: string
+    roleDeleted: string
+    roleSystemBadge: string
+    permissionOrganizationManage: string
+    permissionOrganizationMembersManage: string
+    permissionOrganizationRolesManage: string
   }
 }
 
@@ -246,6 +239,7 @@ const en: LocaleSchema = {
     password: 'Password',
     email: 'Email',
     name: 'Name',
+    namePlaceholder: 'Enter your full name',
     loginTitle: 'Sign in',
     loginHint: 'Use your assigned username and password to continue.',
     registerTitle: 'Create an account',
@@ -315,43 +309,11 @@ const en: LocaleSchema = {
   },
   nav: {
     home: 'Home',
-    accounts: 'Accounts',
     organizations: 'Organizations',
     profile: 'Profile',
     toggleSidebar: 'Toggle sidebar',
     collapseSidebar: 'Collapse sidebar',
     expandSidebar: 'Expand sidebar',
-  },
-  accounts: {
-    title: 'Accounts',
-    searchPlaceholder: 'Search accounts...',
-    namePlaceholder: 'Enter the full name',
-    usernamePlaceholder: 'Enter the username',
-    emailPlaceholder: 'Enter the email address',
-    passwordPlaceholder: 'Enter the password',
-    phonePlaceholder: 'Enter the phone number',
-    positionPlaceholder: 'Enter the position',
-    addressPlaceholder: 'Enter the address',
-    createNew: 'New account',
-    name: 'Name',
-    username: 'Username',
-    email: 'Email',
-    password: 'Password',
-    phone: 'Phone',
-    position: 'Position',
-    address: 'Address',
-    status: 'Status',
-    active: 'Active',
-    inactive: 'Inactive',
-    empty: 'No accounts yet',
-    emptyHint: 'Create an account to get started.',
-    createTitle: 'Create account',
-    editTitle: 'Edit account',
-    deleteConfirm: 'Are you sure you want to delete this account?',
-    created: 'Account created',
-    updated: 'Account updated',
-    deleted: 'Account deleted',
-    updatedAtLabel: 'Updated',
   },
   profile: {
     title: 'Profile',
@@ -363,6 +325,16 @@ const en: LocaleSchema = {
     personalInfo: 'Personal information',
     currentPasswordPlaceholder: 'Enter your current password',
     newPasswordPlaceholder: 'Enter a new password',
+    name: 'Name',
+    namePlaceholder: 'Enter the full name',
+    email: 'Email',
+    emailPlaceholder: 'Enter the email address',
+    phone: 'Phone',
+    phonePlaceholder: 'Enter the phone number',
+    position: 'Position',
+    positionPlaceholder: 'Enter the position',
+    address: 'Address',
+    addressPlaceholder: 'Enter the address',
     sessionsTitle: 'Active sessions',
     sessionsEmpty: 'No active sessions.',
     currentDevice: 'This device',
@@ -394,9 +366,6 @@ const en: LocaleSchema = {
     status: 'Status',
     active: 'Active',
     inactive: 'Inactive',
-    roleOwner: 'Owner',
-    roleAdmin: 'Admin',
-    roleMember: 'Member',
     empty: 'No organizations yet',
     emptyHint: 'Create an organization to get started.',
     created: 'Organization created',
@@ -409,16 +378,34 @@ const en: LocaleSchema = {
     addMemberTitle: 'Add member',
     memberEmail: 'Email',
     memberEmailPlaceholder: "Enter the member's email address",
-    memberRole: 'Role',
     memberAdded: 'Member added',
     removeMember: 'Remove member',
     removeMemberConfirm: 'Remove this member from the organization?',
     memberRemoved: 'Member removed',
-    roleUpdated: 'Role updated',
+    memberRolesUpdated: 'Roles updated',
     deactivate: 'Deactivate organization',
     deactivateConfirm:
       'Deactivate this organization? All members will immediately lose access. This cannot be undone.',
     deactivated: 'Organization deactivated',
+    roles: 'Roles',
+    rolesTitle: 'Roles of {name}',
+    rolesEmpty: 'No roles yet.',
+    roleNoPermissions: 'No permissions',
+    createRole: 'Create role',
+    createRoleTitle: 'Create role',
+    editRoleTitle: 'Edit role',
+    roleName: 'Name',
+    roleNamePlaceholder: 'Enter the role name',
+    rolePermissions: 'Permissions',
+    roleDeleteConfirm:
+      'Delete this role? Members holding only this role will lose its permissions.',
+    roleCreated: 'Role created',
+    roleUpdated: 'Role updated',
+    roleDeleted: 'Role deleted',
+    roleSystemBadge: 'System',
+    permissionOrganizationManage: 'Manage organization',
+    permissionOrganizationMembersManage: 'Manage members',
+    permissionOrganizationRolesManage: 'Manage roles',
   },
 }
 

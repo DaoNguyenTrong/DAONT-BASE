@@ -12,11 +12,6 @@ public sealed class OrganizationMemberConfiguration : IEntityTypeConfiguration<O
 
         builder.HasKey(member => member.Id);
 
-        builder.Property(member => member.Role)
-            .IsRequired()
-            .HasConversion<string>()
-            .HasMaxLength(20);
-
         builder.Property(member => member.IsActive)
             .IsRequired()
             .HasDefaultValue(true);

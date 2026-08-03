@@ -9,4 +9,5 @@ public sealed record AuthResult(
     AccountDto Account,
     bool IsPersistent,
     Guid? OrganizationId,
-    string? OrganizationName);
+    string? OrganizationName,
+    IReadOnlyList<string> Permissions);

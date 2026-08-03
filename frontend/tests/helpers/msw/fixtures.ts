@@ -23,5 +23,8 @@ export function makeAuthResponse(overrides: Partial<Account> = {}): AuthResponse
     refreshToken: 'refresh-token',
     accessTokenExpiry: '2026-12-31T00:00:00Z',
     account: makeAccount(overrides),
+    organizationId: null,
+    organizationName: null,
+    permissions: [],
   }
 }

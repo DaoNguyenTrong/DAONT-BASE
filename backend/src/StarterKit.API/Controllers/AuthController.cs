@@ -292,6 +292,7 @@ public sealed class AuthController(
             result.AccessTokenExpiry,
             result.Account,
             result.OrganizationId,
-            result.OrganizationName);
+            result.OrganizationName,
+            result.Permissions);
     }
 }

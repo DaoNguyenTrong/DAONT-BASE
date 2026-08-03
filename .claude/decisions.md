@@ -8,6 +8,25 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-08-02 — Authorization: organization/role permission checks moved to ASP.NET Core policy-based `[Authorize]`
+
+`EnsurePermissionAsync`/`EnsureActiveMemberAsync` moved out of `OrganizationService`/`RoleService` into a custom
+`IAuthorizationRequirement`+`IAuthorizationHandler`+`IAuthorizationPolicyProvider`, triggered via
+`[Authorize(Policy=...)]` on controller actions — enforcement now runs in ASP.NET Core's authorization
+middleware before the action executes, not inline in application code. No change to what's checked, the
+cache, or JWT contents — only where the check happens. Also required a custom
+`IAuthorizationMiddlewareResultHandler`: the framework's default handler writes an empty 403 body, which
+would have silently dropped the existing localized `CodedProblemDetails` error shown in the frontend.
+
+### 2026-08-02 — Authorization: switch to RBAC with per-organization custom roles
+
+Replaces the hardcoded `OrganizationRole` enum (Owner/Admin/Member) with configurable Role/Permission,
+each org authoring its own roles — chosen over a global role catalog or a seed-only hybrid to maximize
+per-tenant flexibility, accepting the heavier cost (Role CRUD API+UI required from v1). Permissions stay
+a fixed code-defined catalog (not user-creatable); only Roles (permission bundles) are configurable.
+Effective permissions resolve per-request via a short-TTL cache + invalidation (same pattern as the
+existing `org_id`/`TenantAccessService` decision), not embedded in the JWT, to keep revocation near-instant.
+
 ### 2026-08-02 — OpenAPI enum schemas rewritten to strings via a schema transformer, not per-enum attributes
 
 The built-in OpenAPI generator is System.Text.Json-based and has no visibility into the app's

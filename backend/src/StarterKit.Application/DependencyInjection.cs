@@ -7,6 +7,8 @@ using StarterKit.Application.Services.AuditLogs;
 using StarterKit.Application.Services.Auth;
 using StarterKit.Application.Services.Files;
 using StarterKit.Application.Services.Organizations;
+using StarterKit.Application.Services.PermissionCatalog;
+using StarterKit.Application.Services.Roles;
 using StarterKit.Application.Services.SystemSettings;
 
 namespace StarterKit.Application;
@@ -21,6 +23,8 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IOrganizationService, OrganizationService>();
+        services.AddScoped<IPermissionCatalogService, PermissionCatalogService>();
+        services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<ISystemSettingsService, SystemSettingsService>();
 
         return services;

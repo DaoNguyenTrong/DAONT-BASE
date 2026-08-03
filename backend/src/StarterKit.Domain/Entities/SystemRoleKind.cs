@@ -1,6 +1,6 @@
 namespace StarterKit.Domain.Entities;
 
-public enum OrganizationRole
+public enum SystemRoleKind
 {
     Owner,
     Admin,

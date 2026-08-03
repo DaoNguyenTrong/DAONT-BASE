@@ -25,6 +25,7 @@ public class AuthServiceTests
         IUnitOfWork UnitOfWork,
         IJwtTokenService JwtTokenService,
         ITenantAccessService TenantAccessService,
+        IPermissionResolver PermissionResolver,
         IPasswordHasher PasswordHasher,
         IEmailSender EmailSender,
         IExternalAuthProvider ExternalAuthProvider,
@@ -64,6 +65,10 @@ public class AuthServiceTests
         ITenantAccessService tenantAccessService = Substitute.For<ITenantAccessService>();
         tenantAccessService.HasActiveAccessAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(true);
 
+        IPermissionResolver permissionResolver = Substitute.For<IPermissionResolver>();
+        permissionResolver.GetEffectivePermissionsAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns((IReadOnlySet<string>)new HashSet<string>());
+
         IPasswordHasher passwordHasher = Substitute.For<IPasswordHasher>();
         IEmailSender emailSender = Substitute.For<IEmailSender>();
 
@@ -89,6 +94,7 @@ public class AuthServiceTests
             currentUserService,
             jwtTokenService,
             tenantAccessService,
+            permissionResolver,
             passwordHasher,
             emailSender,
             [externalAuthProvider],
@@ -104,6 +110,7 @@ public class AuthServiceTests
             unitOfWork,
             jwtTokenService,
             tenantAccessService,
+            permissionResolver,
             passwordHasher,
             emailSender,
             externalAuthProvider,
@@ -907,7 +914,7 @@ public class AuthServiceTests
 
         Organization organization = Organization.Create(new OrganizationParams("Acme", "acme"));
         OrganizationMember membership = OrganizationMember.Create(
-            new OrganizationMemberParams(organization.Id, account.Id, OrganizationRole.Owner));
+            new OrganizationMemberParams(organization.Id, account.Id));
         f.OrganizationMemberRepo.ListAsync(
                 Arg.Any<Expression<Func<OrganizationMember, bool>>>(), Arg.Any<CancellationToken>())
             .Returns([membership]);
@@ -933,8 +940,8 @@ public class AuthServiceTests
         f.OrganizationMemberRepo.ListAsync(
                 Arg.Any<Expression<Func<OrganizationMember, bool>>>(), Arg.Any<CancellationToken>())
             .Returns([
-                OrganizationMember.Create(new OrganizationMemberParams(Guid.NewGuid(), account.Id, OrganizationRole.Member)),
-                OrganizationMember.Create(new OrganizationMemberParams(Guid.NewGuid(), account.Id, OrganizationRole.Member))
+                OrganizationMember.Create(new OrganizationMemberParams(Guid.NewGuid(), account.Id)),
+                OrganizationMember.Create(new OrganizationMemberParams(Guid.NewGuid(), account.Id))
             ]);
         LoginRequest request = new(account.Username, "correct-password");
 
@@ -1008,7 +1015,7 @@ public class AuthServiceTests
         Organization organization = Organization.Create(new OrganizationParams("Acme", "acme"));
         organization.Deactivate();
         OrganizationMember membership = OrganizationMember.Create(
-            new OrganizationMemberParams(organization.Id, accountId, OrganizationRole.Owner));
+            new OrganizationMemberParams(organization.Id, accountId));
         RepositoryPredicateStub.StubFirstOrDefault(f.OrganizationMemberRepo, [membership]);
         f.OrganizationRepo.GetByIdAsync(organization.Id, Arg.Any<CancellationToken>()).Returns(organization);
 
@@ -1027,7 +1034,7 @@ public class AuthServiceTests
 
         Organization organization = Organization.Create(new OrganizationParams("Acme", "acme"));
         OrganizationMember membership = OrganizationMember.Create(
-            new OrganizationMemberParams(organization.Id, account.Id, OrganizationRole.Owner));
+            new OrganizationMemberParams(organization.Id, account.Id));
         RepositoryPredicateStub.StubFirstOrDefault(f.OrganizationMemberRepo, [membership]);
         f.OrganizationRepo.GetByIdAsync(organization.Id, Arg.Any<CancellationToken>()).Returns(organization);
 

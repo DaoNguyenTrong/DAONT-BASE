@@ -126,6 +126,9 @@
   <data name="OrganizationSlugRequired" xml:space="preserve">
     <value>Organization slug is required.</value>
   </data>
+  <data name="RoleNameRequired" xml:space="preserve">
+    <value>Role name is required.</value>
+  </data>
   <data name="OrganizationAccessDenied" xml:space="preserve">
     <value>You do not have access to this organization.</value>
   </data>
@@ -137,6 +140,18 @@
   </data>
   <data name="OrganizationSlugAlreadyExists" xml:space="preserve">
     <value>Organization slug already exists.</value>
+  </data>
+  <data name="OrganizationRoleNameAlreadyExists" xml:space="preserve">
+    <value>A role with this name already exists in this organization.</value>
+  </data>
+  <data name="OrganizationSystemRoleImmutable" xml:space="preserve">
+    <value>System roles cannot be edited or deleted.</value>
+  </data>
+  <data name="OrganizationMemberRequiresAtLeastOneRole" xml:space="preserve">
+    <value>A member must have at least one role.</value>
+  </data>
+  <data name="UnknownPermissionCode" xml:space="preserve">
+    <value>Unknown permission code.</value>
   </data>
   <data name="ExternalLoginEmailNotConfirmed" xml:space="preserve">
     <value>An account with this email already exists but has not been confirmed yet. Please confirm the email before linking an external login.</value>

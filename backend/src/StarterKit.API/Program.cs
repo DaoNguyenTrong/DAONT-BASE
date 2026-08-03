@@ -1,12 +1,15 @@
 using System.Globalization;
 using System.Net;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using StarterKit.API.Authorization;
 using StarterKit.API.Common;
 using StarterKit.API.Extensions;
 using StarterKit.API.Middleware;
@@ -101,6 +104,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddOpenApiWithAuth();
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationResultHandler>();
 RateLimiterSettings rateLimiterSettings = builder.Configuration
     .GetSection(nameof(RateLimiterSettings)).Get<RateLimiterSettings>() ?? new RateLimiterSettings();
 

@@ -44,22 +44,19 @@ export type { ResendVerificationRequest } from './generated/model/resendVerifica
 export type { ExternalLoginRequest } from './generated/model/externalLoginRequest'
 export type { RefreshTokenRequest } from './generated/model/refreshTokenRequest'
 export type { RefreshTokenRequest as LogoutRequest } from './generated/model/refreshTokenRequest'
-export type { CreateAccountRequest } from './generated/model/createAccountRequest'
-export type { UpdateAccountRequest } from './generated/model/updateAccountRequest'
 export type { ProfileDto } from './generated/model/profileDto'
 export type { UpdateProfileRequest as ProfileUpdateRequest } from './generated/model/updateProfileRequest'
 export type { ChangePasswordRequest } from './generated/model/changePasswordRequest'
 export type { OrganizationDto } from './generated/model/organizationDto'
 export type { OrganizationMemberDto } from './generated/model/organizationMemberDto'
-export { OrganizationRole } from './generated/model/organizationRole'
 export type { CreateOrganizationRequest } from './generated/model/createOrganizationRequest'
 export type { AddMemberRequest } from './generated/model/addMemberRequest'
-export type { UpdateMemberRoleRequest } from './generated/model/updateMemberRoleRequest'
+export type { UpdateMemberRolesRequest } from './generated/model/updateMemberRolesRequest'
 export type { SwitchOrganizationRequest } from './generated/model/switchOrganizationRequest'
-
-import type { AccountDto as Account } from './generated/model/accountDto'
-
-export type AccountPagedResult = PagedResult<Account>
+export type { RoleDto } from './generated/model/roleDto'
+export type { PermissionDto } from './generated/model/permissionDto'
+export type { CreateRoleRequest } from './generated/model/createRoleRequest'
+export type { UpdateRoleRequest } from './generated/model/updateRoleRequest'
 
 // Hand-kept: generated SessionDto.id is `number | string` (same int64-as-string widening as
 // pagination, see PagedResult above) — normalized to plain `number` by auth-api.ts.
