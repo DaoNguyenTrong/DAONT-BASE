@@ -5,8 +5,14 @@ import AppSidebar from './AppSidebar.vue'
 
 const notificationsStore = useNotificationsStore()
 
-onMounted(() => notificationsStore.startPolling())
-onUnmounted(() => notificationsStore.stopPolling())
+onMounted(() => {
+  notificationsStore.startPolling()
+  notificationsStore.connectRealtime()
+})
+onUnmounted(() => {
+  notificationsStore.stopPolling()
+  notificationsStore.disconnectRealtime()
+})
 </script>
 
 <template>
