@@ -24,4 +24,6 @@ public static class DomainMessages
     public const string OrganizationSlugRequired = nameof(OrganizationSlugRequired);
     public const string RoleNameRequired = nameof(RoleNameRequired);
     public const string NotificationTypeRequired = nameof(NotificationTypeRequired);
+    public const string PushSubscriptionTokenRequired = nameof(PushSubscriptionTokenRequired);
+    public const string PushSubscriptionPlatformRequired = nameof(PushSubscriptionPlatformRequired);
 }
