@@ -207,6 +207,20 @@ export interface LocaleSchema {
     permissionOrganizationMembersManage: string
     permissionOrganizationRolesManage: string
   }
+  notifications: {
+    title: string
+    empty: string
+    markAllRead: string
+    markAsRead: string
+    OrganizationMemberAdded: string
+  }
+  pushNotifications: {
+    title: string
+    enable: string
+    description: string
+    notSupported: string
+    permissionDenied: string
+  }
 }
 
 const en: LocaleSchema = {
@@ -428,6 +442,20 @@ const en: LocaleSchema = {
     permissionOrganizationManage: 'Manage organization',
     permissionOrganizationMembersManage: 'Manage members',
     permissionOrganizationRolesManage: 'Manage roles',
+  },
+  notifications: {
+    title: 'Notifications',
+    empty: 'No notifications yet.',
+    markAllRead: 'Mark all as read',
+    markAsRead: 'Mark as read',
+    OrganizationMemberAdded: 'You were added to organization {organizationName}',
+  },
+  pushNotifications: {
+    title: 'Push notifications',
+    enable: 'Push notifications',
+    description: 'Get notified on this device even when the app is closed.',
+    notSupported: 'Push notifications are not supported on this browser.',
+    permissionDenied: 'Notifications are blocked for this site in your browser settings.',
   },
 }
 

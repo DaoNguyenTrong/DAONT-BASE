@@ -24,8 +24,20 @@ const profileFormRef = ref<FormInst | null>(null)
 const passwordFormRef = ref<FormInst | null>(null)
 const profileErrors = ref<Record<string, string>>({})
 const passwordErrors = ref<Record<string, string>>({})
-const activeTab = ref<'personalInfo' | 'changePassword' | 'sessions'>('personalInfo')
+const activeTab = ref<'personalInfo' | 'changePassword' | 'sessions' | 'notifications'>(
+  'personalInfo',
+)
 const hasPassword = ref(true)
+
+const push = usePushNotifications()
+
+async function togglePush(enabled: boolean) {
+  if (enabled) {
+    await push.subscribe()
+  } else {
+    await push.unsubscribe()
+  }
+}
 
 const profileRules = computed<FormRules>(() => ({
   name: [{ required: true, message: t('profile.nameRequired'), trigger: ['input', 'blur'] }],
@@ -507,6 +519,36 @@ watch(visible, (open) => {
               </n-button>
             </li>
           </ul>
+        </div>
+      </n-tab-pane>
+
+      <n-tab-pane name="notifications" :tab="t('pushNotifications.title')">
+        <div class="pt-3">
+          <p v-if="!push.isSupported.value" class="text-sm text-surface-500 dark:text-surface-400">
+            {{ t('pushNotifications.notSupported') }}
+          </p>
+          <div v-else class="flex items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-surface-800 dark:text-surface-100">
+                {{ t('pushNotifications.enable') }}
+              </p>
+              <p class="mt-1 text-xs text-surface-500 dark:text-surface-400">
+                {{ t('pushNotifications.description') }}
+              </p>
+              <p
+                v-if="push.permission.value === 'denied'"
+                class="mt-1 text-xs text-error-600 dark:text-error-400"
+              >
+                {{ t('pushNotifications.permissionDenied') }}
+              </p>
+            </div>
+            <n-switch
+              :value="push.isSubscribed.value"
+              :loading="push.isLoading.value"
+              :disabled="push.permission.value === 'denied'"
+              @update:value="togglePush"
+            />
+          </div>
         </div>
       </n-tab-pane>
     </n-tabs>

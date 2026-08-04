@@ -55,16 +55,22 @@ function resetFontSize() {
       </template>
       <div class="flex min-w-42 flex-col">
         <n-button text :disabled="!canIncrease" @click="increaseFontSize">
-          <template #icon><n-icon><Plus /></n-icon></template>
+          <template #icon
+            ><n-icon><Plus /></n-icon
+          ></template>
           {{ t('common.increaseFontSize') }}
         </n-button>
         <n-button text :disabled="!canDecrease" @click="decreaseFontSize">
-          <template #icon><n-icon><Minus /></n-icon></template>
+          <template #icon
+            ><n-icon><Minus /></n-icon
+          ></template>
           {{ t('common.decreaseFontSize') }}
         </n-button>
         <n-divider class="my-1!" />
         <n-button text :disabled="!canReset" @click="resetFontSize">
-          <template #icon><n-icon><Refresh /></n-icon></template>
+          <template #icon
+            ><n-icon><Refresh /></n-icon
+          ></template>
           {{ t('common.resetFontSize') }}
         </n-button>
       </div>

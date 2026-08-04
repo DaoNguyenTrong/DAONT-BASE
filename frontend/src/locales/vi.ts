@@ -218,6 +218,20 @@ const vi: LocaleSchema = {
     permissionOrganizationMembersManage: 'Quản lý thành viên',
     permissionOrganizationRolesManage: 'Quản lý vai trò',
   },
+  notifications: {
+    title: 'Thông báo',
+    empty: 'Chưa có thông báo nào.',
+    markAllRead: 'Đánh dấu tất cả đã đọc',
+    markAsRead: 'Đánh dấu đã đọc',
+    OrganizationMemberAdded: 'Bạn đã được thêm vào tổ chức {organizationName}',
+  },
+  pushNotifications: {
+    title: 'Thông báo đẩy',
+    enable: 'Thông báo đẩy',
+    description: 'Nhận thông báo trên thiết bị này ngay cả khi ứng dụng đã đóng.',
+    notSupported: 'Trình duyệt này không hỗ trợ thông báo đẩy.',
+    permissionDenied: 'Thông báo cho trang này đang bị chặn trong cài đặt trình duyệt của bạn.',
+  },
 }
 
 export default vi

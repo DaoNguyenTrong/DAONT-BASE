@@ -78,11 +78,7 @@ async function signIn() {
   border-radius: 0;
   background-color: #ffffff;
   color: #5e5e5e;
-  font-family:
-    'Segoe UI Semibold',
-    'Segoe UI',
-    Arial,
-    sans-serif;
+  font-family: 'Segoe UI Semibold', 'Segoe UI', Arial, sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;

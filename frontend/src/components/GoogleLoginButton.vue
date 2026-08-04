@@ -103,10 +103,7 @@ function signIn() {
   border-radius: 0;
   background-color: #ffffff;
   color: #1f1f1f;
-  font-family:
-    'Roboto',
-    Arial,
-    sans-serif;
+  font-family: 'Roboto', Arial, sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;

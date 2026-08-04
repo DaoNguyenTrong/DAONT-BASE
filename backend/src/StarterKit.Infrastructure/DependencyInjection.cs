@@ -21,8 +21,11 @@ public static class DependencyInjection
         services.AddJwtAuthentication(configuration);
         services.AddStorage(configuration);
         services.AddEmail(configuration);
+        services.AddPush(configuration);
         services.AddExternalAuth(configuration);
         services.AddBackgroundJobs(configuration);
+        services.AddNotificationChannels();
+        services.AddRealtime();
         return services;
     }
 

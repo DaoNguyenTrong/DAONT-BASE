@@ -1,6 +1,6 @@
 namespace StarterKit.Domain.Exceptions;
 
-public sealed class NotFoundException : ApiException
+public sealed class NotFoundException : AppException
 {
     public NotFoundException(string message)
         : base(message)
@@ -15,8 +15,4 @@ public sealed class NotFoundException : ApiException
     }
 
     public object[] Args { get; }
-
-    public override int StatusCode => 404;
-
-    public override string Title => "Not Found";
 }

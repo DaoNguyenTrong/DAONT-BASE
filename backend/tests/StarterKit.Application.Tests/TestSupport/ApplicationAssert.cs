@@ -5,7 +5,7 @@ namespace StarterKit.Application.Tests.TestSupport;
 public static class ApplicationAssert
 {
     public static async Task ThrowsWithMessageAsync<TException>(string expectedMessage, Func<Task> act)
-        where TException : ApiException
+        where TException : AppException
     {
         TException ex = await Assert.ThrowsAsync<TException>(act);
         Assert.Equal(expectedMessage, ex.Message);

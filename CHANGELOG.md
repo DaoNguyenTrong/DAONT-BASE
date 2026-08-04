@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.3.0] - 2026-08-04
+
+### Added
+
+- Notification module Phase 2: `NotifyAsync` now fans out to background-dispatched channels via Hangfire (a dedicated `notifications` queue) instead of only persisting in-app — starting with an `EmailNotificationChannel` that reuses the existing SMTP sender. Per-channel failures are logged rather than retried, to avoid duplicate sends when Hangfire would otherwise retry the whole job. The organization-member-added notification now carries the organization's name, so both the in-app UI and the new email surface it instead of a generic placeholder.
+- Notification module Phase 3: Web Push via Firebase Cloud Messaging, plugged into the same channel fan-out as email. Backend adds a `PushSubscription` entity and a `PushNotificationChannel` built on the official `FirebaseAdmin` SDK behind an `IPushSender` abstraction; invalid tokens are pruned reactively from the multicast send response. `FcmSettings` is optional — the channel simply doesn't register when unconfigured, so this doesn't affect existing setups. Frontend adds a push-notification toggle to the profile dialog, backed by a `usePushNotifications` composable and a static `firebase-messaging-sw.js` service worker; also optional via `VITE_FIREBASE_*` env vars.
+- Notification module Phase 3B: real-time in-app delivery via SignalR, pushed synchronously in `NotifyAsync` rather than through the Hangfire fan-out (which would add poll-interval + DB round-trip latency). Backend adds an `IRealtimeNotifier` abstraction and a `NotificationHub`/`SignalRRealtimeNotifier` pair, running in-memory (no Redis backplane) for the current single-instance deployment. Frontend's notification store opens a hub connection alongside the existing 30s poll, which now acts purely as a fallback — paused while the hub is connected, resumed during SignalR's own reconnect attempts, and reconciled via a REST catch-up fetch once reconnected.
+
 ## [v1.2.0] - 2026-08-03
 
 ### Added

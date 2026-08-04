@@ -57,6 +57,10 @@ export type { RoleDto } from './generated/model/roleDto'
 export type { PermissionDto } from './generated/model/permissionDto'
 export type { CreateRoleRequest } from './generated/model/createRoleRequest'
 export type { UpdateRoleRequest } from './generated/model/updateRoleRequest'
+export type { NotificationDto as Notification } from './generated/model/notificationDto'
+export type { UnreadCountDto } from './generated/model/unreadCountDto'
+export type { RegisterPushSubscriptionRequest } from './generated/model/registerPushSubscriptionRequest'
+export type { PushSubscriptionStatusResponse } from './generated/model/pushSubscriptionStatusResponse'
 
 // Hand-kept: generated SessionDto.id is `number | string` (same int64-as-string widening as
 // pagination, see PagedResult above) — normalized to plain `number` by auth-api.ts.

@@ -22,6 +22,7 @@ using StarterKit.Application.Resources;
 using StarterKit.Infrastructure;
 using StarterKit.Infrastructure.Persistence;
 using StarterKit.Infrastructure.Persistence.Seeding;
+using StarterKit.Infrastructure.Services.Notifications;
 using Prometheus;
 using Serilog;
 using Microsoft.Extensions.FileProviders;
@@ -202,6 +203,8 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 });
 
 app.MapControllers();
+
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 // Not under /api, so it already skips UserTimeZoneMiddleware/rate limiting/auth like /hangfire —
 // restrict at the network layer (internal only) the same way, not exposed to the internet.

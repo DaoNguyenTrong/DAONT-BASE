@@ -2,6 +2,17 @@
 import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
+
+const notificationsStore = useNotificationsStore()
+
+onMounted(() => {
+  notificationsStore.startPolling()
+  notificationsStore.connectRealtime()
+})
+onUnmounted(() => {
+  notificationsStore.stopPolling()
+  notificationsStore.disconnectRealtime()
+})
 </script>
 
 <template>
