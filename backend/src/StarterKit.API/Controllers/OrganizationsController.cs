@@ -12,6 +12,7 @@ namespace StarterKit.API.Controllers;
 [Route("api/organizations")]
 public sealed class OrganizationsController(
     IOrganizationService organizationService,
+    IOrganizationMembershipService organizationMembershipService,
     IRoleService roleService) : ControllerBase
 {
     /// <summary>Creates a new organization. The caller becomes its Owner.</summary>
@@ -68,7 +69,7 @@ public sealed class OrganizationsController(
         AddMemberRequest request,
         CancellationToken cancellationToken)
     {
-        await organizationService.AddMemberAsync(id, request, cancellationToken);
+        await organizationMembershipService.AddMemberAsync(id, request, cancellationToken);
 
         return NoContent();
     }
@@ -87,7 +88,7 @@ public sealed class OrganizationsController(
         UpdateMemberRolesRequest request,
         CancellationToken cancellationToken)
     {
-        await organizationService.UpdateMemberRolesAsync(id, accountId, request, cancellationToken);
+        await organizationMembershipService.UpdateMemberRolesAsync(id, accountId, request, cancellationToken);
 
         return NoContent();
     }
@@ -105,7 +106,7 @@ public sealed class OrganizationsController(
         Guid accountId,
         CancellationToken cancellationToken)
     {
-        await organizationService.RemoveMemberAsync(id, accountId, cancellationToken);
+        await organizationMembershipService.RemoveMemberAsync(id, accountId, cancellationToken);
 
         return NoContent();
     }

@@ -16,7 +16,7 @@ public sealed class ExceptionHandlingMiddleware(
         {
             await next(context);
         }
-        catch (ApiException exception)
+        catch (AppException exception)
         {
             object[] args = exception switch
             {
@@ -25,10 +25,12 @@ public sealed class ExceptionHandlingMiddleware(
                 _ => []
             };
 
+            (int statusCode, string title) = AppExceptionHttpMapper.Map(exception);
+
             CodedProblemDetails problemDetails = ApiProblemDetailsFactory.Create(
                 localizer,
-                exception.StatusCode,
-                exception.Title,
+                statusCode,
+                title,
                 exception.Message,
                 args.Length > 0 ? args : null);
 
