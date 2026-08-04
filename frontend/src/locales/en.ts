@@ -441,7 +441,7 @@ const en: LocaleSchema = {
     empty: 'No notifications yet.',
     markAllRead: 'Mark all as read',
     markAsRead: 'Mark as read',
-    OrganizationMemberAdded: 'You were added to an organization',
+    OrganizationMemberAdded: 'You were added to organization {organizationName}',
   },
 }
 
