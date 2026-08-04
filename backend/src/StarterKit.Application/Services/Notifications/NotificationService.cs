@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Microsoft.Extensions.Logging;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Mappings;
 using StarterKit.Application.Common.Models;
@@ -11,7 +12,9 @@ namespace StarterKit.Application.Services.Notifications;
 
 public sealed class NotificationService(
     IUnitOfWork unitOfWork,
-    ICurrentUserService currentUserService) : INotificationService
+    ICurrentUserService currentUserService,
+    IBackgroundJobDispatcher jobDispatcher,
+    ILogger<NotificationService> logger) : INotificationService
 {
     private const int DefaultPageNumber = 1;
     private const int DefaultPageSize = 10;
@@ -21,6 +24,19 @@ public sealed class NotificationService(
         Notification notification = Notification.Create(request);
         await unitOfWork.Repository<Notification, Guid>().AddAsync(notification, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            jobDispatcher.Enqueue<INotificationDispatcher>(
+                dispatcher => dispatcher.DispatchAsync(notification.Id, CancellationToken.None),
+                NotificationQueues.Default);
+        }
+        catch (Exception exception)
+        {
+            // In-app notification đã commit — lỗi enqueue không được biến 1 NotifyAsync
+            // thành công thành lỗi phía caller.
+            logger.LogError(exception, "Failed to enqueue dispatch for notification {NotificationId}", notification.Id);
+        }
     }
 
     public async Task<PagedResult<NotificationDto>> GetMyNotificationsAsync(

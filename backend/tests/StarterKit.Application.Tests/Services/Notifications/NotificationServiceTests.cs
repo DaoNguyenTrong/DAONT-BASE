@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Models;
@@ -17,7 +18,8 @@ public class NotificationServiceTests
         NotificationService Service,
         IRepository<Notification, Guid> NotificationRepo,
         IUnitOfWork UnitOfWork,
-        ICurrentUserService CurrentUserService);
+        ICurrentUserService CurrentUserService,
+        IBackgroundJobDispatcher JobDispatcher);
 
     private static Fixture CreateFixture()
     {
@@ -26,10 +28,12 @@ public class NotificationServiceTests
         unitOfWork.Repository<Notification, Guid>().Returns(notificationRepo);
 
         ICurrentUserService currentUserService = Substitute.For<ICurrentUserService>();
+        IBackgroundJobDispatcher jobDispatcher = Substitute.For<IBackgroundJobDispatcher>();
 
-        NotificationService service = new(unitOfWork, currentUserService);
+        NotificationService service = new(
+            unitOfWork, currentUserService, jobDispatcher, NullLogger<NotificationService>.Instance);
 
-        return new Fixture(service, notificationRepo, unitOfWork, currentUserService);
+        return new Fixture(service, notificationRepo, unitOfWork, currentUserService, jobDispatcher);
     }
 
     private static Notification CreateNotification(Guid accountId, string type = "OrganizationMemberAdded") =>
@@ -48,6 +52,35 @@ public class NotificationServiceTests
 
         await f.NotificationRepo.Received(1).AddAsync(
             Arg.Is<Notification>(n => n.AccountId == accountId), Arg.Any<CancellationToken>());
+        await f.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task NotifyAsync_Success_EnqueuesDispatchOnNotificationQueue()
+    {
+        Fixture f = CreateFixture();
+        Guid accountId = Guid.NewGuid();
+
+        await f.Service.NotifyAsync(
+            new NotificationParams(accountId, NotificationTypes.OrganizationMemberAdded), CancellationToken.None);
+
+        f.JobDispatcher.Received(1).Enqueue(
+            Arg.Any<Expression<Func<INotificationDispatcher, Task>>>(), NotificationQueues.Default);
+    }
+
+    [Fact]
+    public async Task NotifyAsync_EnqueueThrows_DoesNotPropagate()
+    {
+        Fixture f = CreateFixture();
+        Guid accountId = Guid.NewGuid();
+        f.JobDispatcher
+            .When(d => d.Enqueue(
+                Arg.Any<Expression<Func<INotificationDispatcher, Task>>>(), Arg.Any<string>()))
+            .Do(_ => throw new InvalidOperationException("hangfire down"));
+
+        await f.Service.NotifyAsync(
+            new NotificationParams(accountId, NotificationTypes.OrganizationMemberAdded), CancellationToken.None);
+
         await f.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

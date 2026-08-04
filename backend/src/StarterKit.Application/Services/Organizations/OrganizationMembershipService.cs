@@ -52,11 +52,15 @@ public sealed class OrganizationMembershipService(
         await tenantAccessService.InvalidateMemberAsync(organizationId, account.Id, cancellationToken);
         await permissionResolver.InvalidateMemberAsync(organizationId, account.Id, cancellationToken);
 
+        Organization organization = await unitOfWork.Repository<Organization, Guid>()
+            .GetByIdAsync(organizationId, cancellationToken)
+            ?? throw new NotFoundException(nameof(Organization), organizationId);
+
         await notificationService.NotifyAsync(
             new NotificationParams(
                 account.Id,
                 NotificationTypes.OrganizationMemberAdded,
-                JsonSerializer.Serialize(new { organizationId })),
+                JsonSerializer.Serialize(new { organizationId, organizationName = organization.Name })),
             cancellationToken);
     }
 
