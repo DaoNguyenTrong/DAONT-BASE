@@ -14,6 +14,7 @@ public sealed class NotificationService(
     IUnitOfWork unitOfWork,
     ICurrentUserService currentUserService,
     IBackgroundJobDispatcher jobDispatcher,
+    IRealtimeNotifier realtimeNotifier,
     ILogger<NotificationService> logger) : INotificationService
 {
     private const int DefaultPageNumber = 1;
@@ -24,6 +25,18 @@ public sealed class NotificationService(
         Notification notification = Notification.Create(request);
         await unitOfWork.Repository<Notification, Guid>().AddAsync(notification, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await realtimeNotifier.NotifyAsync(
+                notification.AccountId, EntityMapper.ToDto(notification), cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            // Bản ghi in-app đã commit — lỗi đẩy realtime không được biến 1 NotifyAsync
+            // thành công thành lỗi phía caller. Client vẫn thấy notification qua poll fallback.
+            logger.LogError(exception, "Failed to push realtime notification {NotificationId}", notification.Id);
+        }
 
         try
         {

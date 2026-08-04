@@ -5,6 +5,45 @@ import type { NotificationDto } from '@/api/generated/model/notificationDto'
 import { setupTestPinia } from '../../helpers/pinia'
 import { server } from '../../helpers/msw/server'
 
+// vi.hoisted: vi.mock's factory below is hoisted above these imports/consts by vitest, so the
+// fake connection must be defined via vi.hoisted to be visible inside the factory.
+const { fakeConnection, listeners, startMock, stopMock } = vi.hoisted(() => {
+  const listeners: Record<string, (...args: unknown[]) => void> = {}
+  const startMock = vi.fn(() => Promise.resolve())
+  const stopMock = vi.fn(() => Promise.resolve())
+  const fakeConnection = {
+    on: (event: string, handler: (...args: unknown[]) => void) => {
+      listeners[event] = handler
+    },
+    onreconnecting: (handler: () => void) => {
+      listeners.reconnecting = handler
+    },
+    onreconnected: (handler: () => void) => {
+      listeners.reconnected = handler
+    },
+    onclose: (handler: () => void) => {
+      listeners.close = handler
+    },
+    start: startMock,
+    stop: stopMock,
+  }
+  return { fakeConnection, listeners, startMock, stopMock }
+})
+
+vi.mock('@microsoft/signalr', () => ({
+  HubConnectionBuilder: class {
+    withUrl() {
+      return this
+    }
+    withAutomaticReconnect() {
+      return this
+    }
+    build() {
+      return fakeConnection
+    }
+  },
+}))
+
 function flushHttp() {
   return new Promise((resolve) => setTimeout(resolve, 0))
 }
@@ -169,6 +208,148 @@ describe('useNotificationsStore', () => {
       expect(hits).toHaveBeenCalledTimes(2)
 
       store.stopPolling()
+    })
+  })
+
+  describe('realtime', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+      startMock.mockClear()
+      stopMock.mockClear()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('connectRealtime starts the hub connection and pauses the poll fallback once connected', async () => {
+      server.use(
+        http.get('*/api/notifications/unread-count', () => HttpResponse.json({ count: 0 })),
+      )
+      const store = useNotificationsStore()
+      store.startPolling()
+      await flushHttp()
+
+      await store.connectRealtime()
+
+      expect(startMock).toHaveBeenCalledTimes(1)
+
+      const hits = vi.fn()
+      server.use(
+        http.get('*/api/notifications/unread-count', () => {
+          hits()
+          return HttpResponse.json({ count: 0 })
+        }),
+      )
+      await vi.advanceTimersByTimeAsync(30_000)
+      await flushHttp()
+      expect(hits).not.toHaveBeenCalled()
+
+      store.stopPolling()
+      await store.disconnectRealtime()
+    })
+
+    it('increments unreadCount when ReceiveNotification fires', async () => {
+      server.use(
+        http.get('*/api/notifications/unread-count', () => HttpResponse.json({ count: 0 })),
+      )
+      const store = useNotificationsStore()
+      await store.connectRealtime()
+
+      listeners.ReceiveNotification(makeNotification())
+
+      expect(store.unreadCount).toBe(1)
+
+      await store.disconnectRealtime()
+    })
+
+    it('resumes the poll fallback immediately on onreconnecting, before onclose fires', async () => {
+      server.use(
+        http.get('*/api/notifications/unread-count', () => HttpResponse.json({ count: 0 })),
+      )
+      const store = useNotificationsStore()
+      await store.connectRealtime()
+
+      const hits = vi.fn()
+      server.use(
+        http.get('*/api/notifications/unread-count', () => {
+          hits()
+          return HttpResponse.json({ count: 0 })
+        }),
+      )
+
+      listeners.reconnecting()
+      await flushHttp()
+      expect(hits).toHaveBeenCalledTimes(1) // resume() fetches immediately
+
+      await vi.advanceTimersByTimeAsync(30_000)
+      await flushHttp()
+      expect(hits).toHaveBeenCalledTimes(2) // poll interval resumed while reconnecting
+
+      await store.disconnectRealtime()
+    })
+
+    it('pauses the poll fallback again and catches up via REST on onreconnected', async () => {
+      server.use(
+        http.get('*/api/notifications/unread-count', () => HttpResponse.json({ count: 5 })),
+      )
+      const store = useNotificationsStore()
+      await store.connectRealtime()
+      listeners.reconnecting()
+      await flushHttp()
+
+      const hits = vi.fn()
+      server.use(
+        http.get('*/api/notifications/unread-count', () => {
+          hits()
+          return HttpResponse.json({ count: 7 })
+        }),
+      )
+      listeners.reconnected()
+      await flushHttp()
+
+      expect(store.unreadCount).toBe(7) // catch-up fetch reconciles what may have been missed
+      expect(hits).toHaveBeenCalledTimes(1)
+
+      hits.mockClear()
+      await vi.advanceTimersByTimeAsync(30_000)
+      await flushHttp()
+      expect(hits).not.toHaveBeenCalled() // poll paused again now that realtime is back
+
+      await store.disconnectRealtime()
+    })
+
+    it('resumes the poll fallback on onclose', async () => {
+      server.use(
+        http.get('*/api/notifications/unread-count', () => HttpResponse.json({ count: 0 })),
+      )
+      const store = useNotificationsStore()
+      await store.connectRealtime()
+
+      const hits = vi.fn()
+      server.use(
+        http.get('*/api/notifications/unread-count', () => {
+          hits()
+          return HttpResponse.json({ count: 0 })
+        }),
+      )
+
+      listeners.close()
+      await flushHttp()
+      expect(hits).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(30_000)
+      await flushHttp()
+      expect(hits).toHaveBeenCalledTimes(2)
+    })
+
+    it('disconnectRealtime stops the hub connection', async () => {
+      const store = useNotificationsStore()
+      await store.connectRealtime()
+
+      await store.disconnectRealtime()
+
+      expect(stopMock).toHaveBeenCalledTimes(1)
     })
   })
 })
