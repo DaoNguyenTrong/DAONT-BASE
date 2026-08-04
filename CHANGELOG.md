@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.3.0] - 2026-08-04
+
 ### Added
 
 - Notification module Phase 2: `NotifyAsync` now fans out to background-dispatched channels via Hangfire (a dedicated `notifications` queue) instead of only persisting in-app — starting with an `EmailNotificationChannel` that reuses the existing SMTP sender. Per-channel failures are logged rather than retried, to avoid duplicate sends when Hangfire would otherwise retry the whole job. The organization-member-added notification now carries the organization's name, so both the in-app UI and the new email surface it instead of a generic placeholder.
