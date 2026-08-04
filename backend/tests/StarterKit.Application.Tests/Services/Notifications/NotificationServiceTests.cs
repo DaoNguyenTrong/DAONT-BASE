@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Models;
 using StarterKit.Application.Resources;
@@ -19,7 +20,8 @@ public class NotificationServiceTests
         IRepository<Notification, Guid> NotificationRepo,
         IUnitOfWork UnitOfWork,
         ICurrentUserService CurrentUserService,
-        IBackgroundJobDispatcher JobDispatcher);
+        IBackgroundJobDispatcher JobDispatcher,
+        IRealtimeNotifier RealtimeNotifier);
 
     private static Fixture CreateFixture()
     {
@@ -29,11 +31,12 @@ public class NotificationServiceTests
 
         ICurrentUserService currentUserService = Substitute.For<ICurrentUserService>();
         IBackgroundJobDispatcher jobDispatcher = Substitute.For<IBackgroundJobDispatcher>();
+        IRealtimeNotifier realtimeNotifier = Substitute.For<IRealtimeNotifier>();
 
         NotificationService service = new(
-            unitOfWork, currentUserService, jobDispatcher, NullLogger<NotificationService>.Instance);
+            unitOfWork, currentUserService, jobDispatcher, realtimeNotifier, NullLogger<NotificationService>.Instance);
 
-        return new Fixture(service, notificationRepo, unitOfWork, currentUserService, jobDispatcher);
+        return new Fixture(service, notificationRepo, unitOfWork, currentUserService, jobDispatcher, realtimeNotifier);
     }
 
     private static Notification CreateNotification(Guid accountId, string type = "OrganizationMemberAdded") =>
@@ -82,6 +85,50 @@ public class NotificationServiceTests
             new NotificationParams(accountId, NotificationTypes.OrganizationMemberAdded), CancellationToken.None);
 
         await f.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task NotifyAsync_Success_PushesRealtimeNotification()
+    {
+        Fixture f = CreateFixture();
+        Guid accountId = Guid.NewGuid();
+
+        await f.Service.NotifyAsync(
+            new NotificationParams(accountId, NotificationTypes.OrganizationMemberAdded), CancellationToken.None);
+
+        await f.RealtimeNotifier.Received(1).NotifyAsync(
+            accountId, Arg.Any<NotificationDto>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task NotifyAsync_RealtimePushThrows_DoesNotPropagate()
+    {
+        Fixture f = CreateFixture();
+        Guid accountId = Guid.NewGuid();
+        f.RealtimeNotifier
+            .NotifyAsync(Arg.Any<Guid>(), Arg.Any<NotificationDto>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("hub unavailable"));
+
+        await f.Service.NotifyAsync(
+            new NotificationParams(accountId, NotificationTypes.OrganizationMemberAdded), CancellationToken.None);
+
+        await f.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task NotifyAsync_RealtimePushThrows_StillEnqueuesDispatch()
+    {
+        Fixture f = CreateFixture();
+        Guid accountId = Guid.NewGuid();
+        f.RealtimeNotifier
+            .NotifyAsync(Arg.Any<Guid>(), Arg.Any<NotificationDto>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("hub unavailable"));
+
+        await f.Service.NotifyAsync(
+            new NotificationParams(accountId, NotificationTypes.OrganizationMemberAdded), CancellationToken.None);
+
+        f.JobDispatcher.Received(1).Enqueue(
+            Arg.Any<Expression<Func<INotificationDispatcher, Task>>>(), NotificationQueues.Default);
     }
 
     // GetMyNotificationsAsync
