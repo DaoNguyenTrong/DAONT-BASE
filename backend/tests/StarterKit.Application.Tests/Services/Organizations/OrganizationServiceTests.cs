@@ -88,7 +88,7 @@ public class OrganizationServiceTests
         await f.MemberRepo.Received(1).AddAsync(
             Arg.Is<OrganizationMember>(m => m != null && m.AccountId == accountId), Arg.Any<CancellationToken>());
         await f.MemberRoleRepo.Received(1).AddAsync(
-            Arg.Is<OrganizationMemberRole>(mr => mr.RoleId == ownerRole.Id), Arg.Any<CancellationToken>());
+            Arg.Is<OrganizationMemberRole>(mr => mr != null && mr.RoleId == ownerRole.Id), Arg.Any<CancellationToken>());
     }
 
     [Fact]

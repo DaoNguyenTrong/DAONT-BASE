@@ -55,7 +55,7 @@ public sealed class NotificationService(
             .ListPagedAsync(predicate, pageNumber, pageSize, cancellationToken);
 
         return new PagedResult<NotificationDto>(
-            items.Select(EntityMapper.ToDto).ToList(), totalCount, pageNumber, pageSize);
+            items.Select(n => EntityMapper.ToDto(n)).ToList(), totalCount, pageNumber, pageSize);
     }
 
     public async Task<int> GetUnreadCountAsync(CancellationToken cancellationToken)
