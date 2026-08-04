@@ -20,7 +20,7 @@ public class HangfireJobDispatcherTests
             d => d.DispatchAsync(notificationId, CancellationToken.None), "notifications");
 
         backgroundJobClient.Received(1).Create(
-            Arg.Is<Job>(job => job.Method.Name == nameof(INotificationDispatcher.DispatchAsync)),
-            Arg.Is<EnqueuedState>(state => state.Queue == "notifications"));
+            Arg.Is<Job>(job => job != null && job.Method.Name == nameof(INotificationDispatcher.DispatchAsync)),
+            Arg.Is<EnqueuedState>(state => state != null && state.Queue == "notifications"));
     }
 }

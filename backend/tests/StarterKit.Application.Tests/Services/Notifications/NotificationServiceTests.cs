@@ -51,7 +51,7 @@ public class NotificationServiceTests
             new NotificationParams(accountId, NotificationTypes.OrganizationMemberAdded), CancellationToken.None);
 
         await f.NotificationRepo.Received(1).AddAsync(
-            Arg.Is<Notification>(n => n.AccountId == accountId), Arg.Any<CancellationToken>());
+            Arg.Is<Notification>(n => n != null && n.AccountId == accountId), Arg.Any<CancellationToken>());
         await f.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

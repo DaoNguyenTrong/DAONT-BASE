@@ -163,7 +163,7 @@ public class OrganizationMembershipServiceTests
         Assert.True(removedMembership.IsActive);
         f.MemberRepo.Received(1).Update(removedMembership);
         await f.MemberRoleRepo.Received(1).AddAsync(
-            Arg.Is<OrganizationMemberRole>(mr => mr.RoleId == adminRole.Id && mr.OrganizationMemberId == removedMembership.Id),
+            Arg.Is<OrganizationMemberRole>(mr => mr != null && mr.RoleId == adminRole.Id && mr.OrganizationMemberId == removedMembership.Id),
             Arg.Any<CancellationToken>());
         await f.TenantAccessService.Received(1).InvalidateMemberAsync(organizationId, target.Id, Arg.Any<CancellationToken>());
         await f.PermissionResolver.Received(1).InvalidateMemberAsync(organizationId, target.Id, Arg.Any<CancellationToken>());
@@ -188,7 +188,8 @@ public class OrganizationMembershipServiceTests
 
         await f.NotificationService.Received(1).NotifyAsync(
             Arg.Is<NotificationParams>(p =>
-                p.AccountId == target.Id
+                p != null
+                && p.AccountId == target.Id
                 && p.Type == NotificationTypes.OrganizationMemberAdded
                 && p.Data != null && p.Data.Contains("Contoso")),
             Arg.Any<CancellationToken>());
@@ -265,7 +266,7 @@ public class OrganizationMembershipServiceTests
             organizationId, targetAccountId, new UpdateMemberRolesRequest([adminRole.Id]), CancellationToken.None);
 
         await f.MemberRoleRepo.Received(1).AddAsync(
-            Arg.Is<OrganizationMemberRole>(mr => mr.RoleId == adminRole.Id && mr.OrganizationMemberId == target.Id),
+            Arg.Is<OrganizationMemberRole>(mr => mr != null && mr.RoleId == adminRole.Id && mr.OrganizationMemberId == target.Id),
             Arg.Any<CancellationToken>());
         await f.TenantAccessService.Received(1).InvalidateMemberAsync(organizationId, targetAccountId, Arg.Any<CancellationToken>());
         await f.PermissionResolver.Received(1).InvalidateMemberAsync(organizationId, targetAccountId, Arg.Any<CancellationToken>());

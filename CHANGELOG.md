@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Notification module Phase 2: `NotifyAsync` now fans out to background-dispatched channels via Hangfire (a dedicated `notifications` queue) instead of only persisting in-app — starting with an `EmailNotificationChannel` that reuses the existing SMTP sender. Per-channel failures are logged rather than retried, to avoid duplicate sends when Hangfire would otherwise retry the whole job. The organization-member-added notification now carries the organization's name, so both the in-app UI and the new email surface it instead of a generic placeholder.
+- Notification module Phase 3: Web Push via Firebase Cloud Messaging, plugged into the same channel fan-out as email. Backend adds a `PushSubscription` entity and a `PushNotificationChannel` built on the official `FirebaseAdmin` SDK behind an `IPushSender` abstraction; invalid tokens are pruned reactively from the multicast send response. `FcmSettings` is optional — the channel simply doesn't register when unconfigured, so this doesn't affect existing setups. Frontend adds a push-notification toggle to the profile dialog, backed by a `usePushNotifications` composable and a static `firebase-messaging-sw.js` service worker; also optional via `VITE_FIREBASE_*` env vars.
 
 ## [v1.2.0] - 2026-08-03
 

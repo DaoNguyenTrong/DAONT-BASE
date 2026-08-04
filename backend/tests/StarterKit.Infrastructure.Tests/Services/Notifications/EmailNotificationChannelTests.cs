@@ -43,7 +43,7 @@ public class EmailNotificationChannelTests
         await f.Channel.SendAsync(notification, CancellationToken.None);
 
         await f.EmailSender.Received(1).SendAsync(
-            account.Email, Arg.Any<string>(), Arg.Is<string>(body => body.Contains("Acme")), Arg.Any<CancellationToken>());
+            account.Email, Arg.Any<string>(), Arg.Is<string>(body => body != null && body.Contains("Acme")), Arg.Any<CancellationToken>());
     }
 
     [Fact]
