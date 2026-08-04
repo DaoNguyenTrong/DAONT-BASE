@@ -58,7 +58,9 @@ async function handlePrimaryAction() {
             @click="handlePrimaryAction"
           >
             {{ primaryLabel }}
-            <template #icon><n-icon><ArrowRight /></n-icon></template>
+            <template #icon
+              ><n-icon><ArrowRight /></n-icon
+            ></template>
           </n-button>
         </div>
       </div>

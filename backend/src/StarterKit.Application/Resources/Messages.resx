@@ -129,6 +129,9 @@
   <data name="RoleNameRequired" xml:space="preserve">
     <value>Tên vai trò là bắt buộc.</value>
   </data>
+  <data name="NotificationTypeRequired" xml:space="preserve">
+    <value>Loại thông báo là bắt buộc.</value>
+  </data>
   <data name="OrganizationAccessDenied" xml:space="preserve">
     <value>Bạn không có quyền truy cập tổ chức này.</value>
   </data>

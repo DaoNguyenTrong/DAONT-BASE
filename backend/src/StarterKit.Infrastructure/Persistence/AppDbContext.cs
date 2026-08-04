@@ -16,7 +16,8 @@ public sealed class AppDbContext(
     private static readonly HashSet<Type> AuditExcludedEntityTypes =
     [
         typeof(RefreshToken),
-        typeof(EmailVerificationToken)
+        typeof(EmailVerificationToken),
+        typeof(Notification)
     ];
 
     public DbSet<Account> Accounts => Set<Account>();
@@ -30,6 +31,8 @@ public sealed class AppDbContext(
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
 
     public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
+
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     public DbSet<Organization> Organizations => Set<Organization>();
 

@@ -46,7 +46,9 @@ function navigateTo(routeName: string, event: MouseEvent) {
       class="h-9 w-9 lg:h-8 lg:w-8"
       @click="handleToggle"
     >
-      <template #icon><n-icon><Menu2 /></n-icon></template>
+      <template #icon
+        ><n-icon><Menu2 /></n-icon
+      ></template>
     </n-button>
 
     <n-breadcrumb class="hidden! lg:flex! breadcrumb-align-fix">
@@ -63,6 +65,7 @@ function navigateTo(routeName: string, event: MouseEvent) {
 
     <div class="flex-1" />
 
+    <NotificationBell />
     <AppControls />
   </header>
 </template>

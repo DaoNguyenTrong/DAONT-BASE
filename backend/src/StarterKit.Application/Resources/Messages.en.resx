@@ -129,6 +129,9 @@
   <data name="RoleNameRequired" xml:space="preserve">
     <value>Role name is required.</value>
   </data>
+  <data name="NotificationTypeRequired" xml:space="preserve">
+    <value>Notification type is required.</value>
+  </data>
   <data name="OrganizationAccessDenied" xml:space="preserve">
     <value>You do not have access to this organization.</value>
   </data>

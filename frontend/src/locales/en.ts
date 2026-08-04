@@ -207,6 +207,13 @@ export interface LocaleSchema {
     permissionOrganizationMembersManage: string
     permissionOrganizationRolesManage: string
   }
+  notifications: {
+    title: string
+    empty: string
+    markAllRead: string
+    markAsRead: string
+    OrganizationMemberAdded: string
+  }
 }
 
 const en: LocaleSchema = {
@@ -428,6 +435,13 @@ const en: LocaleSchema = {
     permissionOrganizationManage: 'Manage organization',
     permissionOrganizationMembersManage: 'Manage members',
     permissionOrganizationRolesManage: 'Manage roles',
+  },
+  notifications: {
+    title: 'Notifications',
+    empty: 'No notifications yet.',
+    markAllRead: 'Mark all as read',
+    markAsRead: 'Mark as read',
+    OrganizationMemberAdded: 'You were added to an organization',
   },
 }
 

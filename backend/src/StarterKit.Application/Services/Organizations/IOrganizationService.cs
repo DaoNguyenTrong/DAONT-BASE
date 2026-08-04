@@ -8,15 +8,5 @@ public interface IOrganizationService
 
     Task<IReadOnlyList<OrganizationMemberDto>> GetMembersAsync(Guid organizationId, CancellationToken cancellationToken);
 
-    Task AddMemberAsync(Guid organizationId, AddMemberRequest request, CancellationToken cancellationToken);
-
-    Task UpdateMemberRolesAsync(
-        Guid organizationId,
-        Guid accountId,
-        UpdateMemberRolesRequest request,
-        CancellationToken cancellationToken);
-
-    Task RemoveMemberAsync(Guid organizationId, Guid accountId, CancellationToken cancellationToken);
-
     Task DeactivateAsync(Guid organizationId, CancellationToken cancellationToken);
 }

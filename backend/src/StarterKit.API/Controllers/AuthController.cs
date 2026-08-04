@@ -14,6 +14,8 @@ namespace StarterKit.API.Controllers;
 [Route("api/auth")]
 public sealed class AuthController(
     IAuthService authService,
+    IRegistrationService registrationService,
+    ISessionService sessionService,
     IOptions<JwtSettings> jwtOptions) : ControllerBase
 {
     private const string AccessTokenCookieName = "access_token";
@@ -54,7 +56,7 @@ public sealed class AuthController(
         RegisterRequest request,
         CancellationToken cancellationToken)
     {
-        RegisterResult result = await authService.RegisterAsync(request, cancellationToken);
+        RegisterResult result = await registrationService.RegisterAsync(request, cancellationToken);
 
         return StatusCode(StatusCodes.Status202Accepted, result);
     }
@@ -71,7 +73,7 @@ public sealed class AuthController(
         VerifyEmailRequest request,
         CancellationToken cancellationToken)
     {
-        AuthResult result = await authService.VerifyEmailAsync(
+        AuthResult result = await registrationService.VerifyEmailAsync(
             request,
             Request.Headers.UserAgent.ToString(),
             HttpContext.Connection.RemoteIpAddress?.ToString(),
@@ -93,7 +95,7 @@ public sealed class AuthController(
         ResendVerificationRequest request,
         CancellationToken cancellationToken)
     {
-        await authService.ResendVerificationEmailAsync(request, cancellationToken);
+        await registrationService.ResendVerificationEmailAsync(request, cancellationToken);
 
         return NoContent();
     }
@@ -178,7 +180,7 @@ public sealed class AuthController(
     {
         string? currentRefreshToken = Request.Cookies[RefreshTokenCookieName];
 
-        IReadOnlyList<SessionDto> sessions = await authService.GetSessionsAsync(
+        IReadOnlyList<SessionDto> sessions = await sessionService.GetSessionsAsync(
             currentRefreshToken, cancellationToken);
 
         return Ok(sessions);
@@ -192,7 +194,7 @@ public sealed class AuthController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RevokeSession(long id, CancellationToken cancellationToken)
     {
-        await authService.RevokeSessionAsync(id, cancellationToken);
+        await sessionService.RevokeSessionAsync(id, cancellationToken);
 
         return NoContent();
     }
@@ -206,7 +208,7 @@ public sealed class AuthController(
     {
         string? currentRefreshToken = Request.Cookies[RefreshTokenCookieName];
 
-        await authService.RevokeOtherSessionsAsync(currentRefreshToken, cancellationToken);
+        await sessionService.RevokeOtherSessionsAsync(currentRefreshToken, cancellationToken);
 
         return NoContent();
     }

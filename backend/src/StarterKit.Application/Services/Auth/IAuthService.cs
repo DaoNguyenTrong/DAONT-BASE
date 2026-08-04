@@ -8,20 +8,6 @@ public interface IAuthService
         string? ipAddress,
         CancellationToken cancellationToken);
 
-    Task<RegisterResult> RegisterAsync(
-        RegisterRequest request,
-        CancellationToken cancellationToken);
-
-    Task<AuthResult> VerifyEmailAsync(
-        VerifyEmailRequest request,
-        string? deviceInfo,
-        string? ipAddress,
-        CancellationToken cancellationToken);
-
-    Task ResendVerificationEmailAsync(
-        ResendVerificationRequest request,
-        CancellationToken cancellationToken);
-
     Task<AuthResult> RefreshTokenAsync(
         string refreshToken,
         string? deviceInfo,
@@ -36,14 +22,6 @@ public interface IAuthService
         string? deviceInfo,
         string? ipAddress,
         CancellationToken cancellationToken);
-
-    Task<IReadOnlyList<SessionDto>> GetSessionsAsync(
-        string? currentRefreshToken,
-        CancellationToken cancellationToken);
-
-    Task RevokeSessionAsync(long sessionId, CancellationToken cancellationToken);
-
-    Task RevokeOtherSessionsAsync(string? currentRefreshToken, CancellationToken cancellationToken);
 
     Task<AuthResult> SwitchOrganizationAsync(
         Guid? organizationId,

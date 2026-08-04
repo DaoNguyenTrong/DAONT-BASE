@@ -274,6 +274,47 @@ namespace StarterKit.Infrastructure.Migrations
                     b.ToTable("external_logins", (string)null);
                 });
 
+            modelBuilder.Entity("StarterKit.Domain.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Data")
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("AccountId", "ReadAt");
+
+                    b.ToTable("notifications", (string)null);
+                });
+
             modelBuilder.Entity("StarterKit.Domain.Entities.Organization", b =>
                 {
                     b.Property<Guid>("Id")
@@ -701,6 +742,15 @@ namespace StarterKit.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("StarterKit.Domain.Entities.ExternalLogin", b =>
+                {
+                    b.HasOne("StarterKit.Domain.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("StarterKit.Domain.Entities.Notification", b =>
                 {
                     b.HasOne("StarterKit.Domain.Entities.Account", null)
                         .WithMany()

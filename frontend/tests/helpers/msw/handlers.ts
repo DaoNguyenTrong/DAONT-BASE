@@ -9,4 +9,5 @@ export const handlers = [
     }),
   ),
   http.get('*/api/auth/sessions', () => HttpResponse.json([])),
+  http.get('*/api/notifications/unread-count', () => HttpResponse.json({ count: 0 })),
 ]
