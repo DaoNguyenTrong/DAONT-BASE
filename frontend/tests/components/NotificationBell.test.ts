@@ -22,7 +22,7 @@ function listWithOne() {
       {
         id: 'notif-1',
         type: 'OrganizationMemberAdded',
-        data: null,
+        data: JSON.stringify({ organizationName: 'Acme' }),
         isRead: false,
         createdAt: '2026-08-04T00:00:00Z',
       },
@@ -80,7 +80,7 @@ describe('NotificationBell', () => {
     await wrapper.find('button').trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('You were added to an organization')
+    expect(wrapper.text()).toContain('You were added to organization Acme')
   })
 
   it('marks all as read and calls the endpoint', async () => {

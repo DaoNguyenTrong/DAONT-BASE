@@ -20,6 +20,7 @@ public class OrganizationMembershipServiceTests
         IRepository<OrganizationMemberRole, Guid> MemberRoleRepo,
         IRepository<Role, Guid> RoleRepo,
         IRepository<Account, Guid> AccountRepo,
+        IRepository<Organization, Guid> OrganizationRepo,
         IUnitOfWork UnitOfWork,
         ITenantAccessService TenantAccessService,
         IPermissionResolver PermissionResolver,
@@ -33,16 +34,23 @@ public class OrganizationMembershipServiceTests
             Substitute.For<IRepository<OrganizationMemberRole, Guid>>();
         IRepository<Role, Guid> roleRepo = Substitute.For<IRepository<Role, Guid>>();
         IRepository<Account, Guid> accountRepo = Substitute.For<IRepository<Account, Guid>>();
+        IRepository<Organization, Guid> organizationRepo = Substitute.For<IRepository<Organization, Guid>>();
         unitOfWork.Repository<OrganizationMember, Guid>().Returns(memberRepo);
         unitOfWork.Repository<OrganizationMemberRole, Guid>().Returns(memberRoleRepo);
         unitOfWork.Repository<Role, Guid>().Returns(roleRepo);
         unitOfWork.Repository<Account, Guid>().Returns(accountRepo);
+        unitOfWork.Repository<Organization, Guid>().Returns(organizationRepo);
 
         // Defaults: empty lists — tests seed the specific rows a scenario needs.
         memberRoleRepo.ListAsync(Arg.Any<Expression<Func<OrganizationMemberRole, bool>>>(), Arg.Any<CancellationToken>())
             .Returns([]);
         roleRepo.ListAsync(Arg.Any<Expression<Func<Role, bool>>>(), Arg.Any<CancellationToken>())
             .Returns([]);
+
+        // Default: any organization lookup resolves — success-path tests for AddMemberAsync need
+        // this to reach the post-save notification step (which loads Organization for its name).
+        organizationRepo.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(Organization.Create(new OrganizationParams("Acme", "acme")));
 
         ITenantAccessService tenantAccessService = Substitute.For<ITenantAccessService>();
 
@@ -59,6 +67,7 @@ public class OrganizationMembershipServiceTests
             memberRoleRepo,
             roleRepo,
             accountRepo,
+            organizationRepo,
             unitOfWork,
             tenantAccessService,
             permissionResolver,
@@ -166,6 +175,8 @@ public class OrganizationMembershipServiceTests
         Fixture f = CreateFixture();
         Guid organizationId = Guid.NewGuid();
         Account target = CreateAccount();
+        Organization organization = Organization.Create(new OrganizationParams("Contoso", "contoso"));
+        f.OrganizationRepo.GetByIdAsync(organizationId, Arg.Any<CancellationToken>()).Returns(organization);
 
         Role memberRole = Role.Create(new RoleParams(organizationId, "Member", SystemRoleKind.Member));
         RepositoryPredicateStub.StubListAsync(f.RoleRepo, [memberRole]);
@@ -177,8 +188,29 @@ public class OrganizationMembershipServiceTests
 
         await f.NotificationService.Received(1).NotifyAsync(
             Arg.Is<NotificationParams>(p =>
-                p.AccountId == target.Id && p.Type == NotificationTypes.OrganizationMemberAdded),
+                p.AccountId == target.Id
+                && p.Type == NotificationTypes.OrganizationMemberAdded
+                && p.Data != null && p.Data.Contains("Contoso")),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AddMemberAsync_OrganizationNotFound_ThrowsNotFound()
+    {
+        Fixture f = CreateFixture();
+        Guid organizationId = Guid.NewGuid();
+        Account target = CreateAccount();
+        f.OrganizationRepo.GetByIdAsync(organizationId, Arg.Any<CancellationToken>()).Returns((Organization?)null);
+
+        Role memberRole = Role.Create(new RoleParams(organizationId, "Member", SystemRoleKind.Member));
+        RepositoryPredicateStub.StubListAsync(f.RoleRepo, [memberRole]);
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(target);
+
+        await ApplicationAssert.AssertNotFoundAsync<Organization>(
+            organizationId,
+            () => f.Service.AddMemberAsync(
+                organizationId, new AddMemberRequest(target.Email, [memberRole.Id]), CancellationToken.None));
     }
 
     [Fact]

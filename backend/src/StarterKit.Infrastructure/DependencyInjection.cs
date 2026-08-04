@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddEmail(configuration);
         services.AddExternalAuth(configuration);
         services.AddBackgroundJobs(configuration);
+        services.AddNotificationChannels();
         return services;
     }
 

@@ -8,6 +8,18 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-08-04 — Notification email content defaults to `vi`, not per-account locale
+
+`Account` has no locale column, and a Hangfire worker dispatching email has no HTTP request context to infer the user's current language preference — unlike the frontend, which always knows the active locale. Rather than block Phase 2 on adding `Account.Locale`, email content (`NotificationEmailTemplates`) is `vi`-only system-wide, matching `localization.md`'s stated default. Per-account locale is deferred until a real need surfaces (e.g. an `en`-preferring user complaining).
+
+### 2026-08-04 — Notification dispatch: log-and-continue per channel, no Hangfire retry
+
+`NotificationDispatcher` catches each `INotificationChannel` failure and logs rather than rethrowing. Rejected alternative: let a channel's exception propagate and let Hangfire retry the whole job — this would re-send every channel that already succeeded (duplicate emails) whenever one channel fails. Trade-off accepted: a failing channel is not retried by Hangfire on its own; acceptable with only one channel (Email) in Phase 2.
+
+### 2026-08-04 — Background job queue selection via `EnqueuedState`, not Hangfire's `[Queue]` attribute
+
+`IBackgroundJobDispatcher.Enqueue<TJob>` takes an explicit `queueName` string parameter (deviating from the original class diagram's no-argument signature) so `HangfireJobDispatcher` can route jobs to the `notifications` queue via `IBackgroundJobClient.Create(job, new EnqueuedState(queueName))`. Rejected alternative: Hangfire's `[Queue("notifications")]` attribute on the dispatched method — would have forced `Application` to reference the Hangfire package directly, breaking the layer boundary that keeps Application framework-agnostic.
+
 ### 2026-08-03 — Prometheus/Grafana monitoring: prometheus-net over OpenTelemetry, local-dev scope only
 
 Chọn prometheus-net.AspNetCore thay vì OpenTelemetry .NET — exporter Prometheus chính thức của OTel (`OpenTelemetry.Exporter.Prometheus.AspNetCore`) vẫn đang beta (1.17.0-beta.1) tại thời điểm này, không phù hợp để ship trong một starter kit dùng lại cho nhiều project. `/metrics` không đặt dưới `/api` nên tự động bỏ qua `UserTimeZoneMiddleware`/rate limiter/auth giống `/hangfire` — giữ nguyên mô hình "mở, chặn ở network layer" thay vì thêm auth code. Phạm vi lần này chỉ local dev (docker-compose scrape qua host.docker.internal) — chưa containerize API cho production.

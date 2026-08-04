@@ -223,7 +223,7 @@ const vi: LocaleSchema = {
     empty: 'Chưa có thông báo nào.',
     markAllRead: 'Đánh dấu tất cả đã đọc',
     markAsRead: 'Đánh dấu đã đọc',
-    OrganizationMemberAdded: 'Bạn đã được thêm vào một tổ chức',
+    OrganizationMemberAdded: 'Bạn đã được thêm vào tổ chức {organizationName}',
   },
 }
 
