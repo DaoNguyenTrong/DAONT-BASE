@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.4.1] - 2026-08-05
+
 ### Changed
 
 - Release process now goes through a `release/vX.Y.Z` QA-stabilization branch (`dev → release/vX.Y.Z → main`, two phases: cut and ship) instead of merging `dev` directly into `main`. Bugs found during stabilization branch off `release/vX.Y.Z` via `fix/*`. Neither the release branch nor the hotfix workflow back-merges into `dev` — unchanged from v1.2.0 for hotfix; if `dev` needs a hotfix's change too, cherry-pick or reimplement it separately.
