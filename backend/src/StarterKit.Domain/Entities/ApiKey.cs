@@ -4,7 +4,7 @@ namespace StarterKit.Domain.Entities;
 
 public record ApiKeyParams(string Name);
 
-public sealed class ApiKey : BaseEntity<Guid>
+public sealed class ApiKey : BaseEntity<Guid>, IHasOrganization
 {
     private ApiKey()
     {
@@ -18,9 +18,11 @@ public sealed class ApiKey : BaseEntity<Guid>
 
     public bool IsActive { get; private set; } = true;
 
-    public static ApiKey Create(ApiKeyParams p, string keyPrefix, string keyHash)
+    public Guid OrganizationId { get; private set; }
+
+    public static ApiKey Create(ApiKeyParams p, string keyPrefix, string keyHash, Guid organizationId)
     {
-        ApiKey key = new() { Id = IdGenerator.NewUuidV7() };
+        ApiKey key = new() { Id = IdGenerator.NewUuidV7(), OrganizationId = organizationId };
         key.Update(p);
         key.KeyPrefix = keyPrefix.Trim();
         key.KeyHash = keyHash.Trim();

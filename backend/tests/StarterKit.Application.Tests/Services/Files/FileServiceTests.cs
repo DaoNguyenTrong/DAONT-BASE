@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using StarterKit.Application.Common.Interfaces;
@@ -13,6 +14,8 @@ namespace StarterKit.Application.Tests.Services.Files;
 
 public class FileServiceTests
 {
+    private static readonly Guid OrganizationId = Guid.NewGuid();
+
     private sealed record Fixture(
         FileService Service,
         IStorageService StorageService,
@@ -28,6 +31,8 @@ public class FileServiceTests
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         IRepository<StoredFile, Guid> fileRepo = Substitute.For<IRepository<StoredFile, Guid>>();
         unitOfWork.Repository<StoredFile, Guid>().Returns(fileRepo);
+        ICurrentTenantProvider currentTenantProvider = Substitute.For<ICurrentTenantProvider>();
+        currentTenantProvider.OrganizationId.Returns(OrganizationId);
 
         IOptions<StorageSettings> options = Options.Create(new StorageSettings
         {
@@ -36,7 +41,7 @@ public class FileServiceTests
             PublicUrlBase = publicUrlBase
         });
 
-        FileService service = new(storageService, unitOfWork, options);
+        FileService service = new(storageService, unitOfWork, currentTenantProvider, options);
 
         return new Fixture(service, storageService, fileRepo, unitOfWork);
     }
@@ -51,7 +56,7 @@ public class FileServiceTests
         long size = 100,
         string storagePath = "2026/07/24/abc123.png")
     {
-        return StoredFile.Create(new StoredFileParams(fileName, contentType, size, storagePath));
+        return StoredFile.Create(new StoredFileParams(fileName, contentType, size, storagePath, OrganizationId));
     }
 
     // UploadAsync
@@ -186,12 +191,14 @@ public class FileServiceTests
         int requestPage, int requestSize, int expectedPage, int expectedSize)
     {
         Fixture f = CreateFixture();
-        f.FileRepo.ListPagedAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+        f.FileRepo.ListPagedAsync(
+                Arg.Any<Expression<Func<StoredFile, bool>>>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(((IReadOnlyList<StoredFile>)[], 0));
 
         await f.Service.GetAllAsync(new FileListRequest(requestPage, requestSize), CancellationToken.None);
 
-        await f.FileRepo.Received(1).ListPagedAsync(expectedPage, expectedSize, Arg.Any<CancellationToken>());
+        await f.FileRepo.Received(1).ListPagedAsync(
+            Arg.Any<Expression<Func<StoredFile, bool>>>(), expectedPage, expectedSize, Arg.Any<CancellationToken>());
     }
 
     // DownloadAsync

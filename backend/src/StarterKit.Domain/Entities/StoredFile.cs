@@ -7,11 +7,11 @@ public record StoredFileParams(
     string ContentType,
     long Size,
     string StoragePath,
-    Guid? OwnerId = null,
+    Guid OrganizationId,
     string? Description = null,
     string? Category = null);
 
-public sealed class StoredFile : BaseEntity<Guid>
+public sealed class StoredFile : BaseEntity<Guid>, IHasOrganization
 {
     private StoredFile()
     {
@@ -46,7 +46,7 @@ public sealed class StoredFile : BaseEntity<Guid>
             ContentType = p.ContentType.Trim(),
             Size = p.Size,
             StoragePath = p.StoragePath.Trim(),
-            OwnerId = p.OwnerId,
+            OrganizationId = p.OrganizationId,
             Description = string.IsNullOrWhiteSpace(p.Description) ? null : p.Description.Trim(),
             Category = string.IsNullOrWhiteSpace(p.Category) ? null : p.Category.Trim()
         };
@@ -60,7 +60,7 @@ public sealed class StoredFile : BaseEntity<Guid>
 
     public string StoragePath { get; private set; } = string.Empty;
 
-    public Guid? OwnerId { get; private set; }
+    public Guid OrganizationId { get; private set; }
 
     public string? Description { get; private set; }
 

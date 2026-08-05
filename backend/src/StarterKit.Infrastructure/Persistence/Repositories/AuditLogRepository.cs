@@ -6,6 +6,7 @@ namespace StarterKit.Infrastructure.Persistence.Repositories;
 public sealed class AuditLogRepository(AppDbContext dbContext) : IAuditLogRepository
 {
     public async Task<(IReadOnlyList<AuditLogDto> Items, int TotalCount)> ListPagedAsync(
+        Guid organizationId,
         int pageNumber,
         int pageSize,
         string? search,
@@ -13,7 +14,8 @@ public sealed class AuditLogRepository(AppDbContext dbContext) : IAuditLogReposi
         bool? systemOnly,
         CancellationToken cancellationToken = default)
     {
-        IQueryable<AuditLog> query = dbContext.AuditLogs.AsNoTracking();
+        IQueryable<AuditLog> query = dbContext.AuditLogs.AsNoTracking()
+            .Where(log => log.OrganizationId == organizationId);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -63,14 +65,14 @@ public sealed class AuditLogRepository(AppDbContext dbContext) : IAuditLogReposi
         return (items, totalCount);
     }
 
-    public Task<AuditLogDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+    public Task<AuditLogDto?> GetByIdAsync(Guid organizationId, long id, CancellationToken cancellationToken = default)
     {
         return (
             from log in dbContext.AuditLogs.AsNoTracking()
             join account in dbContext.Accounts.AsNoTracking()
                 on log.UserId equals account.Id.ToString() into accountGroup
             from account in accountGroup.DefaultIfEmpty()
-            where log.Id == id
+            where log.Id == id && log.OrganizationId == organizationId
             select new AuditLogDto(
                 log.Id,
                 log.EntityName,

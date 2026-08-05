@@ -13,12 +13,18 @@ public sealed class GenericRepositoryTests(PostgresContainerFixture fixture) : I
     private AppDbContext context = null!;
     private IDbContextTransaction transaction = null!;
     private GenericRepository<ApiKey, Guid> repository = null!;
+    private Guid organizationId;
 
     public async Task InitializeAsync()
     {
         context = fixture.CreateDbContext();
         transaction = await context.Database.BeginTransactionAsync();
         repository = new GenericRepository<ApiKey, Guid>(context);
+
+        Organization organization = Organization.Create(new OrganizationParams("Test Org", $"test-org-{Guid.NewGuid():N}"));
+        context.Organizations.Add(organization);
+        await context.SaveChangesAsync();
+        organizationId = organization.Id;
     }
 
     // Never committed — disposing the transaction issues a ROLLBACK, keeping tests isolated.
@@ -28,8 +34,9 @@ public sealed class GenericRepositoryTests(PostgresContainerFixture fixture) : I
         await context.DisposeAsync();
     }
 
-    private static ApiKey CreateApiKey(string name) =>
-        ApiKey.Create(new ApiKeyParams(name), name.Length >= 8 ? name[..8] : name.PadRight(8, 'x'), "hash-" + name);
+    private ApiKey CreateApiKey(string name) =>
+        ApiKey.Create(
+            new ApiKeyParams(name), name.Length >= 8 ? name[..8] : name.PadRight(8, 'x'), "hash-" + name, organizationId);
 
     private async Task SeedAsync(params ApiKey[] keys)
     {

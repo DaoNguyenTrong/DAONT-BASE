@@ -1,4 +1,5 @@
 using NSubstitute;
+using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Models;
 using StarterKit.Application.Services.AuditLogs;
 using StarterKit.Application.Tests.TestSupport;
@@ -7,12 +8,16 @@ namespace StarterKit.Application.Tests.Services.AuditLogs;
 
 public class AuditLogServiceTests
 {
+    private static readonly Guid OrganizationId = Guid.NewGuid();
+
     private sealed record Fixture(AuditLogService Service, IAuditLogRepository Repository);
 
     private static Fixture CreateFixture()
     {
         IAuditLogRepository repository = Substitute.For<IAuditLogRepository>();
-        AuditLogService service = new(repository);
+        ICurrentTenantProvider currentTenantProvider = Substitute.For<ICurrentTenantProvider>();
+        currentTenantProvider.OrganizationId.Returns(OrganizationId);
+        AuditLogService service = new(repository, currentTenantProvider);
 
         return new Fixture(service, repository);
     }
@@ -31,13 +36,15 @@ public class AuditLogServiceTests
     {
         Fixture f = CreateFixture();
         f.Repository.ListPagedAsync(
-                Arg.Any<int>(), Arg.Any<int>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<bool?>(), Arg.Any<CancellationToken>())
+                Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<bool?>(),
+                Arg.Any<CancellationToken>())
             .Returns(((IReadOnlyList<AuditLogDto>)[], 0));
 
         await f.Service.GetAllAsync(new PaginationRequest(requestPage, requestSize), null, null, CancellationToken.None);
 
         await f.Repository.Received(1).ListPagedAsync(
-            expectedPage, expectedSize, Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<bool?>(), Arg.Any<CancellationToken>());
+            OrganizationId, expectedPage, expectedSize, Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<bool?>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -46,13 +53,15 @@ public class AuditLogServiceTests
         Fixture f = CreateFixture();
         Guid userId = Guid.NewGuid();
         f.Repository.ListPagedAsync(
-                Arg.Any<int>(), Arg.Any<int>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<bool?>(), Arg.Any<CancellationToken>())
+                Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<bool?>(),
+                Arg.Any<CancellationToken>())
             .Returns(((IReadOnlyList<AuditLogDto>)[], 0));
 
         await f.Service.GetAllAsync(
             new PaginationRequest(1, 10, "  create  "), userId, true, CancellationToken.None);
 
-        await f.Repository.Received(1).ListPagedAsync(1, 10, "create", userId, true, Arg.Any<CancellationToken>());
+        await f.Repository.Received(1).ListPagedAsync(
+            OrganizationId, 1, 10, "create", userId, true, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -61,7 +70,8 @@ public class AuditLogServiceTests
         Fixture f = CreateFixture();
         AuditLogDto dto = CreateDto();
         f.Repository.ListPagedAsync(
-                Arg.Any<int>(), Arg.Any<int>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<bool?>(), Arg.Any<CancellationToken>())
+                Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<bool?>(),
+                Arg.Any<CancellationToken>())
             .Returns(((IReadOnlyList<AuditLogDto>)[dto], 1));
 
         PagedResult<AuditLogDto> result = await f.Service.GetAllAsync(
@@ -79,7 +89,7 @@ public class AuditLogServiceTests
     {
         Fixture f = CreateFixture();
         AuditLogDto dto = CreateDto(42);
-        f.Repository.GetByIdAsync(42, Arg.Any<CancellationToken>()).Returns(dto);
+        f.Repository.GetByIdAsync(OrganizationId, 42, Arg.Any<CancellationToken>()).Returns(dto);
 
         AuditLogDto result = await f.Service.GetByIdAsync(42, CancellationToken.None);
 
@@ -90,7 +100,7 @@ public class AuditLogServiceTests
     public async Task GetByIdAsync_NotFound_ThrowsNotFoundWithAuditLogEntityName()
     {
         Fixture f = CreateFixture();
-        f.Repository.GetByIdAsync(99, Arg.Any<CancellationToken>()).Returns((AuditLogDto?)null);
+        f.Repository.GetByIdAsync(OrganizationId, 99, Arg.Any<CancellationToken>()).Returns((AuditLogDto?)null);
 
         await ApplicationAssert.AssertNotFoundAsync(
             "AuditLog", 99L, () => f.Service.GetByIdAsync(99, CancellationToken.None));

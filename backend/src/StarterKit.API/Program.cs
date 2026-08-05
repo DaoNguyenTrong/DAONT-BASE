@@ -21,7 +21,6 @@ using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Resources;
 using StarterKit.Infrastructure;
 using StarterKit.Infrastructure.Persistence;
-using StarterKit.Infrastructure.Persistence.Seeding;
 using StarterKit.Infrastructure.Services.Notifications;
 using Prometheus;
 using Serilog;
@@ -150,12 +149,6 @@ if (!app.Environment.IsDevelopment())
     await dbContext.Database.MigrateAsync();
 }
 
-using (IServiceScope seedScope = app.Services.CreateScope())
-{
-    AppDbContext seedDbContext = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await SystemSettingSeeder.SeedAsync(seedDbContext);
-}
-
 app.UseBackgroundJobs();
 
 app.UseForwardedHeaders();
@@ -169,6 +162,7 @@ app.UseCors();
 app.UseHttpMetrics();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<UserTimeZoneMiddleware>();
+app.UseMiddleware<CsrfProtectionMiddleware>();
 app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())

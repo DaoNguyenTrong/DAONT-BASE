@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StarterKit.Application.Common.Authorization;
 using StarterKit.Application.Services.ApiKeys;
 
 namespace StarterKit.API.Controllers;
 
+/// <summary>API keys for the caller's active organization (JWT <c>org_id</c> claim).</summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = Permissions.ApiKeysManage)]
 [Route("api/admin/api-keys")]
 public sealed class ApiKeysController(IApiKeyService apiKeyService) : ControllerBase
 {

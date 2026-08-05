@@ -41,6 +41,8 @@ internal static class AuthExtensions
         services.AddSingleton<IAuthorizationPolicyProvider, OrganizationPermissionPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, OrganizationPermissionAuthorizationHandler>();
         services.AddScoped<IAuthorizationHandler, OrganizationMembershipAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, ActiveOrganizationPermissionAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, ActiveOrganizationMembershipAuthorizationHandler>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -86,6 +88,10 @@ internal static class AuthExtensions
             options.AddPolicy(
                 AuthorizationPolicies.OrganizationMember,
                 policy => policy.AddRequirements(new OrganizationMembershipRequirement()));
+
+            options.AddPolicy(
+                AuthorizationPolicies.ActiveOrganizationMember,
+                policy => policy.AddRequirements(new ActiveOrganizationMembershipRequirement()));
         });
 
         return services;

@@ -16,6 +16,8 @@ public sealed class AuditLog
 
     public string? UserId { get; set; }
 
+    public Guid? OrganizationId { get; set; }
+
     public string? IpAddress { get; set; }
 
     public string? UserAgent { get; set; }

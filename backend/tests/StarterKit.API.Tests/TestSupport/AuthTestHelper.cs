@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using NSubstitute;
 using StarterKit.Application.Common.Authorization;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Services.ApiKeys;
@@ -173,9 +174,14 @@ public static class AuthTestHelper
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public static async Task<(ApiKey ApiKey, string RawKey)> SeedActiveApiKeyAsync(AppDbContext context, string name = "Test Key")
+    public static async Task<(ApiKey ApiKey, string RawKey)> SeedActiveApiKeyAsync(
+        AppDbContext context, Guid organizationId, string name = "Test Key")
     {
-        ApiKeyService apiKeyServiceHelper = new(new PassthroughUnitOfWork(context));
+        StarterKit.Application.Common.Interfaces.ICurrentTenantProvider currentTenantProvider =
+            Substitute.For<StarterKit.Application.Common.Interfaces.ICurrentTenantProvider>();
+        currentTenantProvider.OrganizationId.Returns(organizationId);
+
+        ApiKeyService apiKeyServiceHelper = new(new PassthroughUnitOfWork(context), currentTenantProvider);
         CreateApiKeyResult result =
             await apiKeyServiceHelper.CreateAsync(new CreateApiKeyRequest(name), CancellationToken.None);
 

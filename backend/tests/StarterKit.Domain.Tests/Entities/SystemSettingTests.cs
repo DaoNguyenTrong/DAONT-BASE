@@ -8,7 +8,7 @@ public class SystemSettingTests
     [Fact]
     public void Create_WithValidParams_AssignsKeyAndValue()
     {
-        SystemSetting setting = SystemSetting.Create(new SystemSettingParams("retrieval.topK", "10"));
+        SystemSetting setting = SystemSetting.Create(new SystemSettingParams("retrieval.topK", "10"), Guid.NewGuid());
 
         Assert.Equal("retrieval.topK", setting.Key);
         Assert.Equal("10", setting.Value);
@@ -19,13 +19,13 @@ public class SystemSettingTests
     [InlineData("   ")]
     public void Create_WithBlankKey_ThrowsDomainException(string key)
     {
-        DomainAssert.ThrowsWithMessage(DomainMessages.SystemSettingKeyRequired, () => SystemSetting.Create(new SystemSettingParams(key, "10")));
+        DomainAssert.ThrowsWithMessage(DomainMessages.SystemSettingKeyRequired, () => SystemSetting.Create(new SystemSettingParams(key, "10"), Guid.NewGuid()));
     }
 
     [Fact]
     public void Create_TrimsKey()
     {
-        SystemSetting setting = SystemSetting.Create(new SystemSettingParams("  retrieval.topK  ", "10"));
+        SystemSetting setting = SystemSetting.Create(new SystemSettingParams("  retrieval.topK  ", "10"), Guid.NewGuid());
 
         Assert.Equal("retrieval.topK", setting.Key);
     }
@@ -33,7 +33,7 @@ public class SystemSettingTests
     [Fact]
     public void Create_WithNullValue_AssignsNullWithoutThrowing()
     {
-        SystemSetting setting = SystemSetting.Create(new SystemSettingParams("retrieval.topK", null));
+        SystemSetting setting = SystemSetting.Create(new SystemSettingParams("retrieval.topK", null), Guid.NewGuid());
 
         Assert.Null(setting.Value);
     }
@@ -41,7 +41,7 @@ public class SystemSettingTests
     [Fact]
     public void Create_DoesNotTrimValue()
     {
-        SystemSetting setting = SystemSetting.Create(new SystemSettingParams("retrieval.topK", "  10  "));
+        SystemSetting setting = SystemSetting.Create(new SystemSettingParams("retrieval.topK", "  10  "), Guid.NewGuid());
 
         Assert.Equal("  10  ", setting.Value);
     }
@@ -52,7 +52,7 @@ public class SystemSettingTests
     [InlineData("new-value")]
     public void UpdateValue_AssignsRawValueUnconditionally(string? value)
     {
-        SystemSetting setting = SystemSetting.Create(new SystemSettingParams("retrieval.topK", "10"));
+        SystemSetting setting = SystemSetting.Create(new SystemSettingParams("retrieval.topK", "10"), Guid.NewGuid());
 
         setting.UpdateValue(value);
 

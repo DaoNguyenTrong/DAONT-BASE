@@ -8,4 +8,7 @@ namespace StarterKit.Infrastructure.Services.Auth;
 public static class AuthorizationPolicies
 {
     public const string OrganizationMember = "OrganizationMember";
+
+    /// <summary>Any active member of the caller's active organization (JWT <c>org_id</c> claim).</summary>
+    public const string ActiveOrganizationMember = "ActiveOrganizationMember";
 }

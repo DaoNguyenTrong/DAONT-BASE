@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using NSubstitute;
 using StarterKit.Application.Common.Interfaces;
@@ -10,6 +11,8 @@ namespace StarterKit.Application.Tests.Services.ApiKeys;
 
 public class ApiKeyServiceTests
 {
+    private static readonly Guid OrganizationId = Guid.NewGuid();
+
     private sealed record Fixture(ApiKeyService Service, IRepository<ApiKey, Guid> ApiKeyRepo, IUnitOfWork UnitOfWork);
 
     private static Fixture CreateFixture()
@@ -17,15 +20,17 @@ public class ApiKeyServiceTests
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         IRepository<ApiKey, Guid> apiKeyRepo = Substitute.For<IRepository<ApiKey, Guid>>();
         unitOfWork.Repository<ApiKey, Guid>().Returns(apiKeyRepo);
+        ICurrentTenantProvider currentTenantProvider = Substitute.For<ICurrentTenantProvider>();
+        currentTenantProvider.OrganizationId.Returns(OrganizationId);
 
-        ApiKeyService service = new(unitOfWork);
+        ApiKeyService service = new(unitOfWork, currentTenantProvider);
 
         return new Fixture(service, apiKeyRepo, unitOfWork);
     }
 
     private static ApiKey CreateApiKey(string name = "CI key", DateTime? createdAt = null)
     {
-        ApiKey key = ApiKey.Create(new ApiKeyParams(name), "sk_abcd12", "hash");
+        ApiKey key = ApiKey.Create(new ApiKeyParams(name), "sk_abcd12", "hash", OrganizationId);
         key.CreatedAt = createdAt ?? DateTime.UtcNow;
         return key;
     }
@@ -70,7 +75,8 @@ public class ApiKeyServiceTests
     public async Task GetAllAsync_Empty_ReturnsEmptyList()
     {
         Fixture f = CreateFixture();
-        f.ApiKeyRepo.ListAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<ApiKey>)[]);
+        f.ApiKeyRepo.ListAsync(Arg.Any<Expression<Func<ApiKey, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<ApiKey>)[]);
 
         IReadOnlyList<ApiKeyDto> result = await f.Service.GetAllAsync(CancellationToken.None);
 
@@ -83,7 +89,8 @@ public class ApiKeyServiceTests
         Fixture f = CreateFixture();
         ApiKey older = CreateApiKey("Older", DateTime.UtcNow.AddHours(-1));
         ApiKey newer = CreateApiKey("Newer", DateTime.UtcNow);
-        f.ApiKeyRepo.ListAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<ApiKey>)[older, newer]);
+        f.ApiKeyRepo.ListAsync(Arg.Any<Expression<Func<ApiKey, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<ApiKey>)[older, newer]);
 
         IReadOnlyList<ApiKeyDto> result = await f.Service.GetAllAsync(CancellationToken.None);
 

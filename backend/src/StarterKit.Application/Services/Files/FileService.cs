@@ -12,6 +12,7 @@ namespace StarterKit.Application.Services.Files;
 public sealed class FileService(
     IStorageService storageService,
     IUnitOfWork unitOfWork,
+    ICurrentTenantProvider currentTenantProvider,
     IOptions<StorageSettings> storageOptions) : IFileService
 {
     private const int DefaultPageNumber = 1;
@@ -21,6 +22,7 @@ public sealed class FileService(
 
     public async Task<FileDto> UploadAsync(UploadFileRequest request, CancellationToken cancellationToken)
     {
+        Guid organizationId = RequireOrganizationId();
         ValidateUpload(request);
 
         StorageUploadResult uploadResult = await storageService.UploadAsync(
@@ -34,7 +36,7 @@ public sealed class FileService(
             request.ContentType,
             uploadResult.Size,
             uploadResult.StoragePath,
-            request.OwnerId,
+            organizationId,
             request.Description,
             request.Category));
 
@@ -46,8 +48,7 @@ public sealed class FileService(
 
     public async Task<FileDto> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        StoredFile storedFile = await unitOfWork.Repository<StoredFile, Guid>().GetByIdAsync(id, cancellationToken)
-            ?? throw new NotFoundException(nameof(StoredFile), id);
+        StoredFile storedFile = await GetOwnedAsync(id, cancellationToken);
 
         return ToDto(storedFile);
     }
@@ -56,11 +57,12 @@ public sealed class FileService(
         FileListRequest request,
         CancellationToken cancellationToken)
     {
+        Guid organizationId = RequireOrganizationId();
         int pageNumber = request.PageNumber < 1 ? DefaultPageNumber : request.PageNumber;
         int pageSize = request.PageSize < 1 ? DefaultPageSize : request.PageSize;
 
         (IReadOnlyList<StoredFile> storedFiles, int totalCount) = await unitOfWork.Repository<StoredFile, Guid>()
-            .ListPagedAsync(pageNumber, pageSize, cancellationToken);
+            .ListPagedAsync(file => file.OrganizationId == organizationId, pageNumber, pageSize, cancellationToken);
 
         return new PagedResult<FileDto>(
             storedFiles.Select(ToDto).ToList(),
@@ -71,8 +73,7 @@ public sealed class FileService(
 
     public async Task<FileDownloadResult> DownloadAsync(Guid id, CancellationToken cancellationToken)
     {
-        StoredFile storedFile = await unitOfWork.Repository<StoredFile, Guid>().GetByIdAsync(id, cancellationToken)
-            ?? throw new NotFoundException(nameof(StoredFile), id);
+        StoredFile storedFile = await GetOwnedAsync(id, cancellationToken);
 
         Stream content = await storageService.DownloadAsync(storedFile.StoragePath, cancellationToken);
 
@@ -81,15 +82,31 @@ public sealed class FileService(
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
+        StoredFile storedFile = await GetOwnedAsync(id, cancellationToken);
         IRepository<StoredFile, Guid> repository = unitOfWork.Repository<StoredFile, Guid>();
-        StoredFile storedFile = await repository.GetByIdAsync(id, cancellationToken)
-            ?? throw new NotFoundException(nameof(StoredFile), id);
 
         await storageService.DeleteAsync(storedFile.StoragePath, cancellationToken);
 
         repository.Delete(storedFile);
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
+
+    private async Task<StoredFile> GetOwnedAsync(Guid id, CancellationToken cancellationToken)
+    {
+        Guid organizationId = RequireOrganizationId();
+        StoredFile? storedFile = await unitOfWork.Repository<StoredFile, Guid>().GetByIdAsync(id, cancellationToken);
+
+        if (storedFile is null || storedFile.OrganizationId != organizationId)
+        {
+            throw new NotFoundException(nameof(StoredFile), id);
+        }
+
+        return storedFile;
+    }
+
+    private Guid RequireOrganizationId() =>
+        currentTenantProvider.OrganizationId
+            ?? throw new ForbiddenException(ApplicationMessages.OrganizationAccessDenied);
 
     private void ValidateUpload(UploadFileRequest request)
     {
@@ -121,7 +138,7 @@ public sealed class FileService(
             storedFile.Size,
             storedFile.StoragePath,
             BuildPublicUrl(storedFile.StoragePath),
-            storedFile.OwnerId,
+            storedFile.OrganizationId,
             storedFile.Description,
             storedFile.Category,
             storedFile.CreatedAt,
