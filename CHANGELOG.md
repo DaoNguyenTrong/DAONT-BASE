@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.4.1] - 2026-08-05
+
+### Changed
+
+- Release process now goes through a `release/vX.Y.Z` QA-stabilization branch (`dev → release/vX.Y.Z → main`, two phases: cut and ship) instead of merging `dev` directly into `main`. Bugs found during stabilization branch off `release/vX.Y.Z` via `fix/*`. Neither the release branch nor the hotfix workflow back-merges into `dev` — unchanged from v1.2.0 for hotfix; if `dev` needs a hotfix's change too, cherry-pick or reimplement it separately.
+- `lefthook.yml`'s `pre-commit` group now sets `piped: true`, so a failing command (e.g. `branch-guard` on `main`) stops the rest of the hooks instead of still running `secretlint`/`prettier` against a commit that's already going to be rejected.
+- Pre-commit `prettier` and `bun run --cwd frontend format` now also cover `frontend/e2e/**`, matching `frontend/src/**`'s existing coverage — e2e specs were previously untouched by either.
+- README (root and `frontend/`) updated to match the current feature set: multi-tenant Organizations + per-org RBAC, Notifications (in-app/email/push/SignalR), Hangfire/Prometheus/Grafana, and the corrected access model (no personal/org-less access to Files/ApiKeys/AuditLogs/SystemSettings). Previously described a pre-v1.2.0, single-account, no-roles model.
+
 ## [v1.4.0] - 2026-08-05
 
 ### Added
