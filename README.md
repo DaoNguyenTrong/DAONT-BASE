@@ -1,19 +1,18 @@
 # StarterKit
 
-An app starter kit for new web applications: .NET 10 Clean Architecture on the backend, Vue 3 + Vite on the frontend. It ships with the shared foundation most applications need — auth, account management, API keys, audit log, file storage, system settings — so you can start writing business features right away instead of rebuilding basic infrastructure from scratch.
+An app starter kit for new web applications: .NET 10 Clean Architecture on the backend, Vue 3 + Vite on the frontend. It ships with the shared foundation most applications need — auth, multi-tenant organizations with per-org RBAC, API keys, audit log, file storage, system settings, notifications — so you can start writing business features right away instead of rebuilding basic infrastructure from scratch.
 
 This is **not** a finished product — no business features are baked in. Remove/replace whatever you don't need and add your own domain on top of this foundation.
 
 ## Already Included
 
-- **Auth**: email + password register/login (JWT access + refresh token, refresh token stored as a SHA-256 hash), mandatory email verification via SMTP, Google login (credential flow), session management (list/revoke by device).
-- **Account**: account CRUD, change password, profile.
-- **ApiKey**: create/manage API keys for an account.
-- **AuditLog**: action logging.
-- **Files**: upload/store files (local disk, provider pluggable via `IStorageProvider`).
-- **SystemSettings**: system configuration as key/value pairs.
+- **Auth**: email + password register/login (JWT access + refresh token, refresh token stored as a SHA-256 hash), mandatory email verification via SMTP, Google + Microsoft login (credential flow / MSAL popup), session management (list/revoke by device).
+- **Profile**: self-service profile (get/update) and change password for the current account. There is no account CRUD/admin surface — accounts are created only via registration, and removed only by leaving/being removed from every organization.
+- **Organizations & RBAC**: multi-tenant — an account can belong to multiple organizations and switches its active one, which is encoded as the JWT `org_id` claim. Access within an organization is governed by custom roles built from a fixed permission catalog; `Owner`/`Admin`/`Member` are seeded as system roles on creation (Owner gets every permission), but roles beyond that are fully organization-defined.
+- **ApiKey**, **AuditLog**, **Files** (local disk, provider pluggable via `IStorageProvider`), **SystemSettings**: all four require an active organization *and* the specific permission for it — there is no personal/org-less access and no global admin bypass.
+- **Notifications**: in-app (REST + real-time via SignalR), email, and optional Web Push (Firebase Cloud Messaging) — channels fan out through a Hangfire background job.
 
-No multi-tenancy — single-user/single-account model. No admin role/global role — every logged-in account has equal access to the APIs above; add authorization as your specific application needs.
+No global admin role anywhere in the system — outside of an organization ("personal" context) an account only has auth/profile/organization endpoints; add authorization as your specific application needs on top of the permission catalog.
 
 ## Architecture
 
@@ -28,13 +27,18 @@ For layer/rule details for each part, see `CLAUDE.md` / `AGENTS.md` and `.claude
 
 ## Tech Stack
 
-| Component | Technology                                           |
-| --------- | ----------------------------------------------------- |
-| Backend   | .NET 10, ASP.NET Core, Clean Architecture, EF Core     |
-| Database  | PostgreSQL                                             |
-| Frontend  | Vue 3 + Vite, Pinia, naive-ui, vue-i18n, Tailwind      |
-| Storage   | Local disk currently; pluggable via `IStorageProvider` |
-| Email     | SMTP (MailKit) — required, even in dev                |
+| Component       | Technology                                                                |
+| --------------- | -------------------------------------------------------------------------- |
+| Backend         | .NET 10, ASP.NET Core, Clean Architecture, EF Core                         |
+| Database        | PostgreSQL                                                                  |
+| Frontend        | Vue 3 + Vite, Pinia, naive-ui, vue-i18n, Tailwind                          |
+| Storage         | Local disk currently; pluggable via `IStorageProvider`                     |
+| Email           | SMTP (MailKit) — required, even in dev                                     |
+| Background jobs | Hangfire (PostgreSQL storage, dashboard at `/hangfire`)                    |
+| Realtime        | SignalR (`/hubs/notifications`, in-memory — no Redis backplane)            |
+| Push            | Firebase Cloud Messaging (`FirebaseAdmin` SDK) — optional, no-op if unconfigured |
+| Logging         | Serilog (structured, console + rolling file) + correlation ID middleware   |
+| Monitoring      | Prometheus metrics (`/metrics`) + Grafana, see `monitoring/`               |
 
 ## Getting Started
 
@@ -91,6 +95,8 @@ bun run --cwd frontend format         # prettier — there is no ESLint config i
 ### 4. Try the Registration Flow
 
 `POST /api/auth/register` → open Mailpit (`localhost:8025`) → click the verification link → log in.
+
+A freshly registered account has no organization yet, so Files/API keys/audit logs/system settings all return 403 until you create one: `POST /api/organizations` (or use the frontend's Organizations page), then `POST /api/auth/switch-organization` to make it the session's active organization — the creator is seeded as its Owner with every permission.
 
 ### Git Hooks (once, at the repo root)
 
