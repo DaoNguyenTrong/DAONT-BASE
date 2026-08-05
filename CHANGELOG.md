@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.4.0] - 2026-08-05
+
 ### Added
 
 - MIT `LICENSE`, `CODE_OF_CONDUCT.md` (Contributor Covenant), and `SECURITY.md` (vulnerability reporting policy) for OSS readiness.
