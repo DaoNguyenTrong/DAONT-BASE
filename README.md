@@ -129,5 +129,11 @@ For full details, see `.claude/rules/commands.md`.
 ## Documentation
 
 - Contributing / git workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Code of Conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- Security policy / reporting a vulnerability: [SECURITY.md](SECURITY.md)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
 - Key architecture decisions: [.claude/decisions.md](.claude/decisions.md)
+
+## License
+
+[MIT](LICENSE)

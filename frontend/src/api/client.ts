@@ -94,6 +94,10 @@ function applyCommonHeaders(config: { headers?: AxiosRequestHeaders; url?: strin
 
   headers.set('Accept-Language', locale)
 
+  // A cross-site <form> submission can't set a custom header, so a forged request never carries
+  // this — the value is unchecked by the backend, only presence matters. See CsrfProtectionMiddleware.
+  headers.set('X-CSRF-Protection', '1')
+
   return headers
 }
 

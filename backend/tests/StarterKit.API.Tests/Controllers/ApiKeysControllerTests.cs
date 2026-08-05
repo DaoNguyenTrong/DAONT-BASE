@@ -19,16 +19,19 @@ public sealed class ApiKeysControllerTests(ApiFactoryFixture fixture) : IAsyncLi
     private AppDbContext CreateDbContext() =>
         fixture.Services.CreateScope().ServiceProvider.GetRequiredService<AppDbContext>();
 
-    private async Task<HttpClient> CreateAuthedClientAsync()
+    private async Task<(HttpClient Client, Guid OrganizationId)> CreateAuthedClientAsync()
     {
         HttpClient client = fixture.CreateTestClient();
         Account caller;
+        Organization organization;
         await using (AppDbContext context = CreateDbContext())
         {
             caller = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: $"apikeys-caller-{Guid.NewGuid():N}", email: $"apikeys-caller-{Guid.NewGuid():N}@example.com");
+            organization = await AuthTestHelper.SeedOrganizationAsync(context);
+            await AuthTestHelper.SeedOrganizationMemberAsync(context, organization.Id, caller.Id, SystemRoleKind.Owner);
         }
-        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(caller));
-        return client;
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(caller, organization.Id));
+        return (client, organization.Id);
     }
 
     [Fact]
@@ -44,11 +47,11 @@ public sealed class ApiKeysControllerTests(ApiFactoryFixture fixture) : IAsyncLi
     [Fact]
     public async Task GetAll_OrdersByCreatedAtDescending()
     {
-        HttpClient client = await CreateAuthedClientAsync();
+        (HttpClient client, Guid organizationId) = await CreateAuthedClientAsync();
         await using (AppDbContext context = CreateDbContext())
         {
-            (_, _) = await AuthTestHelper.SeedActiveApiKeyAsync(context, "Older Key");
-            (_, _) = await AuthTestHelper.SeedActiveApiKeyAsync(context, "Newer Key");
+            (_, _) = await AuthTestHelper.SeedActiveApiKeyAsync(context, organizationId, "Older Key");
+            (_, _) = await AuthTestHelper.SeedActiveApiKeyAsync(context, organizationId, "Newer Key");
         }
 
         HttpResponseMessage response = await client.GetAsync("/api/admin/api-keys");
@@ -63,7 +66,7 @@ public sealed class ApiKeysControllerTests(ApiFactoryFixture fixture) : IAsyncLi
     [Fact]
     public async Task Create_Valid_Returns201WithRawKeyFormat()
     {
-        HttpClient client = await CreateAuthedClientAsync();
+        (HttpClient client, _) = await CreateAuthedClientAsync();
 
         HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/api-keys", new CreateApiKeyRequest("New CI Key"));
 
@@ -75,7 +78,7 @@ public sealed class ApiKeysControllerTests(ApiFactoryFixture fixture) : IAsyncLi
     [Fact]
     public async Task Create_BlankName_ReturnsBadRequest()
     {
-        HttpClient client = await CreateAuthedClientAsync();
+        (HttpClient client, _) = await CreateAuthedClientAsync();
 
         HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/api-keys", new CreateApiKeyRequest(""));
 
@@ -85,7 +88,7 @@ public sealed class ApiKeysControllerTests(ApiFactoryFixture fixture) : IAsyncLi
     [Fact]
     public async Task Deactivate_NotFound_Returns404()
     {
-        HttpClient client = await CreateAuthedClientAsync();
+        (HttpClient client, _) = await CreateAuthedClientAsync();
 
         HttpResponseMessage response = await client.DeleteAsync($"/api/admin/api-keys/{Guid.NewGuid()}");
 
@@ -95,12 +98,12 @@ public sealed class ApiKeysControllerTests(ApiFactoryFixture fixture) : IAsyncLi
     [Fact]
     public async Task Deactivate_Found_KeyNoLongerAuthenticates()
     {
-        HttpClient client = await CreateAuthedClientAsync();
+        (HttpClient client, Guid organizationId) = await CreateAuthedClientAsync();
         ApiKey apiKey;
         string rawKey;
         await using (AppDbContext context = CreateDbContext())
         {
-            (apiKey, rawKey) = await AuthTestHelper.SeedActiveApiKeyAsync(context, "Deactivate Target");
+            (apiKey, rawKey) = await AuthTestHelper.SeedActiveApiKeyAsync(context, organizationId, "Deactivate Target");
         }
 
         HttpResponseMessage deactivateResponse = await client.DeleteAsync($"/api/admin/api-keys/{apiKey.Id}");

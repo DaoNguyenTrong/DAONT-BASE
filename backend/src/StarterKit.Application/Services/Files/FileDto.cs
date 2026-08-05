@@ -7,7 +7,7 @@ public sealed record FileDto(
     long Size,
     string StoragePath,
     string PublicUrl,
-    Guid? OwnerId,
+    Guid OrganizationId,
     string? Description,
     string? Category,
     DateTime CreatedAt,

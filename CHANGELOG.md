@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.4.0] - 2026-08-05
+
+### Added
+
+- MIT `LICENSE`, `CODE_OF_CONDUCT.md` (Contributor Covenant), and `SECURITY.md` (vulnerability reporting policy) for OSS readiness.
+
+### Security
+
+- Files, ApiKeys, AuditLogs, and SystemSettings are now scoped to the caller's active organization (resolved from the JWT `org_id` claim) — previously any authenticated account could read/modify another organization's records for these four resources.
+- Added `CsrfProtectionMiddleware`, requiring a custom header on cookie-authenticated unsafe requests, so a forged cross-site `<form>` submission (e.g. to the file upload endpoint) can no longer ride along on the `access_token` cookie.
+
 ## [v1.3.0] - 2026-08-04
 
 ### Added

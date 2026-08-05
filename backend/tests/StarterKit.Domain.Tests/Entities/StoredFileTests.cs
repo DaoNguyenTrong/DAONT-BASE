@@ -12,7 +12,7 @@ public class StoredFileTests
             ContentType: "application/pdf",
             Size: 1024,
             StoragePath: "/files/report.pdf",
-            OwnerId: null,
+            OrganizationId: Guid.NewGuid(),
             Description: null,
             Category: null);
     }
@@ -29,7 +29,7 @@ public class StoredFileTests
         Assert.Equal(p.ContentType, file.ContentType);
         Assert.Equal(p.Size, file.Size);
         Assert.Equal(p.StoragePath, file.StoragePath);
-        Assert.Null(file.OwnerId);
+        Assert.Equal(p.OrganizationId, file.OrganizationId);
         Assert.Null(file.Description);
         Assert.Null(file.Category);
     }
@@ -103,16 +103,5 @@ public class StoredFileTests
         Assert.Equal("/files/report.pdf", file.StoragePath);
         Assert.Equal("desc", file.Description);
         Assert.Equal("cat", file.Category);
-    }
-
-    [Fact]
-    public void Create_WithOwnerId_AssignsWithoutValidation()
-    {
-        Guid ownerId = Guid.NewGuid();
-        StoredFileParams p = ValidParams() with { OwnerId = ownerId };
-
-        StoredFile file = StoredFile.Create(p);
-
-        Assert.Equal(ownerId, file.OwnerId);
     }
 }

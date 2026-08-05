@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StarterKit.Application.Common.Authorization;
 using StarterKit.Application.Common.Interfaces;
 
 namespace StarterKit.API.Controllers;
 
+/// <summary>Settings for the caller's active organization (JWT <c>org_id</c> claim).</summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = Permissions.SettingsManage)]
 [Route("api/system-settings")]
 public sealed class SystemSettingsController(ISystemSettingsService systemSettingsService) : ControllerBase
 {

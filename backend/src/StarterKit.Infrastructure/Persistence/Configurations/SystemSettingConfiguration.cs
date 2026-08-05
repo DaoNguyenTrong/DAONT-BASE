@@ -22,7 +22,12 @@ public sealed class SystemSettingConfiguration : IEntityTypeConfiguration<System
         builder.Property(setting => setting.CreatedAt)
             .IsRequired();
 
-        builder.HasIndex(setting => setting.Key)
+        builder.HasIndex(setting => new { setting.OrganizationId, setting.Key })
             .IsUnique();
+
+        builder.HasOne<Organization>()
+            .WithMany()
+            .HasForeignKey(setting => setting.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

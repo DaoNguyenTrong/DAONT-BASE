@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StarterKit.Application.Common.Authorization;
 using StarterKit.Application.Common.Models;
 using StarterKit.Application.Services.Files;
+using StarterKit.Infrastructure.Services.Auth;
 
 namespace StarterKit.API.Controllers;
 
+/// <summary>Files scoped to the caller's active organization (JWT <c>org_id</c> claim).</summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = AuthorizationPolicies.ActiveOrganizationMember)]
 [Route("api/files")]
 public sealed class FilesController(IFileService fileService) : ControllerBase
 {
@@ -18,7 +21,6 @@ public sealed class FilesController(IFileService fileService) : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<FileDto>> Upload(
         IFormFile file,
-        Guid? ownerId,
         string? description,
         string? category,
         CancellationToken cancellationToken)
@@ -34,7 +36,6 @@ public sealed class FilesController(IFileService fileService) : ControllerBase
                 file.FileName,
                 contentType,
                 file.Length,
-                ownerId,
                 description,
                 category),
             cancellationToken);
@@ -54,7 +55,7 @@ public sealed class FilesController(IFileService fileService) : ControllerBase
         return Ok(storedFile);
     }
 
-    /// <summary>Returns a paginated list of files, with optional filtering by owner and category.</summary>
+    /// <summary>Returns a paginated list of files for the caller's active organization.</summary>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<FileDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -81,8 +82,10 @@ public sealed class FilesController(IFileService fileService) : ControllerBase
 
     /// <summary>Deletes a file by ID.</summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = Permissions.FilesManage)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

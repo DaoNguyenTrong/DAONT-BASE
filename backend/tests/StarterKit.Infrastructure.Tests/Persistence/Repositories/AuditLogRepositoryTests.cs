@@ -28,17 +28,21 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
         await context.DisposeAsync();
     }
 
+    private static readonly Guid DefaultOrganizationId = Guid.NewGuid();
+
     private static AuditLog CreateAuditLog(
         string entityName = "SomeEntity",
         string action = "Added",
         string? userId = null,
-        DateTime? timestamp = null) =>
+        DateTime? timestamp = null,
+        Guid? organizationId = null) =>
         new()
         {
             EntityName = entityName,
             EntityId = Guid.NewGuid().ToString(),
             Action = action,
             UserId = userId,
+            OrganizationId = organizationId ?? DefaultOrganizationId,
             Timestamp = timestamp ?? DateTime.UtcNow
         };
 
@@ -58,7 +62,7 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
             CreateAuditLog(entityName: "UnrelatedThing"));
 
         (IReadOnlyList<AuditLogDto> items, int totalCount) = await repository.ListPagedAsync(
-            1, 10, "searchablewidget", null, null);
+            DefaultOrganizationId, 1, 10, "searchablewidget", null, null);
 
         Assert.Equal(1, totalCount);
         Assert.Equal("SearchableWidgetXyz", items[0].EntityName);
@@ -72,7 +76,7 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
             CreateAuditLog(action: "Deleted"));
 
         (IReadOnlyList<AuditLogDto> items, int totalCount) = await repository.ListPagedAsync(
-            1, 10, "uniqueactionmarker", null, null);
+            DefaultOrganizationId, 1, 10, "uniqueactionmarker", null, null);
 
         Assert.Equal(1, totalCount);
         Assert.Equal("UniqueActionMarker", items[0].Action);
@@ -85,7 +89,7 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
         await SeedAsync(log);
 
         (IReadOnlyList<AuditLogDto> items, int totalCount) = await repository.ListPagedAsync(
-            1, 10, null, null, null);
+            DefaultOrganizationId, 1, 10, null, null, null);
 
         Assert.Contains(items, i => i.EntityName == "NoFilterEntity");
         Assert.True(totalCount >= 1);
@@ -102,7 +106,7 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
             CreateAuditLog(entityName: "OwnedByOther", userId: Guid.NewGuid().ToString()));
 
         (IReadOnlyList<AuditLogDto> items, int totalCount) = await repository.ListPagedAsync(
-            1, 10, null, userId, null);
+            DefaultOrganizationId, 1, 10, null, userId, null);
 
         Assert.Equal(1, totalCount);
         Assert.Equal("OwnedByUser", items[0].EntityName);
@@ -118,7 +122,7 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
         await SeedAsync(systemLog, userLog);
 
         (IReadOnlyList<AuditLogDto> items, int _) = await repository.ListPagedAsync(
-            1, 50, "GeneratedMarker", null, true);
+            DefaultOrganizationId, 1, 50, "GeneratedMarker", null, true);
 
         Assert.Contains(items, i => i.EntityName == "SystemGeneratedMarker");
         Assert.DoesNotContain(items, i => i.EntityName == "UserGeneratedMarker");
@@ -135,7 +139,7 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
         await SeedAsync(older, newer);
 
         (IReadOnlyList<AuditLogDto> items, int _) = await repository.ListPagedAsync(
-            1, 10, "Order", null, null);
+            DefaultOrganizationId, 1, 10, "Order", null, null);
 
         Assert.Equal("OrderNewer", items[0].EntityName);
         Assert.Equal("OrderOlder", items[1].EntityName);
@@ -153,7 +157,7 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
         await SeedAsync(log);
 
         (IReadOnlyList<AuditLogDto> items, int _) = await repository.ListPagedAsync(
-            1, 10, "JoinedToAccount", null, null);
+            DefaultOrganizationId, 1, 10, "JoinedToAccount", null, null);
 
         Assert.Equal("Nguyen Van A", items[0].UserName);
     }
@@ -165,7 +169,7 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
         await SeedAsync(log);
 
         (IReadOnlyList<AuditLogDto> items, int _) = await repository.ListPagedAsync(
-            1, 10, "OrphanedUserId", null, null);
+            DefaultOrganizationId, 1, 10, "OrphanedUserId", null, null);
 
         Assert.Null(items[0].UserName);
     }
@@ -178,7 +182,7 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
         AuditLog log = CreateAuditLog(entityName: "GetByIdTarget");
         await SeedAsync(log);
 
-        AuditLogDto? result = await repository.GetByIdAsync(log.Id);
+        AuditLogDto? result = await repository.GetByIdAsync(DefaultOrganizationId, log.Id);
 
         Assert.NotNull(result);
         Assert.Equal("GetByIdTarget", result!.EntityName);
@@ -187,7 +191,7 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
     [Fact]
     public async Task GetByIdAsync_NotFound_ReturnsNull()
     {
-        AuditLogDto? result = await repository.GetByIdAsync(long.MaxValue);
+        AuditLogDto? result = await repository.GetByIdAsync(DefaultOrganizationId, long.MaxValue);
 
         Assert.Null(result);
     }

@@ -23,11 +23,14 @@ public sealed class FilesControllerTests(ApiFactoryFixture fixture) : IAsyncLife
     {
         HttpClient client = fixture.CreateTestClient();
         Account caller;
+        Organization organization;
         await using (AppDbContext context = CreateDbContext())
         {
             caller = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: $"files-caller-{Guid.NewGuid():N}", email: $"files-caller-{Guid.NewGuid():N}@example.com");
+            organization = await AuthTestHelper.SeedOrganizationAsync(context);
+            await AuthTestHelper.SeedOrganizationMemberAsync(context, organization.Id, caller.Id, SystemRoleKind.Owner);
         }
-        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(caller));
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(caller, organization.Id));
         return client;
     }
 
@@ -137,5 +140,33 @@ public sealed class FilesControllerTests(ApiFactoryFixture fixture) : IAsyncLife
 
         HttpResponseMessage getResponse = await client.GetAsync($"/api/files/{uploaded.Id}");
         Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetById_BelongsToOtherOrganization_ReturnsNotFound()
+    {
+        HttpClient owner = await CreateAuthedClientAsync();
+        HttpResponseMessage uploadResponse = await owner.PostAsync(
+            "/api/files", CreateUploadContent("other org content"u8.ToArray(), "other-org.txt"));
+        FileDto? uploaded = await uploadResponse.Content.ReadJsonAsync<FileDto>();
+
+        HttpClient outsider = await CreateAuthedClientAsync();
+        HttpResponseMessage response = await outsider.GetAsync($"/api/files/{uploaded!.Id}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetAll_ScopedToActiveOrganization_ExcludesOtherOrganizationsFiles()
+    {
+        HttpClient owner = await CreateAuthedClientAsync();
+        await owner.PostAsync("/api/files", CreateUploadContent("other org content"u8.ToArray(), "other-org.txt"));
+
+        HttpClient outsider = await CreateAuthedClientAsync();
+        HttpResponseMessage response = await outsider.GetAsync("/api/files?pageSize=50");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        PagedResult<FileDto>? result = await response.Content.ReadJsonAsync<PagedResult<FileDto>>();
+        Assert.DoesNotContain(result!.Items, f => f.FileName == "other-org.txt");
     }
 }

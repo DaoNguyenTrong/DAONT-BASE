@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using StarterKit.Domain.Entities;
 
 namespace StarterKit.Infrastructure.Persistence;
 
@@ -39,6 +40,7 @@ internal sealed class AuditEntry(EntityEntry entry)
             OldValues = OldValues.Count > 0 ? JsonSerializer.Serialize(OldValues) : null,
             NewValues = NewValues.Count > 0 ? JsonSerializer.Serialize(NewValues) : null,
             UserId = UserId,
+            OrganizationId = (Entry.Entity as IHasOrganization)?.OrganizationId,
             IpAddress = IpAddress,
             UserAgent = UserAgent,
             Timestamp = timestamp

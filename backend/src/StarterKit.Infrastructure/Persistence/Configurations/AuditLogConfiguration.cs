@@ -42,6 +42,9 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
             .HasColumnName("user_id")
             .HasMaxLength(50);
 
+        builder.Property(x => x.OrganizationId)
+            .HasColumnName("organization_id");
+
         builder.Property(x => x.IpAddress)
             .HasColumnName("ip_address")
             .HasMaxLength(50);
@@ -57,6 +60,7 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
         builder.HasIndex(x => x.EntityName);
         builder.HasIndex(x => x.EntityId);
         builder.HasIndex(x => x.UserId);
+        builder.HasIndex(x => x.OrganizationId);
         builder.HasIndex(x => x.Timestamp);
     }
 }

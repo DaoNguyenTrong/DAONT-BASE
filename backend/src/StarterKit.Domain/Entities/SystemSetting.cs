@@ -4,15 +4,15 @@ namespace StarterKit.Domain.Entities;
 
 public sealed record SystemSettingParams(string Key, string? Value);
 
-public sealed class SystemSetting : BaseEntity
+public sealed class SystemSetting : BaseEntity, IHasOrganization
 {
     private SystemSetting()
     {
     }
 
-    public static SystemSetting Create(SystemSettingParams p)
+    public static SystemSetting Create(SystemSettingParams p, Guid organizationId)
     {
-        SystemSetting setting = new();
+        SystemSetting setting = new() { OrganizationId = organizationId };
         setting.SetKey(p.Key);
         setting.Value = p.Value;
         return setting;
@@ -20,6 +20,7 @@ public sealed class SystemSetting : BaseEntity
 
     public string Key { get; private set; } = string.Empty;
     public string? Value { get; private set; }
+    public Guid OrganizationId { get; private set; }
 
     public void UpdateValue(string? value)
     {
