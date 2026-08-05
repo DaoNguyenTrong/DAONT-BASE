@@ -17,7 +17,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install chromium",
-    "format": "prettier --write --experimental-cli src/"
+    "format": "prettier --write --experimental-cli src/ e2e/"
   },
   "dependencies": {
     "@azure/msal-browser": "^5.17.1",

@@ -1,4 +1,5 @@
 pre-commit:
+  piped: true
   commands:
     branch-guard:
       priority: 1
@@ -23,10 +24,12 @@ pre-commit:
     prettier:
       priority: 4
       # gobwas/glob's `dir/**/*` requires >=1 intermediate directory — doesn't match files
-      # directly in frontend/src/ (e.g. main.ts). Two patterns cover both depths.
+      # directly in frontend/src/ or frontend/e2e/ (e.g. main.ts). Two patterns per dir cover both depths.
       glob:
         - "frontend/src/*.{ts,vue,js,cjs,mjs,json,css,scss,md}"
         - "frontend/src/**/*.{ts,vue,js,cjs,mjs,json,css,scss,md}"
+        - "frontend/e2e/*.ts"
+        - "frontend/e2e/**/*.ts"
       run: bunx prettier --write {staged_files}
       stage_fixed: true
 
