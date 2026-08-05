@@ -347,18 +347,21 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
     [Fact]
     public async Task ApiKeyHeader_AuthenticatesAgainstCombinedPolicy()
     {
-        // ApiKeyAuthenticationHandler issues no ClaimTypes.NameIdentifier claim, so a "current
-        // user"-scoped endpoint like /sessions can't be used here — GetAll on ApiKeysController
-        // only requires [Authorize], not ICurrentUserService.UserId, so it works for either scheme.
+        // ApiKeyAuthenticationHandler issues no ClaimTypes.NameIdentifier claim and no org_id claim,
+        // so neither a "current user"-scoped endpoint like /sessions nor an organization-scoped one
+        // like ApiKeysController.GetAll can be used here — PermissionsController.GetAll is a static,
+        // org-independent catalog behind bare [Authorize], so it works for either scheme.
         HttpClient client = fixture.CreateTestClient();
+        Guid organizationId;
         string rawKey;
         await using (AppDbContext context = CreateDbContext())
         {
-            (_, rawKey) = await AuthTestHelper.SeedActiveApiKeyAsync(context, "accounts-api-key");
+            organizationId = (await AuthTestHelper.SeedOrganizationAsync(context)).Id;
+            (_, rawKey) = await AuthTestHelper.SeedActiveApiKeyAsync(context, organizationId, "accounts-api-key");
         }
         client.DefaultRequestHeaders.Add("X-Api-Key", rawKey);
 
-        HttpResponseMessage response = await client.GetAsync("/api/admin/api-keys");
+        HttpResponseMessage response = await client.GetAsync("/api/permissions");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }

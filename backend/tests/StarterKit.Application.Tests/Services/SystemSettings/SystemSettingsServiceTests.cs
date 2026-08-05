@@ -10,6 +10,8 @@ namespace StarterKit.Application.Tests.Services.SystemSettings;
 
 public class SystemSettingsServiceTests
 {
+    private static readonly Guid OrganizationId = Guid.NewGuid();
+
     private sealed record Fixture(SystemSettingsService Service, IRepository<SystemSetting> Repo, IUnitOfWork UnitOfWork, ICacheService CacheService);
 
     private static Fixture CreateFixture()
@@ -17,6 +19,8 @@ public class SystemSettingsServiceTests
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         IRepository<SystemSetting> repo = Substitute.For<IRepository<SystemSetting>>();
         unitOfWork.Repository<SystemSetting>().Returns(repo);
+        ICurrentTenantProvider currentTenantProvider = Substitute.For<ICurrentTenantProvider>();
+        currentTenantProvider.OrganizationId.Returns(OrganizationId);
 
         ICacheService cacheService = Substitute.For<ICacheService>();
         cacheService.GetOrSetAsync(
@@ -26,13 +30,13 @@ public class SystemSettingsServiceTests
                 Arg.Any<CancellationToken>())
             .Returns(ci => ci.Arg<Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>>()!(CancellationToken.None));
 
-        StarterKit.Application.Services.SystemSettings.SystemSettingsService service = new(unitOfWork, cacheService);
+        StarterKit.Application.Services.SystemSettings.SystemSettingsService service = new(unitOfWork, cacheService, currentTenantProvider);
 
         return new Fixture(service, repo, unitOfWork, cacheService);
     }
 
     private static SystemSetting CreateSetting(string key, string? value) =>
-        SystemSetting.Create(new SystemSettingParams(key, value));
+        SystemSetting.Create(new SystemSettingParams(key, value), OrganizationId);
 
     // GetAllAsync
 
@@ -74,11 +78,11 @@ public class SystemSettingsServiceTests
             Arg.Is<SystemSetting>(s => s != null && s.Key == "app:newKey" && s.Value == "New Value"),
             Arg.Any<CancellationToken>());
         await f.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await f.CacheService.Received(1).RemoveAsync("systemsettings:all", Arg.Any<CancellationToken>());
+        await f.CacheService.Received(1).RemoveAsync($"systemsettings:{OrganizationId}:all", Arg.Any<CancellationToken>());
         Received.InOrder(() =>
         {
             f.UnitOfWork.SaveChangesAsync(Arg.Any<CancellationToken>());
-            f.CacheService.RemoveAsync("systemsettings:all", Arg.Any<CancellationToken>());
+            f.CacheService.RemoveAsync($"systemsettings:{OrganizationId}:all", Arg.Any<CancellationToken>());
         });
     }
 
@@ -92,6 +96,6 @@ public class SystemSettingsServiceTests
         await f.Repo.DidNotReceive().AddAsync(Arg.Any<SystemSetting>(), Arg.Any<CancellationToken>());
         f.Repo.DidNotReceive().Update(Arg.Any<SystemSetting>());
         await f.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await f.CacheService.Received(1).RemoveAsync("systemsettings:all", Arg.Any<CancellationToken>());
+        await f.CacheService.Received(1).RemoveAsync($"systemsettings:{OrganizationId}:all", Arg.Any<CancellationToken>());
     }
 }

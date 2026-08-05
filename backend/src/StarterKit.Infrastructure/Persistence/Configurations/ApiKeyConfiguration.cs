@@ -48,9 +48,20 @@ public sealed class ApiKeyConfiguration : IEntityTypeConfiguration<ApiKey>
         builder.Property(key => key.UpdatedBy)
             .HasColumnName("updated_by");
 
+        builder.Property(key => key.OrganizationId)
+            .HasColumnName("organization_id")
+            .IsRequired();
+
         builder.HasIndex(key => key.KeyHash)
             .IsUnique();
 
         builder.HasIndex(key => key.KeyPrefix);
+
+        builder.HasIndex(key => key.OrganizationId);
+
+        builder.HasOne<Organization>()
+            .WithMany()
+            .HasForeignKey(key => key.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

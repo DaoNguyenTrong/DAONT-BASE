@@ -39,8 +39,13 @@ public sealed class StoredFileConfiguration : IEntityTypeConfiguration<StoredFil
         builder.HasIndex(file => file.StoragePath)
             .IsUnique();
 
-        builder.HasIndex(file => file.OwnerId);
+        builder.HasIndex(file => file.OrganizationId);
 
         builder.HasIndex(file => file.Category);
+
+        builder.HasOne<Organization>()
+            .WithMany()
+            .HasForeignKey(file => file.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

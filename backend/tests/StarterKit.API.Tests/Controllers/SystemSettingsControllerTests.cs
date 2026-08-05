@@ -21,11 +21,14 @@ public sealed class SystemSettingsControllerTests(ApiFactoryFixture fixture) : I
     {
         HttpClient client = fixture.CreateTestClient();
         Account caller;
+        Organization organization;
         await using (AppDbContext context = CreateDbContext())
         {
             caller = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: $"settings-caller-{Guid.NewGuid():N}", email: $"settings-caller-{Guid.NewGuid():N}@example.com");
+            organization = await AuthTestHelper.SeedOrganizationAsync(context);
+            await AuthTestHelper.SeedOrganizationMemberAsync(context, organization.Id, caller.Id, SystemRoleKind.Owner);
         }
-        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(caller));
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(caller, organization.Id));
         return client;
     }
 
@@ -75,5 +78,19 @@ public sealed class SystemSettingsControllerTests(ApiFactoryFixture fixture) : I
         Dictionary<string, string?>? afterSecondValues = await afterSecond.Content.ReadJsonAsync<Dictionary<string, string?>>();
         Assert.Equal("value1-updated", afterSecondValues![$"{prefix}:key1"]);
         Assert.Equal("value2", afterSecondValues[$"{prefix}:key2"]);
+    }
+
+    [Fact]
+    public async Task UpdateSection_ThenGetAll_ScopedToActiveOrganization_ExcludesOtherOrganizationsValue()
+    {
+        HttpClient owner = await CreateAuthedClientAsync();
+        string prefix = $"test-section-{Guid.NewGuid():N}";
+        await owner.PutAsJsonAsync($"/api/system-settings/{prefix}", new Dictionary<string, string?> { ["key1"] = "owner-value" });
+
+        HttpClient outsider = await CreateAuthedClientAsync();
+        HttpResponseMessage response = await outsider.GetAsync("/api/system-settings");
+
+        Dictionary<string, string?>? values = await response.Content.ReadJsonAsync<Dictionary<string, string?>>();
+        Assert.False(values!.ContainsKey($"{prefix}:key1"));
     }
 }

@@ -5,6 +5,5 @@ public sealed record UploadFileRequest(
     string FileName,
     string ContentType,
     long Size,
-    Guid? OwnerId = null,
     string? Description = null,
     string? Category = null);

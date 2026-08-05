@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StarterKit.Application.Common.Authorization;
 using StarterKit.Application.Common.Models;
 using StarterKit.Application.Services.AuditLogs;
 
 namespace StarterKit.API.Controllers;
 
+/// <summary>Audit trail for the caller's active organization (JWT <c>org_id</c> claim).</summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = Permissions.AuditLogsView)]
 [Route("api/admin/audit-logs")]
 public sealed class AuditLogsController(IAuditLogService auditLogService) : ControllerBase
 {
