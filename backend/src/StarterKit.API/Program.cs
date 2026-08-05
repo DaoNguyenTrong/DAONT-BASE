@@ -162,6 +162,7 @@ app.UseCors();
 app.UseHttpMetrics();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<UserTimeZoneMiddleware>();
+app.UseMiddleware<CsrfProtectionMiddleware>();
 app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
