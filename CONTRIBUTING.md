@@ -22,7 +22,7 @@ feature       ●────●
 | `feature/*` | New features, branched from `dev` |
 | `fix/*` | Bug fixes — from `dev` for in-progress work, or from `release/vX.Y.Z` for bugs QA finds during stabilization |
 | `test/*` | Optional — for large/independent e2e specs added on `release/vX.Y.Z` that need separate review |
-| `hotfix/*` | Emergency production fixes — from `main`, merges to `main`, then back-merges into `dev` |
+| `hotfix/*` | Emergency production fixes — from `main`, merges to `main`, not back-merged into `dev` |
 
 ## Development Flow
 
@@ -105,7 +105,8 @@ For an emergency production fix that can't wait for `dev`'s next `[Unreleased]` 
 1. Branch `hotfix/vX.Y.Z` from `main`, fix, test, commit.
 2. Update `CHANGELOG.md` on the hotfix branch: insert the new `## [vX.Y.Z]` section directly above the previous release entry. **Never** touch `dev`'s `[Unreleased]` section from a hotfix branch.
 3. PR `hotfix/vX.Y.Z` → `main`, merge, tag `origin/main` the same way as a standard release.
-4. Back-merge `main` into `dev` so the fix isn't lost on the next regular release — conflicts here are resolved manually, never auto-resolved.
+
+Not back-merged into `dev` — if `dev` needs the fix too, cherry-pick or reimplement it there separately.
 
 ## Versioning (SemVer)
 

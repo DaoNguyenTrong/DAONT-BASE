@@ -1,6 +1,6 @@
 ---
 name: git-release
-description: 'Release a new version: cut a release/vX.Y.Z QA-stabilization branch from dev, finalize CHANGELOG, then (once stabilized) merge to main and tag. Supports standard release (dev → release/vX.Y.Z → main, two phases, no back-merge) and hotfix (main → hotfix/vX.Y.Z → main → dev, back-merges). Uses MinVer — version is derived from git tags. Examples: "Release v1.1.0", "Release patch", "Cut the release", "Ship the release", "Hotfix v1.2.1"'
+description: 'Release a new version: cut a release/vX.Y.Z QA-stabilization branch from dev, finalize CHANGELOG, then (once stabilized) merge to main and tag. Supports standard release (dev → release/vX.Y.Z → main, two phases, no back-merge) and hotfix (main → hotfix/vX.Y.Z → main, no back-merge). Uses MinVer — version is derived from git tags. Examples: "Release v1.1.0", "Release patch", "Cut the release", "Ship the release", "Hotfix v1.2.1"'
 ---
 
 # Git Release
@@ -10,7 +10,7 @@ Automates the release workflow with CHANGELOG and git tag. This is a .NET projec
 Two modes:
 
 - **Standard release**: `dev → release/vX.Y.Z → main`. Two phases, run as separate skill invocations because QA stabilization happens in between and can take any amount of time — **Cut** (finalize CHANGELOG on `dev`, branch off) and **Ship** (test, merge to `main`, tag). `release/vX.Y.Z` is never back-merged into `dev`.
-- **Hotfix**: `main → hotfix/vX.Y.Z → main`, then back-merged into `dev`.
+- **Hotfix**: `main → hotfix/vX.Y.Z → main`. Not back-merged into `dev`.
 
 Detect which mode/phase the user means from the current branch:
 
@@ -166,7 +166,7 @@ Print:
 
 ---
 
-## Hotfix Workflow (main → hotfix/vX.Y.Z → main → dev)
+## Hotfix Workflow (main → hotfix/vX.Y.Z → main)
 
 Use when a critical bug must be fixed on production without including unreleased changes from `dev`.
 
@@ -265,27 +265,13 @@ git tag vX.Y.Z origin/main
 git push origin vX.Y.Z
 ```
 
-### 7. Back-merge into dev
-
-The hotfix must not be lost on the next regular release.
-
-```bash
-git checkout dev
-git pull origin dev
-git merge origin/main --no-ff -m "chore: back-merge vX.Y.Z hotfix into dev"
-git push origin dev
-```
-
-**Stop and report** on any merge conflict — do not auto-resolve. `dev`'s `[Unreleased]` section is the most likely conflict point if it was edited near the top of the file; resolve by keeping both the hotfix's dated section and `dev`'s current `[Unreleased]` content.
-
-### 8. Summary
+### 7. Summary
 
 Print:
 
 - Hotfix version
 - PR to main (link)
 - Tag name
-- Back-merge status (clean / conflicts resolved manually)
 
 ---
 
@@ -297,5 +283,5 @@ Print:
 - No version file to bump — MinVer reads the git tag directly.
 - Always tag `origin/main` after merge — never `dev`, `release/*`, or the hotfix branch.
 - Standard release: `release/vX.Y.Z` is never back-merged into `dev` — the rename-at-cut-time CHANGELOG entry (Phase 1, step 4) is the only piece of release state that has to survive, and it already lives on `dev`.
-- Hotfix: never modify `dev`'s `[Unreleased]` section from the hotfix branch — insert the hotfix's own dated section instead; the back-merge (step 7) is what brings the fix itself onto `dev`.
+- Hotfix: never modify `dev`'s `[Unreleased]` section — insert the hotfix's own dated CHANGELOG section instead (step 4). The fix itself is not brought onto `dev` automatically; if `dev` needs it too, cherry-pick or reimplement it there separately.
 - If any step fails, stop and report — do not continue.
