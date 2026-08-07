@@ -1,3 +1,8 @@
+---
+paths:
+  - "frontend/**"
+---
+
 # Frontend Conventions (`frontend/`)
 
 Vue 3 + Vite + TypeScript, Pinia, naive-ui, Tailwind, vue-i18n. Package manager is `bun`. See `commands.md` for build/test/format commands.

@@ -8,6 +8,11 @@ All notable changes to this project will be documented in this file.
 
 - Single-instance Docker Compose setup for production (`docker-compose.prod.yml`): Dockerfiles for backend and frontend, an edge nginx serving the SPA and reverse-proxying `/api`/`/hubs` to the API (same-origin, `/hangfire` and `/metrics` deliberately unreachable through it), and a "Production (Docker)" section in the README.
 
+### Changed
+
+- `.claude/rules/*.md` files now scope loading to matching `backend/`/`frontend/` paths instead of always loading into every session (`serena.md` stays always-loaded — it's tool-selection guidance needed before a session knows which files it'll touch).
+- Removed `AGENTS.md`, which duplicated `CLAUDE.md`'s guidance but had drifted stale; `CLAUDE.md` is now the single source of truth.
+
 ## [v1.4.1] - 2026-08-05
 
 ### Changed

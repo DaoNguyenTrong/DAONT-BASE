@@ -35,34 +35,34 @@ Follow this order for every non-trivial task:
 
 Two-tier model: **CodeGraph first** when you need orientation; **Serena next** when you know what to look at. Serena's reliable scope differs per capability — see the Scope column below, not just "is the language server configured."
 
-| When you don't yet know where to look…           | Use                                                        |
-| ------------------------------------------------ | ----------------------------------------------------------- |
-| How do modules / services connect?               | CodeGraph `codegraph_explore` (natural-language query)     |
-| What calls what across layers?                   | CodeGraph `codegraph_explore`                               |
-| What breaks if I change this?                    | CodeGraph `codegraph_explore` (blast-radius in the response) — the default for frontend impact-check too |
+| When you don't yet know where to look… | Use                                                                                                      |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| How do modules / services connect?     | CodeGraph `codegraph_explore` (natural-language query)                                                   |
+| What calls what across layers?         | CodeGraph `codegraph_explore`                                                                            |
+| What breaks if I change this?          | CodeGraph `codegraph_explore` (blast-radius in the response) — the default for frontend impact-check too |
 
-| When you already know which symbol to inspect…   | Use                                                       | Scope |
-| -------------------------------------------------- | ---------------------------------------------------------- | ----- |
-| Read a class or method body                        | Serena `find_symbol` with `include_body=true`              | backend + frontend |
-| Confirm what a specific usage resolves to           | Serena `find_declaration`                                  | backend + frontend |
-| Scan a file's public surface                        | Serena `get_symbols_overview`                               | backend + frontend |
-| Find every caller / usage of a symbol               | Serena `find_referencing_symbols`                            | **backend C# only** — for frontend use CodeGraph's blast-radius (verified 0% recall on `.vue` callers otherwise, even with explicit imports) |
-| Rename a symbol safely across the whole codebase    | Serena `rename_symbol`                                       | **backend C# only** — CodeGraph has no rename tool, and no frontend rename tool here is reliable; rename manually against CodeGraph's blast-radius file list, then run `test:run` |
-| Broad keyword / file search                         | `grep` (quick), Explore agent (broad)                        | — |
-| Read implementation line-by-line                    | `Read` — only after CodeGraph/Serena identified the file    | — |
+| When you already know which symbol to inspect…   | Use                                                      | Scope                                                                                                                                                                             |
+| ------------------------------------------------ | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Read a class or method body                      | Serena `find_symbol` with `include_body=true`            | backend + frontend                                                                                                                                                                |
+| Confirm what a specific usage resolves to        | Serena `find_declaration`                                | backend + frontend                                                                                                                                                                |
+| Scan a file's public surface                     | Serena `get_symbols_overview`                            | backend + frontend                                                                                                                                                                |
+| Find every caller / usage of a symbol            | Serena `find_referencing_symbols`                        | **backend C# only** — for frontend use CodeGraph's blast-radius (verified 0% recall on `.vue` callers otherwise, even with explicit imports)                                      |
+| Rename a symbol safely across the whole codebase | Serena `rename_symbol`                                   | **backend C# only** — CodeGraph has no rename tool, and no frontend rename tool here is reliable; rename manually against CodeGraph's blast-radius file list, then run `test:run` |
+| Broad keyword / file search                      | `grep` (quick), Explore agent (broad)                    | —                                                                                                                                                                                 |
+| Read implementation line-by-line                 | `Read` — only after CodeGraph/Serena identified the file | —                                                                                                                                                                                 |
 
 Never grep first. Never open a file to orient — orient with CodeGraph, then drill with Serena (backend, or `find_declaration` anywhere), then `Read`.
 
 ### Context Layers
 
-| Layer                       | Source                                   | When to access                                                          |
-| --------------------------- | ---------------------------------------- | ----------------------------------------------------------------------- |
-| **0 — Persistent memory**   | `.claude/decisions.md`, project memory   | Start of task — check for prior decisions relevant to the task          |
-| **1 — Always loaded**       | This file                                | Always in context — architecture, constraints, workflow rules           |
+| Layer                       | Source                                   | When to access                                                                               |
+| --------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **0 — Persistent memory**   | `.claude/decisions.md`, project memory   | Start of task — check for prior decisions relevant to the task                               |
+| **1 — Always loaded**       | This file                                | Always in context — architecture, constraints, workflow rules                                |
 | **2a — Architecture map**   | CodeGraph                                | Orientation: module graph, data flow, call chains, cross-service wiring (backend + frontend) |
-| **2b — Symbol navigation**  | Serena                                   | Drill-down: symbol bodies, callers, file surfaces                       |
-| **3 — File implementation** | `Read` tool                              | After Layer 2b identified the exact target                              |
-| **4 — Live state**          | `git status`, `git diff`, `dotnet build` | Start of task — understand current working state before acting          |
+| **2b — Symbol navigation**  | Serena                                   | Drill-down: symbol bodies, callers, file surfaces                                            |
+| **3 — File implementation** | `Read` tool                              | After Layer 2b identified the exact target                                                   |
+| **4 — Live state**          | `git status`, `git diff`, `dotnet build` | Start of task — understand current working state before acting                               |
 
 CodeGraph sees the codebase as a **graph of relationships** — it answers "what connects to what."
 Serena sees the codebase as a **tree of symbols** — it answers "what does this specific thing contain."
@@ -82,13 +82,13 @@ Record only decisions that affect **system design** in `.claude/decisions.md` �
 
 All rule files in `.claude/rules/` are auto-loaded. This table documents when each is most relevant.
 
-| File                      | Read when                                                        |
-| ------------------------- | ---------------------------------------------------------------- |
-| `api-contract.md`         | Changing API endpoints/DTOs that the frontend consumes           |
-| `architecture.md`         | Understanding backend layer responsibilities or boundaries       |
-| `authentication.md`       | Adding endpoints, headers, or role-based access                  |
-| `code-conventions.md`     | Writing C# — naming, EF Core patterns, Mapperly                  |
-| `commands.md`             | Building/running/testing the backend or the frontend             |
-| `frontend-conventions.md` | Writing Vue/TypeScript — components, stores, api client patterns |
-| `localization.md`         | Adding or editing user-facing messages (backend and/or frontend) |
+| File                      | Read when                                                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `api-contract.md`         | Changing API endpoints/DTOs that the frontend consumes                                                                    |
+| `architecture.md`         | Understanding backend layer responsibilities or boundaries                                                                |
+| `authentication.md`       | Adding endpoints, headers, or role-based access                                                                           |
+| `code-conventions.md`     | Writing C# — naming, EF Core patterns, Mapperly                                                                           |
+| `commands.md`             | Building/running/testing the backend or the frontend                                                                      |
+| `frontend-conventions.md` | Writing Vue/TypeScript — components, stores, api client patterns                                                          |
+| `localization.md`         | Adding or editing user-facing messages (backend and/or frontend)                                                          |
 | `serena.md`               | Using Serena symbol navigation tools — read-only lookup works backend + frontend, caller-search/rename is backend C# only |

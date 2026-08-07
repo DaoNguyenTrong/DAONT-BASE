@@ -1,3 +1,8 @@
+---
+paths:
+  - "backend/**"
+---
+
 # Authentication
 
 JWT Bearer tokens are accepted from the `Authorization` header or the `access_token` cookie
