@@ -8,6 +8,10 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-08-07 — Docker production: một nginx biên (same-origin), appsettings.json bind-mount thay vì bake vào image
+
+Chọn một nginx vừa serve frontend static vừa proxy `/api`,`/hubs` sang API thay vì thêm container reverse-proxy riêng — mọi request thành same-origin nên không cần biết domain thật lúc build image (`VITE_API_BASE_URL` để trống). Secret backend vẫn theo convention cũ (`appsettings.Example.json` → `appsettings.json` gitignored) nhưng bind-mount vào container thay vì bake vào image hay dàn trải qua hàng chục env var lồng nhau. Chỉ single-instance — cache và SignalR in-memory, không scale `api` >1 replica nếu chưa thêm Redis.
+
 ### 2026-08-04 — Notification email content defaults to `vi`, not per-account locale
 
 `Account` has no locale column, and a Hangfire worker dispatching email has no HTTP request context to infer the user's current language preference — unlike the frontend, which always knows the active locale. Rather than block Phase 2 on adding `Account.Locale`, email content (`NotificationEmailTemplates`) is `vi`-only system-wide, matching `localization.md`'s stated default. Per-account locale is deferred until a real need surfaces (e.g. an `en`-preferring user complaining).

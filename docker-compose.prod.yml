@@ -1,0 +1,68 @@
+# Production, single-instance deployment. Do NOT scale `api` beyond 1 replica with this file —
+# caching and SignalR are both in-memory (see .claude/decisions.md), a second replica would break
+# session/notification consistency. Scaling out requires adding Redis first.
+#
+# Setup:
+#   cp backend/src/StarterKit.API/appsettings.Example.json backend/src/StarterKit.API/appsettings.json
+#   # then edit appsettings.json: ConnectionStrings (Host=postgres), JwtSettings, CorsSettings,
+#   # EmailSettings, ExternalAuthSettings, FcmSettings with real production values
+#   cp .env.prod.example .env.prod
+#   # then edit .env.prod: POSTGRES_USER/PASSWORD/DB
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - starterkit-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # Trusts X-Forwarded-For/Proto only from this compose network (the nginx `web` service) —
+      # must match the `default` network subnet declared below.
+      ForwardedHeadersSettings__KnownNetworks__0: 172.28.0.0/16
+    volumes:
+      - ./backend/src/StarterKit.API/appsettings.json:/app/appsettings.json:ro
+      - starterkit-api-uploads:/app/uploads
+      - starterkit-api-logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  starterkit-postgres-data:
+  starterkit-api-uploads:
+  starterkit-api-logs:
