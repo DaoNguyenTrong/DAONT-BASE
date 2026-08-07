@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Single-instance Docker Compose setup for production (`docker-compose.prod.yml`): Dockerfiles for backend and frontend, an edge nginx serving the SPA and reverse-proxying `/api`/`/hubs` to the API (same-origin, `/hangfire` and `/metrics` deliberately unreachable through it), and a "Production (Docker)" section in the README.
+
 ## [v1.4.1] - 2026-08-05
 
 ### Changed
