@@ -1,3 +1,9 @@
+---
+paths:
+  - "backend/**"
+  - "frontend/**"
+---
+
 # Build & Migration Commands
 
 Read this file when building, running, or testing either `backend/` or `frontend/`, or working with EF Core migrations.
