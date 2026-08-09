@@ -1,0 +1,20 @@
+# Used by frontend/Dockerfile, whose build context is the repo root (needed to reach
+# shared/openapi/openapi.json via a relative path from frontend/). backend/Dockerfile has its
+# own context (./backend) and its own backend/.dockerignore.
+**/node_modules/
+**/dist/
+**/bin/
+**/obj/
+.git/
+.serena/
+.codegraph/
+.playwright-mcp/
+backend/
+plans/
+monitoring/
+*.md
+
+.env
+.env.*
+!.env.example
+!.env.prod.example

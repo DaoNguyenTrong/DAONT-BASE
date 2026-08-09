@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+**/logs/
+**/uploads/
+tests/
+
+# Real secrets — never bake into the image, only appsettings.Example.json is a template.
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Backup.json
+
+.vs/
+*.user

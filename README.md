@@ -74,7 +74,7 @@ dotnet ef database update --project backend/src/StarterKit.Infrastructure --star
 dotnet run --project backend/src/StarterKit.API
 
 # Test
-dotnet test backend/StarterKit.sln --no-restore -m:1
+backend/scripts/test.sh
 ```
 
 Production: migrations are applied automatically on startup via `Database.MigrateAsync`.
@@ -131,6 +131,32 @@ bun run --cwd frontend codegen
 There is no CI workflow running build/test on PR/push yet (`.github/workflows/` only has `release.yml`, triggered on `v*` tags). Run the commands above locally before requesting a review.
 
 For full details, see `.claude/rules/commands.md`.
+
+## Production (Docker)
+
+`docker-compose.prod.yml` builds and runs the API and frontend as containers (single-instance —
+caching and SignalR are in-memory, don't scale `api` past 1 replica without adding Redis first).
+An nginx container serves the built frontend and reverse-proxies `/api/` and `/hubs/` to the API;
+`/hangfire` and `/metrics` are deliberately not exposed through it, same "network-layer only"
+restriction the API already applies (see `Program.cs`).
+
+```bash
+# 1. App secrets — same convention as local dev, just bind-mounted into the container instead of
+#    baked into the image. Fill in real ConnectionStrings/JwtSettings/CorsSettings/EmailSettings/...
+cp backend/src/StarterKit.API/appsettings.Example.json backend/src/StarterKit.API/appsettings.json
+
+# 2. Compose-level vars (Postgres credentials, frontend build arg)
+cp .env.prod.example .env.prod
+
+# 3. Build and start
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+Migrations apply automatically on startup. Uploaded files and API logs persist in named volumes
+(`starterkit-api-uploads`, `starterkit-api-logs`); Postgres data in `starterkit-postgres-data`.
+
+Not included yet (fine for a first deploy, revisit before scaling): TLS termination at nginx, and
+an `/health` endpoint for container healthchecks.
 
 ## Documentation
 

@@ -1,3 +1,8 @@
+---
+paths:
+  - "backend/**"
+---
+
 # Architecture
 
 Scope: `backend/` only. For `frontend/` structure and conventions, see `frontend-conventions.md`; for the cross-cutting API contract between the two, see `api-contract.md`.

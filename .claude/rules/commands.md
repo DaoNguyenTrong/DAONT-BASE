@@ -1,3 +1,9 @@
+---
+paths:
+  - "backend/**"
+  - "frontend/**"
+---
+
 # Build & Migration Commands
 
 Read this file when building, running, or testing either `backend/` or `frontend/`, or working with EF Core migrations.
@@ -38,10 +44,24 @@ Off by default on plain `dotnet build` (costs ~5-9s via a design-time host). Run
 ### Tests
 
 ```bash
+backend/scripts/test.sh
+```
+
+Builds the solution once (serialized, `-m:1` — see Build above), then runs the 4 test projects as independent parallel processes (each still `-m:1` internally, so no process attempts the broken parallel-build path — only the OS scheduler runs them concurrently). Measured 2026-08-09: 479 tests, ~35s, vs. ~56s for `dotnet test backend/StarterKit.sln --no-restore -m:1` run serially. See `.claude/decisions.md` (2026-08-09) for why.
+
+The plain solution-level command still works and is equivalent for correctness — use it if you need a single combined log/trx or are debugging the script itself:
+
+```bash
 dotnet test backend/StarterKit.sln --no-restore -m:1
 ```
 
-Test projects live under `backend/tests/` (`StarterKit.Domain.Tests`, `StarterKit.Application.Tests`), mirroring the `backend/src/` layer split. See `docs/unit-testing-plan.md` for the testing strategy and phase roadmap.
+For fast local iteration on a single layer, run just that project (skips the other 3 entirely):
+
+```bash
+dotnet test backend/tests/StarterKit.Domain.Tests --no-restore -m:1
+```
+
+Test projects live under `backend/tests/` (`StarterKit.Domain.Tests`, `StarterKit.Application.Tests`, `StarterKit.Infrastructure.Tests`, `StarterKit.API.Tests`), mirroring the `backend/src/` layer split. `Infrastructure.Tests` and `API.Tests` each spin up their own `Testcontainers.PostgreSql` container and run EF migrations — this is why they dominate total runtime (~8s and ~18s respectively) while `Domain.Tests`/`Application.Tests` are near-instant.
 
 ## Frontend (`frontend/`)
 

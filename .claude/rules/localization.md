@@ -1,3 +1,9 @@
+---
+paths:
+  - "backend/**"
+  - "frontend/**"
+---
+
 # Localization
 
 Both the backend API and the frontend UI support Vietnamese (`vi`, default) and English (`en`) — as **two separate, unsynced localization systems**. There is no shared message catalog between them.

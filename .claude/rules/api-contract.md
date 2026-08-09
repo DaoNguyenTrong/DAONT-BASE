@@ -1,3 +1,10 @@
+---
+paths:
+  - "backend/**"
+  - "frontend/**"
+  - "shared/openapi/**"
+---
+
 # API Contract (backend ↔ frontend)
 
 Read this when changing a backend endpoint, request/response DTO, or header contract that the frontend consumes.

@@ -1,3 +1,8 @@
+---
+paths:
+  - "backend/**"
+---
+
 # C# Code Conventions
 
 ## Variable Declarations

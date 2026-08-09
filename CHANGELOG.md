@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.4.2] - 2026-08-09
+
+### Added
+
+- Single-instance Docker Compose setup for production (`docker-compose.prod.yml`): Dockerfiles for backend and frontend, an edge nginx serving the SPA and reverse-proxying `/api`/`/hubs` to the API (same-origin, `/hangfire` and `/metrics` deliberately unreachable through it), and a "Production (Docker)" section in the README.
+- `backend/scripts/test.sh`: runs the 4 backend test projects as parallel processes after a single serialized build, cutting local suite wall-clock from ~56s to ~35s (479 tests). Documented in `commands.md` and README as the default way to run backend tests.
+
+### Changed
+
+- `.claude/rules/*.md` files now scope loading to matching `backend/`/`frontend/` paths instead of always loading into every session (`serena.md` stays always-loaded — it's tool-selection guidance needed before a session knows which files it'll touch).
+- Removed `AGENTS.md`, which duplicated `CLAUDE.md`'s guidance but had drifted stale; `CLAUDE.md` is now the single source of truth.
+
 ## [v1.4.1] - 2026-08-05
 
 ### Changed
