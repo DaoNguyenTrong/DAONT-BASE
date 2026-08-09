@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Single-instance Docker Compose setup for production (`docker-compose.prod.yml`): Dockerfiles for backend and frontend, an edge nginx serving the SPA and reverse-proxying `/api`/`/hubs` to the API (same-origin, `/hangfire` and `/metrics` deliberately unreachable through it), and a "Production (Docker)" section in the README.
+- `backend/scripts/test.sh`: runs the 4 backend test projects as parallel processes after a single serialized build, cutting local suite wall-clock from ~56s to ~35s (479 tests). Documented in `commands.md` and README as the default way to run backend tests.
 
 ### Changed
 
