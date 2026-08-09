@@ -74,7 +74,7 @@ dotnet ef database update --project backend/src/StarterKit.Infrastructure --star
 dotnet run --project backend/src/StarterKit.API
 
 # Test
-dotnet test backend/StarterKit.sln --no-restore -m:1
+backend/scripts/test.sh
 ```
 
 Production: migrations are applied automatically on startup via `Database.MigrateAsync`.
