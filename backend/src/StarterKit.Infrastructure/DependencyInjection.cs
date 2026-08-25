@@ -27,7 +27,7 @@ public static class DependencyInjection
         services.AddExternalAuth(configuration);
         services.AddBackgroundJobs(configuration);
         services.AddNotificationChannels();
-        services.AddRealtime();
+        services.AddRealtime(configuration);
         return services;
     }
 
