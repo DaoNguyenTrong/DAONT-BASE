@@ -1,17 +1,25 @@
 # syntax=docker/dockerfile:1
+#
+# Build context MUST be the repo root (not backend/) — MinVer (backend/Directory.Build.props)
+# derives the assembly version from git tags and needs the actual .git history, copied below,
+# which is unreachable from a context scoped to backend/ alone.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy project files first so `dotnet restore` is cached across builds that only change source.
-COPY Directory.Build.props .
-COPY src/StarterKit.Domain/StarterKit.Domain.csproj src/StarterKit.Domain/
-COPY src/StarterKit.Application/StarterKit.Application.csproj src/StarterKit.Application/
-COPY src/StarterKit.Infrastructure/StarterKit.Infrastructure.csproj src/StarterKit.Infrastructure/
-COPY src/StarterKit.API/StarterKit.API.csproj src/StarterKit.API/
-RUN dotnet restore src/StarterKit.API/StarterKit.API.csproj
+COPY backend/Directory.Build.props backend/Directory.Build.props
+COPY backend/src/StarterKit.Domain/StarterKit.Domain.csproj backend/src/StarterKit.Domain/
+COPY backend/src/StarterKit.Application/StarterKit.Application.csproj backend/src/StarterKit.Application/
+COPY backend/src/StarterKit.Infrastructure/StarterKit.Infrastructure.csproj backend/src/StarterKit.Infrastructure/
+COPY backend/src/StarterKit.API/StarterKit.API.csproj backend/src/StarterKit.API/
+RUN dotnet restore backend/src/StarterKit.API/StarterKit.API.csproj
 
-COPY src/ src/
-RUN dotnet publish src/StarterKit.API/StarterKit.API.csproj -c Release -o /app/publish --no-restore
+COPY backend/src/ backend/src/
+# Copied last (changes on every commit) so it doesn't invalidate the restore-cache layers above.
+# Only .git's metadata is needed (MinVer runs `git describe` against it) — none of it reaches the
+# final image below, which only copies the published output.
+COPY .git/ .git/
+RUN dotnet publish backend/src/StarterKit.API/StarterKit.API.csproj -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app

@@ -28,8 +28,8 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       # Trusts X-Forwarded-For/Proto only from this compose network (the nginx `web` service) —
