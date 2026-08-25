@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Email verification links now work with the app's hash-based routing — previously the link bounced unauthenticated users to the login page instead of the verification screen.
+- A temporary email-sending failure during registration or resend no longer surfaces as an error, since the account was already created successfully — users can retry sending the verification email once mail delivery recovers.
+
+### Changed
+
+- Backend API tests now mint their JWTs from the test server's actual configured secret instead of a hardcoded value, preventing spurious 401 failures when a developer's local config differs.
+
 ## [v1.4.2] - 2026-08-09
 
 ### Added
