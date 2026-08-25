@@ -4,14 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Optional SeaweedFS file storage via its S3 gateway, with a local docker-compose service for development.
+- Cache provider selectable via config (keyed DI), matching the existing storage-provider pattern.
+
 ### Fixed
 
 - Email verification links now work with the app's hash-based routing — previously the link bounced unauthenticated users to the login page instead of the verification screen.
 - A temporary email-sending failure during registration or resend no longer surfaces as an error, since the account was already created successfully — users can retry sending the verification email once mail delivery recovers.
+- Dropped HTTPS redirection when nothing in the stack terminates TLS, removing a noisy warning on every request.
 
 ### Changed
 
 - Backend API tests now mint their JWTs from the test server's actual configured secret instead of a hardcoded value, preventing spurious 401 failures when a developer's local config differs.
+- Cache scope invalidation now uses a generation counter so permission/tenant revocation stays correct across instances once a shared cache is added.
+- Production API Docker builds use the repo root as context so MinVer can resolve the release version from git tags.
 
 ## [v1.4.2] - 2026-08-09
 
