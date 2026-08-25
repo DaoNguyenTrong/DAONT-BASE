@@ -16,7 +16,8 @@ internal sealed class TenantAccessService(
         Guid accountId, Guid organizationId, CancellationToken cancellationToken = default)
     {
         return cacheService.GetOrSetAsync(
-            CacheKey(organizationId, accountId),
+            Scope(organizationId),
+            accountId.ToString(),
             async ct =>
             {
                 OrganizationMember? member = await unitOfWork.Repository<OrganizationMember, Guid>()
@@ -39,12 +40,11 @@ internal sealed class TenantAccessService(
 
     public Task InvalidateMemberAsync(
         Guid organizationId, Guid accountId, CancellationToken cancellationToken = default) =>
-        cacheService.RemoveAsync(CacheKey(organizationId, accountId), cancellationToken);
+        cacheService.RemoveAsync(Scope(organizationId), accountId.ToString(), cancellationToken);
 
     public Task InvalidateOrganizationAsync(
         Guid organizationId, CancellationToken cancellationToken = default) =>
-        cacheService.RemoveByPrefixAsync($"tenant-access:{organizationId}:", cancellationToken);
+        cacheService.InvalidateScopeAsync(Scope(organizationId), cancellationToken);
 
-    private static string CacheKey(Guid organizationId, Guid accountId) =>
-        $"tenant-access:{organizationId}:{accountId}";
+    private static string Scope(Guid organizationId) => $"tenant-access:{organizationId}";
 }

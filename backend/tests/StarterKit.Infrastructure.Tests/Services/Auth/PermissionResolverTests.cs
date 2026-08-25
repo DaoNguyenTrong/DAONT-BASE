@@ -27,6 +27,7 @@ public sealed class PermissionResolverTests(PostgresContainerFixture fixture) : 
         cacheService = Substitute.For<ICacheService>();
         cacheService.GetOrSetAsync(
                 Arg.Any<string>(),
+                Arg.Any<string>(),
                 Arg.Any<Func<CancellationToken, Task<IReadOnlySet<string>>>>(),
                 Arg.Any<TimeSpan?>(),
                 Arg.Any<CancellationToken>())
@@ -152,17 +153,17 @@ public sealed class PermissionResolverTests(PostgresContainerFixture fixture) : 
         await resolver.InvalidateMemberAsync(organizationId, accountId);
 
         await cacheService.Received(1)
-            .RemoveAsync($"permissions:{organizationId}:{accountId}", Arg.Any<CancellationToken>());
+            .RemoveAsync($"permissions:{organizationId}", accountId.ToString(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task InvalidateOrganizationAsync_RemovesByOrganizationPrefix()
+    public async Task InvalidateOrganizationAsync_InvalidatesOrganizationScope()
     {
         Guid organizationId = Guid.NewGuid();
 
         await resolver.InvalidateOrganizationAsync(organizationId);
 
         await cacheService.Received(1)
-            .RemoveByPrefixAsync($"permissions:{organizationId}:", Arg.Any<CancellationToken>());
+            .InvalidateScopeAsync($"permissions:{organizationId}", Arg.Any<CancellationToken>());
     }
 }
