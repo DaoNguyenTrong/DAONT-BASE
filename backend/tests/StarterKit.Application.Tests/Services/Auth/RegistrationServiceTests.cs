@@ -1,6 +1,8 @@
 using System.Linq.Expressions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Resources;
@@ -75,7 +77,8 @@ public class RegistrationServiceTests
             passwordHasher,
             emailSender,
             emailOptions,
-            tokenIssuer);
+            tokenIssuer,
+            NullLogger<RegistrationService>.Instance);
 
         return new Fixture(
             service,
@@ -191,6 +194,25 @@ public class RegistrationServiceTests
             request.Email, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         await f.RefreshTokenRepo.DidNotReceive().AddAsync(Arg.Any<RefreshToken>(), Arg.Any<CancellationToken>());
         Assert.Equal(request.Email, result.Email);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_EmailSendFails_StillCommitsAccountAndDoesNotPropagate()
+    {
+        Fixture f = CreateFixture();
+        RepositoryPredicateStub.StubFirstOrDefault(f.AccountRepo, []);
+        f.PasswordHasher.Hash(Arg.Any<string>()).Returns("hashed-password");
+        f.EmailSender.SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("smtp down"));
+        RegisterRequest request = CreateRegisterRequest();
+
+        RegisterResult result = await f.Service.RegisterAsync(request, CancellationToken.None);
+
+        Assert.Equal(request.Email, result.Email);
+        await f.AccountRepo.Received(1).AddAsync(Arg.Any<Account>(), Arg.Any<CancellationToken>());
+        await f.EmailVerificationTokenRepo.Received(1).AddAsync(
+            Arg.Any<EmailVerificationToken>(), Arg.Any<CancellationToken>());
+        await f.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     // VerifyEmailAsync
@@ -314,5 +336,22 @@ public class RegistrationServiceTests
             Arg.Any<EmailVerificationToken>(), Arg.Any<CancellationToken>());
         await f.EmailSender.Received(1).SendAsync(
             account.Email, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ResendVerificationEmailAsync_EmailSendFails_DoesNotPropagate()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount(emailConfirmed: false);
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+        f.EmailSender.SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("smtp down"));
+        ResendVerificationRequest request = new(account.Email);
+
+        await f.Service.ResendVerificationEmailAsync(request, CancellationToken.None);
+
+        await f.EmailVerificationTokenRepo.Received(1).AddAsync(
+            Arg.Any<EmailVerificationToken>(), Arg.Any<CancellationToken>());
     }
 }

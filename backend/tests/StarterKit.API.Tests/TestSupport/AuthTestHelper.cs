@@ -16,9 +16,12 @@ namespace StarterKit.API.Tests.TestSupport;
 
 public static class AuthTestHelper
 {
-    // Mirrors backend/src/StarterKit.API/appsettings.json's JwtSettings so tokens minted here
-    // validate against the real JwtBearer pipeline the test host boots.
-    private static readonly JwtSettings JwtSettings = new()
+    // Set once by ApiFactoryFixture right after the test host boots, from the same IOptions<JwtSettings>
+    // the host's own JwtBearer pipeline validates against — so tokens minted here always match
+    // whatever SecretKey is actually configured (appsettings.json/env), instead of a hardcoded
+    // literal that silently drifts from a developer's local appsettings.json and breaks every
+    // authenticated test with 401s.
+    private static JwtSettings JwtSettings = new()
     {
         SecretKey = "change-this-development-secret-key-32-chars-minimum",
         Issuer = "StarterKit-Auth",
@@ -26,6 +29,8 @@ public static class AuthTestHelper
         AccessTokenExpiryMinutes = 15,
         RefreshTokenExpiryDays = 7
     };
+
+    public static void ConfigureJwtSettings(JwtSettings jwtSettings) => JwtSettings = jwtSettings;
 
     public static async Task<Account> SeedConfirmedAccountAsync(
         AppDbContext context,
