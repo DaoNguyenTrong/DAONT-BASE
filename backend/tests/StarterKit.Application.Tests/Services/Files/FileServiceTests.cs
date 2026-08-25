@@ -25,14 +25,15 @@ public class FileServiceTests
     private static Fixture CreateFixture(
         long maxFileSizeBytes = 10_485_760,
         string[]? allowedContentTypes = null,
-        string publicUrlBase = "/storage")
+        string publicUrlBase = "/storage",
+        bool hasActiveOrganization = true)
     {
         IStorageService storageService = Substitute.For<IStorageService>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         IRepository<StoredFile, Guid> fileRepo = Substitute.For<IRepository<StoredFile, Guid>>();
         unitOfWork.Repository<StoredFile, Guid>().Returns(fileRepo);
         ICurrentTenantProvider currentTenantProvider = Substitute.For<ICurrentTenantProvider>();
-        currentTenantProvider.OrganizationId.Returns(OrganizationId);
+        currentTenantProvider.OrganizationId.Returns(hasActiveOrganization ? OrganizationId : (Guid?)null);
 
         IOptions<StorageSettings> options = Options.Create(new StorageSettings
         {
@@ -60,6 +61,20 @@ public class FileServiceTests
     }
 
     // UploadAsync
+
+    [Fact]
+    public async Task UploadAsync_NoActiveOrganization_ThrowsForbidden_AndDoesNotCallStorage()
+    {
+        Fixture f = CreateFixture(hasActiveOrganization: false);
+        UploadFileRequest request = CreateUploadRequest();
+
+        await ApplicationAssert.ThrowsWithMessageAsync<ForbiddenException>(
+            ApplicationMessages.OrganizationAccessDenied,
+            () => f.Service.UploadAsync(request, CancellationToken.None));
+
+        await f.StorageService.DidNotReceive().UploadAsync(
+            Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
 
     [Fact]
     public async Task UploadAsync_SizeZeroOrLess_ThrowsDomain_AndDoesNotCallStorage()
@@ -161,6 +176,16 @@ public class FileServiceTests
     // GetByIdAsync
 
     [Fact]
+    public async Task GetByIdAsync_NoActiveOrganization_ThrowsForbidden()
+    {
+        Fixture f = CreateFixture(hasActiveOrganization: false);
+
+        await ApplicationAssert.ThrowsWithMessageAsync<ForbiddenException>(
+            ApplicationMessages.OrganizationAccessDenied,
+            () => f.Service.GetByIdAsync(Guid.NewGuid(), CancellationToken.None));
+    }
+
+    [Fact]
     public async Task GetByIdAsync_NotFound_ThrowsNotFound()
     {
         Fixture f = CreateFixture();
@@ -183,6 +208,16 @@ public class FileServiceTests
     }
 
     // GetAllAsync
+
+    [Fact]
+    public async Task GetAllAsync_NoActiveOrganization_ThrowsForbidden()
+    {
+        Fixture f = CreateFixture(hasActiveOrganization: false);
+
+        await ApplicationAssert.ThrowsWithMessageAsync<ForbiddenException>(
+            ApplicationMessages.OrganizationAccessDenied,
+            () => f.Service.GetAllAsync(new FileListRequest(), CancellationToken.None));
+    }
 
     [Theory]
     [InlineData(0, 0, 1, 10)]

@@ -21,6 +21,15 @@ services:
       - "1025:1025" # SMTP
       - "8025:8025" # Web UI
 
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    command: server -s3 -filer -dir=/data
+    ports:
+      - "8333:8333" # S3 gateway
+      - "8888:8888" # Filer HTTP
+    volumes:
+      - starterkit-seaweedfs-data:/data
+
   prometheus:
     image: prom/prometheus:latest
     ports:
@@ -47,3 +56,4 @@ services:
 
 volumes:
   starterkit-postgres-data:
+  starterkit-seaweedfs-data:
