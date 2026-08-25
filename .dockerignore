@@ -1,18 +1,30 @@
-# Used by frontend/Dockerfile, whose build context is the repo root (needed to reach
-# shared/openapi/openapi.json via a relative path from frontend/). backend/Dockerfile has its
-# own context (./backend) and its own backend/.dockerignore.
+# Shared by both frontend/Dockerfile and backend/Dockerfile — both build from the repo root
+# context. backend/Dockerfile needs .git/ present so MinVer can resolve the release version at
+# publish time (see backend/Directory.Build.props), so it is NOT excluded here. Modern BuildKit
+# only transfers paths actually COPY'd by whichever Dockerfile is building, so listing both
+# sides' excludes together doesn't slow either build down.
 **/node_modules/
 **/dist/
 **/bin/
 **/obj/
-.git/
+**/logs/
+**/uploads/
 .serena/
 .codegraph/
 .playwright-mcp/
-backend/
 plans/
 monitoring/
 *.md
+tests/
+
+# Real secrets — never bake into any image, only appsettings.Example.json is a template.
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Backup.json
+
+.vs/
+*.user
 
 .env
 .env.*

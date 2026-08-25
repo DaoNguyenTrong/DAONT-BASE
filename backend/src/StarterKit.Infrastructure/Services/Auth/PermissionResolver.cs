@@ -19,7 +19,8 @@ internal sealed class PermissionResolver(
         Guid organizationId, Guid accountId, CancellationToken cancellationToken = default)
     {
         return cacheService.GetOrSetAsync<IReadOnlySet<string>>(
-            CacheKey(organizationId, accountId),
+            Scope(organizationId),
+            accountId.ToString(),
             async ct =>
             {
                 OrganizationMember? member = await dbContext.OrganizationMembers.AsNoTracking()
@@ -64,12 +65,11 @@ internal sealed class PermissionResolver(
 
     public Task InvalidateMemberAsync(
         Guid organizationId, Guid accountId, CancellationToken cancellationToken = default) =>
-        cacheService.RemoveAsync(CacheKey(organizationId, accountId), cancellationToken);
+        cacheService.RemoveAsync(Scope(organizationId), accountId.ToString(), cancellationToken);
 
     public Task InvalidateOrganizationAsync(
         Guid organizationId, CancellationToken cancellationToken = default) =>
-        cacheService.RemoveByPrefixAsync($"permissions:{organizationId}:", cancellationToken);
+        cacheService.InvalidateScopeAsync(Scope(organizationId), cancellationToken);
 
-    private static string CacheKey(Guid organizationId, Guid accountId) =>
-        $"permissions:{organizationId}:{accountId}";
+    private static string Scope(Guid organizationId) => $"permissions:{organizationId}";
 }

@@ -28,6 +28,7 @@ public class TenantAccessServiceTests
         ICacheService cacheService = Substitute.For<ICacheService>();
         cacheService.GetOrSetAsync(
                 Arg.Any<string>(),
+                Arg.Any<string>(),
                 Arg.Any<Func<CancellationToken, Task<bool>>>(),
                 Arg.Any<TimeSpan?>(),
                 Arg.Any<CancellationToken>())
@@ -115,7 +116,8 @@ public class TenantAccessServiceTests
         await f.Service.HasActiveAccessAsync(accountId, organizationId);
 
         await f.CacheService.Received(1).GetOrSetAsync(
-            $"tenant-access:{organizationId}:{accountId}",
+            $"tenant-access:{organizationId}",
+            accountId.ToString(),
             Arg.Any<Func<CancellationToken, Task<bool>>>(),
             TimeSpan.FromSeconds(60),
             Arg.Any<CancellationToken>());
@@ -131,11 +133,11 @@ public class TenantAccessServiceTests
         await f.Service.InvalidateMemberAsync(organizationId, accountId);
 
         await f.CacheService.Received(1)
-            .RemoveAsync($"tenant-access:{organizationId}:{accountId}", Arg.Any<CancellationToken>());
+            .RemoveAsync($"tenant-access:{organizationId}", accountId.ToString(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task InvalidateOrganizationAsync_RemovesByOrganizationPrefix()
+    public async Task InvalidateOrganizationAsync_InvalidatesOrganizationScope()
     {
         Fixture f = CreateFixture();
         Guid organizationId = Guid.NewGuid();
@@ -143,6 +145,6 @@ public class TenantAccessServiceTests
         await f.Service.InvalidateOrganizationAsync(organizationId);
 
         await f.CacheService.Received(1)
-            .RemoveByPrefixAsync($"tenant-access:{organizationId}:", Arg.Any<CancellationToken>());
+            .InvalidateScopeAsync($"tenant-access:{organizationId}", Arg.Any<CancellationToken>());
     }
 }

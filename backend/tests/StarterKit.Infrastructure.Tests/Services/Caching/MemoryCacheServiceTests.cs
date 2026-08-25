@@ -20,7 +20,7 @@ public class MemoryCacheServiceTests
     {
         MemoryCacheService service = CreateService(out _);
 
-        string? value = await service.GetAsync<string>("missing-key");
+        string? value = await service.GetAsync<string>("scope", "missing-key");
 
         Assert.Null(value);
     }
@@ -30,8 +30,8 @@ public class MemoryCacheServiceTests
     {
         MemoryCacheService service = CreateService(out _);
 
-        await service.SetAsync("key", "value");
-        string? value = await service.GetAsync<string>("key");
+        await service.SetAsync("scope", "key", "value");
+        string? value = await service.GetAsync<string>("scope", "key");
 
         Assert.Equal("value", value);
     }
@@ -42,12 +42,12 @@ public class MemoryCacheServiceTests
         MemoryCacheService service = CreateService(out _);
         int factoryCalls = 0;
 
-        string first = await service.GetOrSetAsync("key", _ =>
+        string first = await service.GetOrSetAsync("scope", "key", _ =>
         {
             factoryCalls++;
             return Task.FromResult("computed");
         });
-        string second = await service.GetOrSetAsync("key", _ =>
+        string second = await service.GetOrSetAsync("scope", "key", _ =>
         {
             factoryCalls++;
             return Task.FromResult("computed-again");
@@ -66,7 +66,7 @@ public class MemoryCacheServiceTests
         MemoryCacheService service = CreateService(out _);
         int factoryCalls = 0;
 
-        bool result = await service.GetOrSetAsync("bool-key", _ =>
+        bool result = await service.GetOrSetAsync("scope", "bool-key", _ =>
         {
             factoryCalls++;
             return Task.FromResult(true);
@@ -82,12 +82,12 @@ public class MemoryCacheServiceTests
         MemoryCacheService service = CreateService(out _);
         int factoryCalls = 0;
 
-        bool first = await service.GetOrSetAsync("bool-key-false", _ =>
+        bool first = await service.GetOrSetAsync("scope", "bool-key-false", _ =>
         {
             factoryCalls++;
             return Task.FromResult(false);
         });
-        bool second = await service.GetOrSetAsync("bool-key-false", _ =>
+        bool second = await service.GetOrSetAsync("scope", "bool-key-false", _ =>
         {
             factoryCalls++;
             return Task.FromResult(true);
@@ -102,25 +102,37 @@ public class MemoryCacheServiceTests
     public async Task RemoveAsync_EvictsKey()
     {
         MemoryCacheService service = CreateService(out _);
-        await service.SetAsync("key", "value");
+        await service.SetAsync("scope", "key", "value");
 
-        await service.RemoveAsync("key");
+        await service.RemoveAsync("scope", "key");
 
-        Assert.Null(await service.GetAsync<string>("key"));
+        Assert.Null(await service.GetAsync<string>("scope", "key"));
     }
 
     [Fact]
-    public async Task RemoveByPrefixAsync_RemovesOnlyMatchingKeys()
+    public async Task InvalidateScopeAsync_RemovesOnlyMatchingScope()
     {
         MemoryCacheService service = CreateService(out _);
-        await service.SetAsync("prefix:one", "1");
-        await service.SetAsync("prefix:two", "2");
-        await service.SetAsync("other:key", "3");
+        await service.SetAsync("prefix", "one", "1");
+        await service.SetAsync("prefix", "two", "2");
+        await service.SetAsync("other", "key", "3");
 
-        await service.RemoveByPrefixAsync("prefix:");
+        await service.InvalidateScopeAsync("prefix");
 
-        Assert.Null(await service.GetAsync<string>("prefix:one"));
-        Assert.Null(await service.GetAsync<string>("prefix:two"));
-        Assert.Equal("3", await service.GetAsync<string>("other:key"));
+        Assert.Null(await service.GetAsync<string>("prefix", "one"));
+        Assert.Null(await service.GetAsync<string>("prefix", "two"));
+        Assert.Equal("3", await service.GetAsync<string>("other", "key"));
+    }
+
+    [Fact]
+    public async Task InvalidateScopeAsync_ThenSetAsync_NewEntryIsVisibleAgain()
+    {
+        MemoryCacheService service = CreateService(out _);
+        await service.SetAsync("prefix", "one", "1");
+
+        await service.InvalidateScopeAsync("prefix");
+        await service.SetAsync("prefix", "one", "1-new");
+
+        Assert.Equal("1-new", await service.GetAsync<string>("prefix", "one"));
     }
 }

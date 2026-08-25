@@ -150,9 +150,14 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseBackgroundJobs();
+await app.UseStorageAsync();
 
 app.UseForwardedHeaders();
-app.UseHttpsRedirection();
+// No UseHttpsRedirection(): no layer in this stack terminates TLS today (nginx in
+// docker-compose.prod.yml only listens on :80; see README "Production (Docker)"). With no HTTPS
+// port ever discoverable, the middleware doesn't actually redirect anything — verified empirically
+// — but it does log a "Failed to determine the https port for redirect" warning on every request
+// that reaches it. Re-add once TLS terminates somewhere in front (nginx or an external LB).
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging();
 app.UseRequestLocalization();
@@ -172,17 +177,20 @@ if (app.Environment.IsDevelopment())
 }
 
 StorageSettings storageSettings = app.Services.GetRequiredService<IOptions<StorageSettings>>().Value;
-string storagePath = Path.IsPathRooted(storageSettings.BasePath)
-    ? storageSettings.BasePath
-    : Path.Combine(app.Environment.ContentRootPath, storageSettings.BasePath);
-
-Directory.CreateDirectory(storagePath);
-
-app.UseStaticFiles(new StaticFileOptions
+if (storageSettings.Provider == "Local")
 {
-    FileProvider = new PhysicalFileProvider(storagePath),
-    RequestPath = storageSettings.PublicUrlBase
-});
+    string storagePath = Path.IsPathRooted(storageSettings.BasePath)
+        ? storageSettings.BasePath
+        : Path.Combine(app.Environment.ContentRootPath, storageSettings.BasePath);
+
+    Directory.CreateDirectory(storagePath);
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(storagePath),
+        RequestPath = storageSettings.PublicUrlBase
+    });
+}
 
 app.UseAuthentication();
 app.UseAuthorization();

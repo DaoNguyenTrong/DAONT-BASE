@@ -1,3 +1,5 @@
+using Amazon.S3;
+using Amazon.S3.Util;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -49,5 +51,28 @@ public static class DependencyInjection
             "refresh-token-cleanup",
             job => job.RunAsync(CancellationToken.None),
             cronExpression);
+    }
+
+    // Bucket must exist before the first upload — SeaweedFS's S3 gateway does not auto-create
+    // buckets on PutObject the way some S3-compatible stores do. No-op for any other provider.
+    public static async Task UseStorageAsync(this IApplicationBuilder app)
+    {
+        using IServiceScope scope = app.ApplicationServices.CreateScope();
+        StorageSettings storageSettings = scope.ServiceProvider
+            .GetRequiredService<IOptions<StorageSettings>>().Value;
+
+        if (storageSettings.Provider != "SeaweedFS")
+        {
+            return;
+        }
+
+        IAmazonS3 s3Client = scope.ServiceProvider.GetRequiredService<IAmazonS3>();
+        SeaweedFsSettings seaweedFsSettings = scope.ServiceProvider
+            .GetRequiredService<IOptions<SeaweedFsSettings>>().Value;
+
+        if (!await AmazonS3Util.DoesS3BucketExistV2Async(s3Client, seaweedFsSettings.BucketName))
+        {
+            await s3Client.PutBucketAsync(seaweedFsSettings.BucketName);
+        }
     }
 }
