@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Optional Redis service in docker-compose (profile `redis`) for multi-instance local and production setups.
 - Optional SeaweedFS file storage via its S3 gateway, with a local docker-compose service for development.
 - Cache provider selectable via config (keyed DI), matching the existing storage-provider pattern.
+- Test coverage for the backend's central exception-handling middleware and error-status mapping, which previously had none.
 
 ### Fixed
 
