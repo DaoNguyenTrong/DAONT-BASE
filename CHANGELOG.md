@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Optional Redis for shared app cache and SignalR so multiple API instances stay consistent when scaled out.
+- Optional Redis service in docker-compose (profile `redis`) for multi-instance local and production setups.
 - Optional SeaweedFS file storage via its S3 gateway, with a local docker-compose service for development.
 - Cache provider selectable via config (keyed DI), matching the existing storage-provider pattern.
 

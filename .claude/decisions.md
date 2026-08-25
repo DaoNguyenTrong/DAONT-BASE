@@ -8,6 +8,10 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-08-25 — Cache + SignalR chọn Memory/Redis qua config, không hard-require Redis
+
+Single-instance giữ in-memory; multi-instance bật Redis bằng `CacheSettings:Provider` và `RealtimeSettings:Backplane` cùng một `ConnectionStrings:Redis`. Rejected hard-wiring Redis vào mọi môi trường — thêm dependency/ops không cần thiết khi chỉ chạy 1 replica. Fail-fast khi chọn Redis mà thiếu connection, tránh silent single-node behaviour lúc scale.
+
 ### 2026-08-25 — Cache scope invalidation qua generation counter, không enumerate key
 
 `ICacheService.RemoveByPrefixAsync` thay bằng `InvalidateScopeAsync`, dựa trên generation counter theo scope thay vì track/enumerate key trong process. Key-tracking local (cách cũ) không lan sang instance khác khi cache dùng chung (Redis) — revoke quyền sẽ stale ở instance khác đến khi hết TTL. Tăng generation là thao tác atomic, đúng với mọi backing store dùng chung, không cần thiết kế lại khi thêm Redis. Cũng thêm `CacheSettings.Provider` + keyed DI để chọn provider qua config, khớp pattern `StorageExtensions`.

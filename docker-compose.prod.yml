@@ -1,6 +1,6 @@
-# Production, single-instance deployment. Do NOT scale `api` beyond 1 replica with this file —
-# caching and SignalR are both in-memory (see .claude/decisions.md), a second replica would break
-# session/notification consistency. Scaling out requires adding Redis first.
+# Production, single-instance by default (CacheSettings:Provider=Memory, RealtimeSettings:Backplane=None).
+# To scale `api` beyond 1 replica: start Redis (`--profile redis`), set ConnectionStrings:Redis,
+# CacheSettings:Provider=Redis and RealtimeSettings:Backplane=Redis in appsettings.json.
 #
 # Setup:
 #   cp backend/src/StarterKit.API/appsettings.Example.json backend/src/StarterKit.API/appsettings.json
@@ -9,6 +9,8 @@
 #   cp .env.prod.example .env.prod
 #   # then edit .env.prod: POSTGRES_USER/PASSWORD/DB
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#   # multi-instance (optional):
+#   # docker compose -f docker-compose.prod.yml --env-file .env.prod --profile redis up -d
 
 services:
   postgres:
@@ -23,6 +25,16 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
       timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    profiles: [redis]
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
       retries: 10
     restart: unless-stopped
 
