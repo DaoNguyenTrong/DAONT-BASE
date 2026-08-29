@@ -128,6 +128,7 @@ public sealed class AuthController(
 
     /// <summary>Refreshes the access token using a refresh token. The refresh token can be sent in the request body or via cookie.</summary>
     [AllowAnonymous]
+    [EnableRateLimiting("auth-refresh")]
     [HttpPost("refresh")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

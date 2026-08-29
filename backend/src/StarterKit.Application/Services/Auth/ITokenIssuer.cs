@@ -13,5 +13,6 @@ public interface ITokenIssuer
         string? ipAddress,
         bool isPersistent,
         DateTime loginAt,
+        Guid? familyId,
         CancellationToken cancellationToken);
 }

@@ -29,6 +29,7 @@ internal sealed class TokenIssuer(
         string? ipAddress,
         bool isPersistent,
         DateTime loginAt,
+        Guid? familyId,
         CancellationToken cancellationToken)
     {
         string accessToken = jwtTokenService.GenerateAccessToken(account, organizationId);
@@ -44,7 +45,8 @@ internal sealed class TokenIssuer(
             ipAddress,
             isPersistent,
             loginAt,
-            organizationId));
+            organizationId,
+            familyId));
 
         await unitOfWork.Repository<RefreshToken, long>().AddAsync(token, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

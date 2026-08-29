@@ -234,6 +234,35 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
     }
 
     [Fact]
+    public async Task Refresh_StaleTokenReplayedWithinGrace_StillReturnsNewTokens()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        await using (AppDbContext context = CreateDbContext())
+        {
+            Account account = await AuthTestHelper.SeedConfirmedAccountAsync(
+                context, username: "grace-user", email: "grace-user@example.com");
+            context.RefreshTokens.Add(RefreshToken.Create(new RefreshTokenParams(
+                account.Id, ComputeSha256("grace-token"), DateTime.UtcNow.AddDays(1), null, null, false, DateTime.UtcNow)));
+            await context.SaveChangesAsync();
+        }
+
+        // First tab refreshes: "grace-token" is rotated and revoked, a successor in
+        // the same family is issued.
+        HttpResponseMessage first = await client.PostAsJsonAsync(
+            "/api/auth/refresh", new RefreshTokenRequest("grace-token"));
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+
+        // Second tab, racing with the first, presents the same now-revoked token a
+        // moment later — still inside the grace window, so it must succeed too.
+        HttpResponseMessage second = await client.PostAsJsonAsync(
+            "/api/auth/refresh", new RefreshTokenRequest("grace-token"));
+
+        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+        LoginResponse? body = await second.Content.ReadJsonAsync<LoginResponse>();
+        Assert.NotEqual("grace-token", body!.RefreshToken);
+    }
+
+    [Fact]
     public async Task Refresh_MissingToken_ReturnsUnauthorized()
     {
         HttpClient client = fixture.CreateTestClient();
