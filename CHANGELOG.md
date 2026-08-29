@@ -7,22 +7,30 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Optional Redis for shared app cache and SignalR so multiple API instances stay consistent when scaled out.
-- Optional Redis service in docker-compose (profile `redis`) for multi-instance local and production setups.
 - Optional SeaweedFS file storage via its S3 gateway, with a local docker-compose service for development.
 - Cache provider selectable via config (keyed DI), matching the existing storage-provider pattern.
 - Test coverage for the backend's central exception-handling middleware and error-status mapping, which previously had none.
+- A full-screen error screen appears when the backend is unreachable, and the app restores itself once the API comes back.
+- After signing in you are returned to the page you originally tried to open instead of always landing on the home screen.
 
 ### Fixed
 
 - Email verification links now work with the app's hash-based routing — previously the link bounced unauthenticated users to the login page instead of the verification screen.
 - A temporary email-sending failure during registration or resend no longer surfaces as an error, since the account was already created successfully — users can retry sending the verification email once mail delivery recovers.
 - Dropped HTTPS redirection when nothing in the stack terminates TLS, removing a noisy warning on every request.
+- Opening the app in a second tab no longer risks logging you out of the first while both refresh their session.
 
 ### Changed
 
 - Backend API tests now mint their JWTs from the test server's actual configured secret instead of a hardcoded value, preventing spurious 401 failures when a developer's local config differs.
 - Cache scope invalidation now uses a generation counter so permission/tenant revocation stays correct across instances once a shared cache is added.
 - Production API Docker builds use the repo root as context so MinVer can resolve the release version from git tags.
+- docker-compose no longer bundles a Redis container; a scaled-out deployment points at a Redis from its own environment.
+- Local and production Postgres upgraded to 18.
+
+### Security
+
+- A stolen refresh token that is replayed after its session has already moved on now invalidates the entire session family.
 
 ## [v1.4.2] - 2026-08-09
 
