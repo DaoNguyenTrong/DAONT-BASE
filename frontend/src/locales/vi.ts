@@ -32,6 +32,10 @@ const vi: LocaleSchema = {
     notFoundDescription:
       'Liên kết có thể đã thay đổi hoặc trang đã được di chuyển. Hãy quay lại một màn hình hợp lệ để tiếp tục.',
     serverError: 'Lỗi máy chủ',
+    serverErrorTitle: 'Không kết nối được với máy chủ',
+    serverErrorDescription:
+      'Dịch vụ tạm thời không khả dụng hoặc không thể kết nối. Hệ thống thường tự khôi phục — vui lòng thử lại sau giây lát.',
+    serverErrorRetry: 'Thử lại',
   },
   auth: {
     login: 'Đăng nhập',
@@ -103,6 +107,7 @@ const vi: LocaleSchema = {
       checking: 'Đang kiểm tra API…',
       online: 'API đang hoạt động',
       offline: 'API ngoại tuyến',
+      error: 'API không khả dụng',
     },
     welcomeTitle: 'Chào mừng trở lại',
     welcomeDescription: 'Đây là điểm khởi đầu của bạn — hãy xây dựng tính năng đầu tiên từ đây.',

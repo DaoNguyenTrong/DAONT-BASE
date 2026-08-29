@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import { useAuthStore } from '@/stores/auth'
+import { hasSessionHint } from '@/lib/auth-session'
 import { setupTestPinia } from '../../helpers/pinia'
 import { makeAuthResponse } from '../../helpers/msw/fixtures'
 
@@ -30,6 +31,16 @@ describe('useAuthStore', () => {
 
     expect(auth.account).toBeNull()
     expect(auth.isAuthenticated).toBe(false)
+  })
+
+  it('setAuth leaves a session hint for the next boot, clearAuth removes it', () => {
+    const auth = useAuthStore()
+
+    auth.setAuth(makeAuthResponse())
+    expect(hasSessionHint()).toBe(true)
+
+    auth.clearAuth()
+    expect(hasSessionHint()).toBe(false)
   })
 
   it('setAuth stores the active-org permission set', () => {

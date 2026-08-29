@@ -2,7 +2,14 @@
 import type { FormInst, FormRules } from 'naive-ui'
 
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
+
+// Set by the router guard when it bounces an unauthenticated visitor here from a
+// protected route; validated to an app-internal path before we follow it.
+function goToDestination() {
+  return router.push(safeRedirectTarget(route.query.redirect) ?? useHomeRoute())
+}
 const { wordmarkSrc } = useBrandWordmark()
 
 const formRef = ref<FormInst | null>(null)
@@ -43,7 +50,7 @@ async function handleSubmit() {
       keepLoggedIn: keepLogin.value,
     })
     setKeepLoginPreference(keepLogin.value)
-    await router.push(useHomeRoute())
+    await goToDestination()
   } catch (error) {
     if (error instanceof ApiError) {
       if (error.problem.code === 'EmailNotConfirmed') {

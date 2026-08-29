@@ -29,6 +29,9 @@ export interface LocaleSchema {
     notFoundTitle: string
     notFoundDescription: string
     serverError: string
+    serverErrorTitle: string
+    serverErrorDescription: string
+    serverErrorRetry: string
   }
   auth: {
     login: string
@@ -94,6 +97,7 @@ export interface LocaleSchema {
       checking: string
       online: string
       offline: string
+      error: string
     }
     welcomeTitle: string
     welcomeDescription: string
@@ -255,6 +259,10 @@ const en: LocaleSchema = {
     notFoundDescription:
       'The link may be outdated, or the page may have been moved. Return to a valid screen to continue.',
     serverError: 'Server error',
+    serverErrorTitle: 'We can’t reach the server',
+    serverErrorDescription:
+      'The service is temporarily unavailable or unreachable. It usually recovers on its own — try again in a moment.',
+    serverErrorRetry: 'Try again',
   },
   auth: {
     login: 'Login',
@@ -328,6 +336,7 @@ const en: LocaleSchema = {
       checking: 'Checking API…',
       online: 'API online',
       offline: 'API offline',
+      error: 'API unavailable',
     },
     welcomeTitle: 'Welcome back',
     welcomeDescription: 'This is your starting point — build your first feature from here.',
