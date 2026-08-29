@@ -1,6 +1,9 @@
 # Production, single-instance by default (CacheSettings:Provider=Memory, RealtimeSettings:Backplane=None).
-# To scale `api` beyond 1 replica: start Redis (`--profile redis`), set ConnectionStrings:Redis,
-# CacheSettings:Provider=Redis and RealtimeSettings:Backplane=Redis in appsettings.json.
+# This file does not run a Redis container — Redis is expected to be provided by the deploy environment.
+# To scale `api` beyond 1 replica: point ConnectionStrings:Redis at a Redis reachable from this compose
+# network (a managed service, or a host Redis via host.docker.internal + an `extra_hosts` entry on `api`),
+# then set CacheSettings:Provider=Redis and RealtimeSettings:Backplane=Redis in appsettings.json.
+# Use `abortConnect=false` in the connection string so `api` doesn't crash on boot if Redis lags.
 #
 # Setup:
 #   cp backend/src/StarterKit.API/appsettings.Example.json backend/src/StarterKit.API/appsettings.json
@@ -9,32 +12,20 @@
 #   cp .env.prod.example .env.prod
 #   # then edit .env.prod: POSTGRES_USER/PASSWORD/DB
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
-#   # multi-instance (optional):
-#   # docker compose -f docker-compose.prod.yml --env-file .env.prod --profile redis up -d
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - starterkit-postgres-data:/var/lib/postgresql/data
+      - starterkit-postgres-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
       timeout: 5s
-      retries: 10
-    restart: unless-stopped
-
-  redis:
-    profiles: [redis]
-    image: redis:7-alpine
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
       retries: 10
     restart: unless-stopped
 

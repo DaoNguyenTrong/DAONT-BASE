@@ -17,7 +17,7 @@ namespace StarterKit.API.Tests.TestSupport;
 
 public sealed class ApiFactoryFixture : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer container = new PostgreSqlBuilder("postgres:16-alpine")
+    private readonly PostgreSqlContainer container = new PostgreSqlBuilder("postgres:18-alpine")
         .WithDatabase("starterkit_api_test")
         .WithUsername("postgres")
         .WithPassword("postgres")
