@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DaoNguyenTrong/daont-claude-plugins/main/plugins/release-kit/release-kit.schema.json",
+  "prCli": "gh",
+  "devBranch": "dev",
+  "mainBranch": "main",
+  "versioningNote": "backend via MinVer (git tag); frontend not versioned",
+  "frontendVersionFile": null,
+  "gate": {
+    "phase1": "dotnet test backend/StarterKit.sln --no-restore -m:1 && bun run --cwd frontend test:run",
+    "mandatory": "dotnet test backend/StarterKit.sln --no-restore -m:1 && bun run --cwd frontend test:run"
+  },
+  "changelogPath": "CHANGELOG.md",
+  "ciTriggerNote": ".github/workflows/release.yml triggers on tag push; CI runs after the tag, there is no PR CI",
+  "modes": ["standard", "hotfix"]
+}
