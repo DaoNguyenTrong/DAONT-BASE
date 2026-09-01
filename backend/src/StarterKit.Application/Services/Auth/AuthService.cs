@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Options;
 using StarterKit.Application.Common.Interfaces;
+using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Resources;
 using StarterKit.Domain.Entities;
 using StarterKit.Domain.Exceptions;
@@ -12,8 +14,11 @@ public sealed class AuthService(
     ITokenIssuer tokenIssuer,
     ITenantAccessService tenantAccessService,
     IPasswordHasher passwordHasher,
-    IEnumerable<IExternalAuthProvider> externalAuthProviders) : IAuthService
+    IEnumerable<IExternalAuthProvider> externalAuthProviders,
+    IOptions<JwtSettings> jwtOptions) : IAuthService
 {
+    private readonly JwtSettings jwtSettings = jwtOptions.Value;
+
     public async Task<AuthResult> LoginAsync(
         LoginRequest request,
         string? deviceInfo,
@@ -45,6 +50,7 @@ public sealed class AuthService(
             ipAddress,
             request.KeepLoggedIn,
             DateTime.UtcNow,
+            familyId: null,
             cancellationToken);
     }
 
@@ -66,13 +72,12 @@ public sealed class AuthService(
             .FirstOrDefaultAsync(token => token.TokenHash == tokenHash, cancellationToken)
             ?? throw new UnauthorizedException(ApplicationMessages.InvalidRefreshToken);
 
-        if (!storedToken.IsActive)
-        {
-            throw new UnauthorizedException(ApplicationMessages.InvalidRefreshToken);
-        }
+        RefreshToken rotatingToken = storedToken.IsActive
+            ? storedToken
+            : await ResolveInactiveRefreshTokenAsync(refreshTokenRepository, storedToken, cancellationToken);
 
         Account account = await unitOfWork.Repository<Account, Guid>()
-            .GetByIdAsync(storedToken.AccountId, cancellationToken)
+            .GetByIdAsync(rotatingToken.AccountId, cancellationToken)
             ?? throw new UnauthorizedException(ApplicationMessages.InvalidRefreshToken);
 
         if (!account.Status)
@@ -80,23 +85,80 @@ public sealed class AuthService(
             throw new UnauthorizedException(ApplicationMessages.InvalidRefreshToken);
         }
 
-        if (storedToken.OrganizationId is { } organizationId &&
+        if (rotatingToken.OrganizationId is { } organizationId &&
             !await tenantAccessService.HasActiveAccessAsync(account.Id, organizationId, cancellationToken))
         {
             throw new UnauthorizedException(ApplicationMessages.InvalidRefreshToken);
         }
 
-        storedToken.Revoke();
-        refreshTokenRepository.Update(storedToken);
+        rotatingToken.Revoke();
+        refreshTokenRepository.Update(rotatingToken);
 
         return await tokenIssuer.IssueTokensAsync(
             account,
-            storedToken.OrganizationId,
+            rotatingToken.OrganizationId,
             deviceInfo,
             ipAddress,
-            storedToken.IsPersistent,
-            storedToken.LoginAt,
+            rotatingToken.IsPersistent,
+            rotatingToken.LoginAt,
+            rotatingToken.FamilyId,
             cancellationToken);
+    }
+
+    /// <summary>
+    /// A presented refresh token that is no longer active is not automatically a
+    /// forgery: because the refresh cookie is shared across a browser's tabs, a
+    /// near-simultaneous refresh from another tab may have just rotated it. If the
+    /// family still has an active token and this one was revoked within the grace
+    /// window (<see cref="JwtSettings.RefreshTokenReuseGraceSeconds"/>), accept the
+    /// presenter and continue rotating from that active token. Otherwise treat the
+    /// replay as a leaked token and revoke the entire family.
+    /// </summary>
+    private async Task<RefreshToken> ResolveInactiveRefreshTokenAsync(
+        IRepository<RefreshToken, long> repository,
+        RefreshToken presentedToken,
+        CancellationToken cancellationToken)
+    {
+        DateTime now = DateTime.UtcNow;
+        Guid accountId = presentedToken.AccountId;
+        Guid familyId = presentedToken.FamilyId;
+
+        RefreshToken? activeInFamily = await repository.FirstOrDefaultAsync(
+            token => token.AccountId == accountId
+                && token.FamilyId == familyId
+                && token.RevokedAt == null
+                && token.ExpiresAt > now,
+            cancellationToken);
+
+        bool withinGrace = presentedToken.RevokedAt is { } revokedAt
+            && revokedAt >= now.AddSeconds(-jwtSettings.RefreshTokenReuseGraceSeconds);
+
+        if (activeInFamily is not null && withinGrace)
+        {
+            return activeInFamily;
+        }
+
+        if (activeInFamily is not null)
+        {
+            // Stale token replayed while the family is still live — assume it leaked.
+            // Burn every active token in the family so both the attacker and the
+            // legitimate user are forced to re-authenticate.
+            IReadOnlyList<RefreshToken> activeFamilyTokens = await repository.ListAsync(
+                token => token.AccountId == accountId
+                    && token.FamilyId == familyId
+                    && token.RevokedAt == null,
+                cancellationToken);
+
+            foreach (RefreshToken familyToken in activeFamilyTokens)
+            {
+                familyToken.Revoke();
+                repository.Update(familyToken);
+            }
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        throw new UnauthorizedException(ApplicationMessages.InvalidRefreshToken);
     }
 
     public async Task<AuthResult> ExternalLoginAsync(
@@ -167,7 +229,7 @@ public sealed class AuthService(
 
         Guid? organizationId = await tokenIssuer.ResolveDefaultOrganizationIdAsync(account.Id, cancellationToken);
 
-        return await tokenIssuer.IssueTokensAsync(account, organizationId, deviceInfo, ipAddress, false, DateTime.UtcNow, cancellationToken);
+        return await tokenIssuer.IssueTokensAsync(account, organizationId, deviceInfo, ipAddress, false, DateTime.UtcNow, familyId: null, cancellationToken);
     }
 
     public async Task RevokeTokenAsync(string refreshToken, CancellationToken cancellationToken)
@@ -221,7 +283,7 @@ public sealed class AuthService(
         Account account = await unitOfWork.Repository<Account, Guid>().GetByIdAsync(accountId, cancellationToken)
             ?? throw new UnauthorizedException(ApplicationMessages.AuthenticatedUserRequired);
 
-        return await tokenIssuer.IssueTokensAsync(account, organizationId, deviceInfo, ipAddress, true, DateTime.UtcNow, cancellationToken);
+        return await tokenIssuer.IssueTokensAsync(account, organizationId, deviceInfo, ipAddress, true, DateTime.UtcNow, familyId: null, cancellationToken);
     }
 
     private Guid GetCurrentAccountId()

@@ -32,7 +32,8 @@ public class AuthServiceTests
 
     private static Fixture CreateFixture(
         int accessTokenExpiryMinutes = 15,
-        int refreshTokenExpiryDays = 7)
+        int refreshTokenExpiryDays = 7,
+        int refreshTokenReuseGraceSeconds = 60)
     {
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         IRepository<Account, Guid> accountRepo = Substitute.For<IRepository<Account, Guid>>();
@@ -73,7 +74,8 @@ public class AuthServiceTests
         IOptions<JwtSettings> jwtOptions = Options.Create(new JwtSettings
         {
             AccessTokenExpiryMinutes = accessTokenExpiryMinutes,
-            RefreshTokenExpiryDays = refreshTokenExpiryDays
+            RefreshTokenExpiryDays = refreshTokenExpiryDays,
+            RefreshTokenReuseGraceSeconds = refreshTokenReuseGraceSeconds
         });
 
         // TokenIssuer has no I/O beyond the already-substituted collaborators above (IUnitOfWork,
@@ -87,7 +89,8 @@ public class AuthServiceTests
             tokenIssuer,
             tenantAccessService,
             passwordHasher,
-            [externalAuthProvider]);
+            [externalAuthProvider],
+            jwtOptions);
 
         return new Fixture(
             service,
@@ -135,7 +138,8 @@ public class AuthServiceTests
         string rawToken,
         bool isPersistent = false,
         DateTime? expiresAt = null,
-        DateTime? loginAt = null)
+        DateTime? loginAt = null,
+        Guid? familyId = null)
     {
         return RefreshToken.Create(new RefreshTokenParams(
             accountId,
@@ -144,7 +148,8 @@ public class AuthServiceTests
             DeviceInfo: null,
             IpAddress: null,
             IsPersistent: isPersistent,
-            LoginAt: loginAt ?? DateTime.UtcNow));
+            LoginAt: loginAt ?? DateTime.UtcNow,
+            FamilyId: familyId));
     }
 
     // LoginAsync
@@ -497,6 +502,74 @@ public class AuthServiceTests
         AuthResult result = await f.Service.RefreshTokenAsync("old-token", null, null, CancellationToken.None);
 
         Assert.Equal(oldIsPersistent, result.IsPersistent);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_ValidToken_KeepsFamilyIdOnNewToken()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        Guid familyId = Guid.NewGuid();
+        RefreshToken oldToken = CreateRefreshToken(account.Id, "old-token", familyId: familyId);
+        RepositoryPredicateStub.StubFirstOrDefault(f.RefreshTokenRepo, [oldToken]);
+        f.AccountRepo.GetByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+
+        RefreshToken? issued = null;
+        f.RefreshTokenRepo.When(r => r.AddAsync(Arg.Any<RefreshToken>(), Arg.Any<CancellationToken>()))
+            .Do(ci => issued = ci.Arg<RefreshToken>());
+
+        await f.Service.RefreshTokenAsync("old-token", null, null, CancellationToken.None);
+
+        Assert.NotNull(issued);
+        Assert.Equal(familyId, issued!.FamilyId);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_StaleTokenWithinGrace_RotatesActiveSuccessor()
+    {
+        Fixture f = CreateFixture(refreshTokenReuseGraceSeconds: 60);
+        Account account = CreateAccount();
+        Guid familyId = Guid.NewGuid();
+        RefreshToken staleToken = CreateRefreshToken(account.Id, "stale-token", familyId: familyId);
+        staleToken.Revoke();
+        RefreshToken successor = CreateRefreshToken(account.Id, "successor-token", familyId: familyId);
+        RepositoryPredicateStub.StubFirstOrDefault(f.RefreshTokenRepo, [staleToken, successor]);
+        f.AccountRepo.GetByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+
+        AuthResult result = await f.Service.RefreshTokenAsync("stale-token", null, null, CancellationToken.None);
+
+        // The concurrent-tab refresh is honoured: the still-active successor is the
+        // one that gets rotated, and a fresh pair is issued in the same family.
+        Assert.NotNull(successor.RevokedAt);
+        f.RefreshTokenRepo.Received(1).Update(successor);
+        Assert.NotEqual("stale-token", result.RefreshToken);
+        Assert.NotEqual("successor-token", result.RefreshToken);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_StaleTokenOutsideGrace_BurnsWholeFamily()
+    {
+        Fixture f = CreateFixture(refreshTokenReuseGraceSeconds: 0);
+        Account account = CreateAccount();
+        Guid familyId = Guid.NewGuid();
+        RefreshToken staleToken = CreateRefreshToken(account.Id, "stale-token", familyId: familyId);
+        staleToken.Revoke();
+        // Two live successors — a truly-simultaneous double refresh is a normal state.
+        RefreshToken successorA = CreateRefreshToken(account.Id, "successor-a", familyId: familyId);
+        RefreshToken successorB = CreateRefreshToken(account.Id, "successor-b", familyId: familyId);
+        RepositoryPredicateStub.StubFirstOrDefault(f.RefreshTokenRepo, [staleToken, successorA, successorB]);
+        RepositoryPredicateStub.StubListAsync(f.RefreshTokenRepo, [staleToken, successorA, successorB]);
+
+        await ApplicationAssert.ThrowsWithMessageAsync<UnauthorizedException>(
+            ApplicationMessages.InvalidRefreshToken,
+            () => f.Service.RefreshTokenAsync("stale-token", null, null, CancellationToken.None));
+
+        // Replay of a long-dead token while the family is still live is treated as a
+        // leak: every active token in the family is revoked.
+        Assert.NotNull(successorA.RevokedAt);
+        Assert.NotNull(successorB.RevokedAt);
+        await f.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await f.RefreshTokenRepo.DidNotReceive().AddAsync(Arg.Any<RefreshToken>(), Arg.Any<CancellationToken>());
     }
 
     // RevokeTokenAsync

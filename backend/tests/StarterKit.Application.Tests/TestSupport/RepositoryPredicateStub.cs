@@ -23,6 +23,10 @@ internal static class RepositoryPredicateStub
         where T : BaseEntity<Guid>
         => StubList(repo, seed);
 
+    public static void StubListAsync<T>(IRepository<T, long> repo, IReadOnlyList<T> seed)
+        where T : BaseEntity<long>
+        => StubList(repo, seed);
+
     private static void Stub<T, TId>(IRepository<T, TId> repo, IReadOnlyList<T> seed)
         where T : BaseEntity<TId>
         where TId : notnull

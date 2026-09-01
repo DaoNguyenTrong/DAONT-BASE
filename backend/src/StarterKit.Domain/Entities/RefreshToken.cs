@@ -10,7 +10,8 @@ public record RefreshTokenParams(
     string? IpAddress,
     bool IsPersistent,
     DateTime LoginAt,
-    Guid? OrganizationId = null);
+    Guid? OrganizationId = null,
+    Guid? FamilyId = null);
 
 public sealed class RefreshToken : BaseEntity<long>
 {
@@ -44,7 +45,12 @@ public sealed class RefreshToken : BaseEntity<long>
             IpAddress = string.IsNullOrWhiteSpace(p.IpAddress) ? null : p.IpAddress.Trim(),
             IsPersistent = p.IsPersistent,
             LoginAt = p.LoginAt,
-            OrganizationId = p.OrganizationId
+            OrganizationId = p.OrganizationId,
+            // Every token minted from one login chain shares a FamilyId. A fresh
+            // login starts a new family; a rotation inherits the presented token's.
+            // The refresh flow uses it to tell a legitimate concurrent-tab rotation
+            // apart from a replayed (stolen) token.
+            FamilyId = p.FamilyId is { } familyId && familyId != Guid.Empty ? familyId : Guid.NewGuid()
         };
     }
 
@@ -65,6 +71,8 @@ public sealed class RefreshToken : BaseEntity<long>
     public DateTime LoginAt { get; private set; }
 
     public Guid? OrganizationId { get; private set; }
+
+    public Guid FamilyId { get; private set; }
 
     public bool IsActive => !RevokedAt.HasValue && DateTime.UtcNow < ExpiresAt;
 

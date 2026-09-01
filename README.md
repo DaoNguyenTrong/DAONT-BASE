@@ -135,7 +135,9 @@ For full details, see `.claude/rules/commands.md`.
 ## Production (Docker)
 
 `docker-compose.prod.yml` builds and runs the API and frontend as containers (single-instance —
-caching and SignalR are in-memory, don't scale `api` past 1 replica without adding Redis first).
+caching and SignalR are in-memory, don't scale `api` past 1 replica without pointing
+`ConnectionStrings:Redis` at a Redis from your deploy environment first — this compose file no
+longer ships a Redis container).
 An nginx container serves the built frontend and reverse-proxies `/api/` and `/hubs/` to the API;
 `/hangfire` and `/metrics` are deliberately not exposed through it, same "network-layer only"
 restriction the API already applies (see `Program.cs`).

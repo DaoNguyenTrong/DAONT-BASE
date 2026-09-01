@@ -76,20 +76,36 @@ const router = createRouter({
 })
 
 export function resolveGuardRedirect(
-  to: { meta: { requiresAuth?: boolean; guestOnly?: boolean } },
+  to: {
+    meta: { requiresAuth?: boolean; guestOnly?: boolean }
+    fullPath: string
+    query: Record<string, unknown>
+  },
   auth: { isAuthenticated: boolean },
+  health: { isDown: boolean },
 ) {
+  // During an API outage, ServerErrorScreen takes over the whole screen and the
+  // silent refresh could not run — so `auth.isAuthenticated` is unreliable.
+  // Don't redirect anywhere (no /login flash): keep the URL on the intended
+  // route so App.vue's recovery watcher can restore the session and route once
+  // the API comes back.
+  if (health.isDown) {
+    return undefined
+  }
+
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: 'login' }
+    // Preserve the destination so LoginView can return the user there after
+    // signing in, instead of always dropping them on the home page.
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
 
   if (to.meta.guestOnly && auth.isAuthenticated) {
-    return useHomeRoute()
+    return safeRedirectTarget(to.query.redirect) ?? useHomeRoute()
   }
 
   return undefined
 }
 
-router.beforeEach((to) => resolveGuardRedirect(to, useAuthStore()))
+router.beforeEach((to) => resolveGuardRedirect(to, useAuthStore(), useHealthStore()))
 
 export default router

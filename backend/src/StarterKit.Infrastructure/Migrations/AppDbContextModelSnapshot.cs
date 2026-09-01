@@ -500,6 +500,9 @@ namespace StarterKit.Infrastructure.Migrations
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("IpAddress")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -537,6 +540,8 @@ namespace StarterKit.Infrastructure.Migrations
 
                     b.HasIndex("TokenHash")
                         .IsUnique();
+
+                    b.HasIndex("AccountId", "FamilyId");
 
                     b.ToTable("refresh_tokens", (string)null);
                 });

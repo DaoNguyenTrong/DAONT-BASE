@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   clearKeepLoginPreference,
+  clearSessionHint,
   getKeepLoginPreference,
+  hasSessionHint,
   KEEP_LOGIN_STORAGE_KEY,
+  markSessionHint,
+  SESSION_HINT_STORAGE_KEY,
   setKeepLoginPreference,
 } from '@/lib/auth-session'
 
@@ -32,5 +36,24 @@ describe('auth-session keep-login preference', () => {
   it('treats non-true stored values as false', () => {
     localStorage.setItem(KEEP_LOGIN_STORAGE_KEY, 'false')
     expect(getKeepLoginPreference()).toBe(false)
+  })
+})
+
+describe('auth-session session hint', () => {
+  it('is absent by default', () => {
+    expect(hasSessionHint()).toBe(false)
+  })
+
+  it('persists via markSessionHint and reads back true', () => {
+    markSessionHint()
+    expect(localStorage.getItem(SESSION_HINT_STORAGE_KEY)).toBe('true')
+    expect(hasSessionHint()).toBe(true)
+  })
+
+  it('is removed via clearSessionHint', () => {
+    markSessionHint()
+    clearSessionHint()
+    expect(localStorage.getItem(SESSION_HINT_STORAGE_KEY)).toBeNull()
+    expect(hasSessionHint()).toBe(false)
   })
 })

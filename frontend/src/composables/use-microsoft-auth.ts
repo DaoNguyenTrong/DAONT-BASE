@@ -1,5 +1,6 @@
 export function useMicrosoftAuth() {
   const router = useRouter()
+  const route = useRoute()
   const { t } = useI18n()
   const { isLoading, error, run } = useApiAction()
   const showResendVerification = ref(false)
@@ -21,7 +22,7 @@ export function useMicrosoftAuth() {
     })
 
     if (result) {
-      await router.push(useHomeRoute())
+      await router.push(safeRedirectTarget(route.query.redirect) ?? useHomeRoute())
     }
   }
 

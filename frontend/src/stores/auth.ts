@@ -32,6 +32,8 @@ export const useAuthStore = defineStore('auth', () => {
     organizationId.value = response.organizationId
     organizationName.value = response.organizationName
     permissions.value = response.permissions
+    // Breadcrumb for the next boot: a silent refresh is worth attempting.
+    markSessionHint()
   }
 
   function clearAuth() {
@@ -39,6 +41,7 @@ export const useAuthStore = defineStore('auth', () => {
     organizationId.value = null
     organizationName.value = null
     permissions.value = []
+    clearSessionHint()
   }
 
   function hasPermission(code: string): boolean {

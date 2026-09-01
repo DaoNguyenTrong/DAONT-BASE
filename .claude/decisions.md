@@ -8,6 +8,22 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-08-25 — Cache + SignalR chọn Memory/Redis qua config, không hard-require Redis
+
+Single-instance giữ in-memory; multi-instance bật Redis bằng `CacheSettings:Provider` và `RealtimeSettings:Backplane` cùng một `ConnectionStrings:Redis`. Rejected hard-wiring Redis vào mọi môi trường — thêm dependency/ops không cần thiết khi chỉ chạy 1 replica. Fail-fast khi chọn Redis mà thiếu connection, tránh silent single-node behaviour lúc scale.
+
+### 2026-08-25 — Cache scope invalidation qua generation counter, không enumerate key
+
+`ICacheService.RemoveByPrefixAsync` thay bằng `InvalidateScopeAsync`, dựa trên generation counter theo scope thay vì track/enumerate key trong process. Key-tracking local (cách cũ) không lan sang instance khác khi cache dùng chung (Redis) — revoke quyền sẽ stale ở instance khác đến khi hết TTL. Tăng generation là thao tác atomic, đúng với mọi backing store dùng chung, không cần thiết kế lại khi thêm Redis. Cũng thêm `CacheSettings.Provider` + keyed DI để chọn provider qua config, khớp pattern `StorageExtensions`.
+
+### 2026-08-25 — backend/Dockerfile build context chuyển sang repo root để MinVer thấy được .git
+
+`api.build.context` trong `docker-compose.prod.yml` đổi từ `./backend` sang `.` (`dockerfile: backend/Dockerfile`) — verify thực nghiệm cho thấy MinVer luôn fallback về `0.0.0-preview` khi context chỉ chứa `backend/` vì `.git` nằm ngoài context, khiến `/api/health.Version` vô dụng để xác minh bản deploy. `.dockerignore` root và `backend/.dockerignore` được gộp làm một (`backend/.dockerignore` xoá) vì cả 2 Dockerfile giờ dùng chung context root.
+
+### 2026-08-25 — SeaweedFS storage provider: S3 Gateway API, auto-create bucket lúc khởi động
+
+Thêm `SeaweedFsFileProvider` implement `IStorageProvider` có sẵn (keyed DI theo `StorageSettings:Provider`) — không sửa `FileService`/`FilesController`/entity. Chọn gọi qua S3 Gateway (AWSSDK.S3, `ForcePathStyle=true`) thay vì Filer HTTP API thuần — nặng hơn (thêm dependency + container `-s3`) nhưng code tái dùng được cho AWS S3/MinIO thật sau này, chỉ đổi `ServiceURL`. Bucket tự tạo lúc khởi động nếu thiếu, ưu tiên DX hơn yêu cầu operator tạo sẵn. Static-file serving local (`Program.cs`) giờ chỉ mount khi `Provider == "Local"`; `FileDto.PublicUrl` cần bucket cấu hình public-read mới hoạt động đúng với SeaweedFS.
+
 ### 2026-08-09 — Backend test runner song song hoá theo tiến trình OS thay vì bỏ -m:1
 
 `dotnet test backend/StarterKit.sln --no-restore -m:1` serialize cả 4 test project dù phần lớn wall-clock (55,8s/479 test) là overhead build/khởi động tiến trình mỗi project, không phải thời gian chạy test — đã kiểm chứng thực nghiệm. Không bỏ `-m:1` (rủi ro tái kích hoạt bug parallel-MSBuild đã biết). Thay vào đó `backend/scripts/test.sh` build 1 lần tuần tự rồi chạy mỗi project bằng tiến trình `dotnet test --no-build` độc lập (vẫn `-m:1` nội bộ) — còn ~35s, kết quả test không đổi.

@@ -17,7 +17,7 @@ public sealed class SystemSettingsService(
     {
         Guid organizationId = RequireOrganizationId();
 
-        return cacheService.GetOrSetAsync(CacheKey(organizationId), async token =>
+        return cacheService.GetOrSetAsync(Scope(organizationId), CacheKey, async token =>
         {
             IRepository<SystemSetting> repository = unitOfWork.Repository<SystemSetting>();
             IReadOnlyList<SystemSetting> rows = await repository.ListAsync(
@@ -54,12 +54,14 @@ public sealed class SystemSettingsService(
         }
 
         await unitOfWork.SaveChangesAsync(ct);
-        await cacheService.RemoveAsync(CacheKey(organizationId), ct);
+        await cacheService.RemoveAsync(Scope(organizationId), CacheKey, ct);
     }
 
     private Guid RequireOrganizationId() =>
         currentTenantProvider.OrganizationId
             ?? throw new ForbiddenException(ApplicationMessages.OrganizationAccessDenied);
 
-    private static string CacheKey(Guid organizationId) => $"systemsettings:{organizationId}:all";
+    private const string CacheKey = "all";
+
+    private static string Scope(Guid organizationId) => $"systemsettings:{organizationId}";
 }

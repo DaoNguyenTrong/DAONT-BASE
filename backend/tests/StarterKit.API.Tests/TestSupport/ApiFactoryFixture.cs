@@ -5,9 +5,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Respawn;
 using StarterKit.Application.Common.Interfaces;
+using StarterKit.Application.Common.Settings;
 using StarterKit.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
 
@@ -15,7 +17,7 @@ namespace StarterKit.API.Tests.TestSupport;
 
 public sealed class ApiFactoryFixture : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer container = new PostgreSqlBuilder("postgres:16-alpine")
+    private readonly PostgreSqlContainer container = new PostgreSqlBuilder("postgres:18-alpine")
         .WithDatabase("starterkit_api_test")
         .WithUsername("postgres")
         .WithPassword("postgres")
@@ -57,6 +59,14 @@ public sealed class ApiFactoryFixture : WebApplicationFactory<Program>, IAsyncLi
 
         // Force host creation now so the initial (seeded) state is captured before Respawn resets anything.
         _ = Server;
+
+        // AuthTestHelper mints tokens outside the host's DI container — point it at whatever
+        // SecretKey the host actually resolved (appsettings.json/env), so minted tokens always
+        // validate against the real JwtBearer pipeline regardless of local appsettings.json content.
+        using (IServiceScope scope = Services.CreateScope())
+        {
+            AuthTestHelper.ConfigureJwtSettings(scope.ServiceProvider.GetRequiredService<IOptions<JwtSettings>>().Value);
+        }
 
         respawnConnection = new NpgsqlConnection(ConnectionString);
         await respawnConnection.OpenAsync();

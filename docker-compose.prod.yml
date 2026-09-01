@@ -1,6 +1,9 @@
-# Production, single-instance deployment. Do NOT scale `api` beyond 1 replica with this file —
-# caching and SignalR are both in-memory (see .claude/decisions.md), a second replica would break
-# session/notification consistency. Scaling out requires adding Redis first.
+# Production, single-instance by default (CacheSettings:Provider=Memory, RealtimeSettings:Backplane=None).
+# This file does not run a Redis container — Redis is expected to be provided by the deploy environment.
+# To scale `api` beyond 1 replica: point ConnectionStrings:Redis at a Redis reachable from this compose
+# network (a managed service, or a host Redis via host.docker.internal + an `extra_hosts` entry on `api`),
+# then set CacheSettings:Provider=Redis and RealtimeSettings:Backplane=Redis in appsettings.json.
+# Use `abortConnect=false` in the connection string so `api` doesn't crash on boot if Redis lags.
 #
 # Setup:
 #   cp backend/src/StarterKit.API/appsettings.Example.json backend/src/StarterKit.API/appsettings.json
@@ -12,13 +15,13 @@
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - starterkit-postgres-data:/var/lib/postgresql/data
+      - starterkit-postgres-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
@@ -28,8 +31,8 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       # Trusts X-Forwarded-For/Proto only from this compose network (the nginx `web` service) —

@@ -1,16 +1,16 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: dao
+      POSTGRES_PASSWORD: 12345aA@
       POSTGRES_DB: StarterKit_api
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - starterkit-postgres-data:/var/lib/postgresql/data
+      - starterkit-postgres-data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U dao"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -20,6 +20,15 @@ services:
     ports:
       - "1025:1025" # SMTP
       - "8025:8025" # Web UI
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    command: server -s3 -filer -dir=/data
+    ports:
+      - "8333:8333" # S3 gateway
+      - "8888:8888" # Filer HTTP
+    volumes:
+      - starterkit-seaweedfs-data:/data
 
   prometheus:
     image: prom/prometheus:latest
@@ -47,3 +56,4 @@ services:
 
 volumes:
   starterkit-postgres-data:
+  starterkit-seaweedfs-data:

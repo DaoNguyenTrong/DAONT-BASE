@@ -35,10 +35,17 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
         builder.Property(token => token.LoginAt)
             .IsRequired();
 
+        builder.Property(token => token.FamilyId)
+            .IsRequired();
+
         builder.HasIndex(token => token.TokenHash)
             .IsUnique();
 
         builder.HasIndex(token => token.AccountId);
+
+        // Reuse detection and concurrent-rotation lookups query the family scoped
+        // to one account (see AuthService.RefreshTokenAsync).
+        builder.HasIndex(token => new { token.AccountId, token.FamilyId });
 
         builder.HasOne<Account>()
             .WithMany()

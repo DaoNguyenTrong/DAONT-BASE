@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Mappings;
@@ -15,7 +16,8 @@ public sealed class RegistrationService(
     IPasswordHasher passwordHasher,
     IEmailSender emailSender,
     IOptions<EmailSettings> emailOptions,
-    ITokenIssuer tokenIssuer) : IRegistrationService
+    ITokenIssuer tokenIssuer,
+    ILogger<RegistrationService> logger) : IRegistrationService
 {
     private readonly EmailSettings emailSettings = emailOptions.Value;
 
@@ -68,7 +70,7 @@ public sealed class RegistrationService(
 
         Guid? organizationId = await tokenIssuer.ResolveDefaultOrganizationIdAsync(account.Id, cancellationToken);
 
-        return await tokenIssuer.IssueTokensAsync(account, organizationId, deviceInfo, ipAddress, false, DateTime.UtcNow, cancellationToken);
+        return await tokenIssuer.IssueTokensAsync(account, organizationId, deviceInfo, ipAddress, false, DateTime.UtcNow, familyId: null, cancellationToken);
     }
 
     public async Task ResendVerificationEmailAsync(
@@ -124,7 +126,11 @@ public sealed class RegistrationService(
         await unitOfWork.Repository<EmailVerificationToken, Guid>().AddAsync(token, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        string verificationUrl = $"{emailSettings.FrontendBaseUrl.TrimEnd('/')}/verify-email?token={rawToken}";
+        // Frontend router uses createWebHashHistory() (hash-based routing) — a plain path URL
+        // resolves to "/" before vue-router ever sees "verify-email", tripping the home route's
+        // requiresAuth guard and bouncing the (not-yet-authenticated) user to /login instead of
+        // VerifyEmailView. The route must live after "#/" so vue-router picks it up.
+        string verificationUrl = $"{emailSettings.FrontendBaseUrl.TrimEnd('/')}/#/verify-email?token={rawToken}";
         string body = $"""
             <p>Xin chào {account.Name},</p>
             <p>Nhấn vào liên kết bên dưới để xác thực địa chỉ email của bạn:</p>
@@ -132,7 +138,18 @@ public sealed class RegistrationService(
             <p>Liên kết có hiệu lực trong {emailSettings.VerificationTokenExpiryHours} giờ.</p>
             """;
 
-        await emailSender.SendAsync(account.Email, "Xác thực địa chỉ email", body, cancellationToken);
+        try
+        {
+            await emailSender.SendAsync(account.Email, "Xác thực địa chỉ email", body, cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            // Account + token đã commit — lỗi gửi mail (SMTP chưa cấu hình/đang lỗi) không được
+            // biến 1 RegisterAsync/ResendVerificationEmailAsync thành công thành lỗi phía caller,
+            // nếu không user sẽ bị kẹt: retry đăng ký cùng username thì gặp 409 "đã tồn tại" mà
+            // không có lối thoát. User dùng "Gửi lại email xác thực" để thử lại sau khi SMTP ổn.
+            logger.LogError(exception, "Failed to send verification email to account {AccountId}", account.Id);
+        }
     }
 
     private static string GenerateRawToken()
