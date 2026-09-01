@@ -21,16 +21,15 @@ public static class AuthTestHelper
     // whatever SecretKey is actually configured (appsettings.json/env), instead of a hardcoded
     // literal that silently drifts from a developer's local appsettings.json and breaks every
     // authenticated test with 401s.
-    private static JwtSettings JwtSettings = new()
-    {
-        SecretKey = "change-this-development-secret-key-32-chars-minimum",
-        Issuer = "StarterKit-Auth",
-        Audiences = ["StarterKit-API", "StarterKit-Web", "StarterKit-Mobile"],
-        AccessTokenExpiryMinutes = 15,
-        RefreshTokenExpiryDays = 7
-    };
+    private static JwtSettings? configuredJwtSettings;
 
-    public static void ConfigureJwtSettings(JwtSettings jwtSettings) => JwtSettings = jwtSettings;
+    private static JwtSettings JwtSettings => configuredJwtSettings
+        ?? throw new InvalidOperationException(
+            $"{nameof(AuthTestHelper)} is not configured. Every test class that mints tokens must be in "
+            + $"[Collection(nameof(ApiCollection))] so {nameof(ApiFactoryFixture)} can call "
+            + $"{nameof(ConfigureJwtSettings)} with the host's resolved IOptions<JwtSettings>.");
+
+    public static void ConfigureJwtSettings(JwtSettings jwtSettings) => configuredJwtSettings = jwtSettings;
 
     public static async Task<Account> SeedConfirmedAccountAsync(
         AppDbContext context,

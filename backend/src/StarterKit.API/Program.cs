@@ -136,6 +136,15 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(rateLimiterSettings.AuthWindowMinutes),
                 QueueLimit = 0
             }));
+    options.AddPolicy("auth-refresh", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimiterSettings.RefreshPermitLimit,
+                Window = TimeSpan.FromMinutes(rateLimiterSettings.RefreshWindowMinutes),
+                QueueLimit = 0
+            }));
 });
 builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);

@@ -20,9 +20,30 @@ export async function renderComponent<C extends Component>(
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: '/', name: 'home', component: { template: '<div />' } },
-      { path: '/login', name: 'login', component: { template: '<div />' } },
-      { path: '/register', name: 'register', component: { template: '<div />' } },
+      {
+        path: '/',
+        name: 'home',
+        component: { template: '<div />' },
+        meta: { requiresAuth: true },
+      },
+      {
+        path: '/organizations',
+        name: 'organizations',
+        component: { template: '<div />' },
+        meta: { requiresAuth: true },
+      },
+      {
+        path: '/login',
+        name: 'login',
+        component: { template: '<div />' },
+        meta: { guestOnly: true },
+      },
+      {
+        path: '/register',
+        name: 'register',
+        component: { template: '<div />' },
+        meta: { guestOnly: true },
+      },
       { path: '/verify-email', name: 'verify-email', component: { template: '<div />' } },
     ],
   })

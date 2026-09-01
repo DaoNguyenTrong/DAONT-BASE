@@ -5,6 +5,7 @@ import GoogleLoginButton from '@/components/GoogleLoginButton.vue'
 import ResendVerificationForm from '@/components/ResendVerificationForm.vue'
 import LoginView from '@/views/LoginView.vue'
 import { server } from '../helpers/msw/server'
+import { makeAuthResponse } from '../helpers/msw/fixtures'
 import { renderComponent } from '../helpers/render'
 
 function problemResponse(body: Record<string, unknown>, status: number) {
@@ -70,6 +71,30 @@ describe('LoginView', () => {
 
     expect(wrapper.text()).toContain('Please verify your email address before signing in.')
     expect(wrapper.findComponent(ResendVerificationForm).exists()).toBe(true)
+  })
+
+  it('returns the user to a safe redirect destination after signing in', async () => {
+    server.use(http.post('*/api/auth/login', () => HttpResponse.json(makeAuthResponse())))
+
+    const { wrapper, router } = await renderComponent(LoginView, {
+      initialRoute: '/login?redirect=/organizations',
+    })
+    await submitLogin(wrapper)
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/organizations')
+  })
+
+  it('ignores an off-origin redirect and lands on home after signing in', async () => {
+    server.use(http.post('*/api/auth/login', () => HttpResponse.json(makeAuthResponse())))
+
+    const { wrapper, router } = await renderComponent(LoginView, {
+      initialRoute: '/login?redirect=https://evil.example/phish',
+    })
+    await submitLogin(wrapper)
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('home')
   })
 
   it('clears the resend form on a fresh submit attempt', async () => {

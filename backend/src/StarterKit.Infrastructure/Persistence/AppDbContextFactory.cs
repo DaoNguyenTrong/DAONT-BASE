@@ -25,7 +25,7 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 
         string connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? Environment.GetEnvironmentVariable("FEEDBACKHUB_DESIGN_TIME_CONNECTION")
-            ?? "Host=localhost;Port=5432;Database=StarterKit_design;Username=postgres;Password=postgres";
+            ?? "Host=localhost;Port=5433;Database=StarterKit_design;Username=postgres;Password=postgres";
 
         DbContextOptionsBuilder<AppDbContext> optionsBuilder = new();
         optionsBuilder.UseNpgsql(connectionString);

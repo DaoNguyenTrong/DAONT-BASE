@@ -1,7 +1,8 @@
 <script setup lang="ts">
 const { t, locale } = useI18n()
 const version = __APP_VERSION__
-const { status, apiVersion, apiBuildTimestamp } = useHealthStatus()
+// Polling is owned by App.vue (app-wide); the footer only reflects the shared state.
+const { status, apiVersion, apiBuildTimestamp } = storeToRefs(useHealthStore())
 
 const formattedBuildTime = computed(() => {
   if (!apiBuildTimestamp.value) return null
@@ -16,7 +17,7 @@ const formattedBuildTime = computed(() => {
 
 const statusDotClass = computed(() => {
   if (status.value === 'online') return 'bg-green-500'
-  if (status.value === 'offline') return 'bg-red-500'
+  if (status.value === 'offline' || status.value === 'error') return 'bg-red-500'
   return 'bg-surface-400 dark:bg-surface-500'
 })
 </script>

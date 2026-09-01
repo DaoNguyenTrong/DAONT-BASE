@@ -6,7 +6,7 @@ namespace StarterKit.Infrastructure.Tests.TestSupport;
 
 public sealed class PostgresContainerFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer container = new PostgreSqlBuilder("postgres:16-alpine")
+    private readonly PostgreSqlContainer container = new PostgreSqlBuilder("postgres:18-alpine")
         .WithDatabase("starterkit_infra_test")
         .WithUsername("postgres")
         .WithPassword("postgres")
