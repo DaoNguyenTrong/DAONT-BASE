@@ -1,4 +1,12 @@
 {
+  "extraKnownMarketplaces": {
+    "daont-claude-plugins": {
+      "source": { "source": "github", "repo": "DaoNguyenTrong/daont-claude-plugins" }
+    }
+  },
+  "enabledPlugins": {
+    "release-kit@daont-claude-plugins": true
+  },
   "hooks": {
     "UserPromptSubmit": [
       {

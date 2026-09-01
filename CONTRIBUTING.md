@@ -17,12 +17,12 @@ feature       ●────●
 | Branch | Purpose |
 |--------|---------|
 | `main` | Production, only receives merges via PR (no direct commits) |
-| `release/vX.Y.Z` | QA stabilization branch for a release — cut from `dev`, merges only into `main`, does **not** back-merge to `dev` |
+| `release/vX.Y.Z` | QA stabilization branch for a release — cut from `dev`, merges into `main`; `main` is reconciled back into `dev` after the release ships |
 | `dev` | Integration/staging |
 | `feature/*` | New features, branched from `dev` |
 | `fix/*` | Bug fixes — from `dev` for in-progress work, or from `release/vX.Y.Z` for bugs QA finds during stabilization |
 | `test/*` | Optional — for large/independent e2e specs added on `release/vX.Y.Z` that need separate review |
-| `hotfix/*` | Emergency production fixes — from `main`, merges to `main`, not back-merged into `dev` |
+| `hotfix/*` | Emergency production fixes — from `main`, merges to `main`; `main` is reconciled back into `dev` afterward |
 
 ## Development Flow
 
@@ -71,42 +71,37 @@ When your PR is merged, add entry to `CHANGELOG.md` under `[Unreleased]`:
 
 ## Release Process
 
-Two phases, handled by the `git-release` skill (`/git-release`) — cutting a release and shipping it are separate steps, since QA stabilization on `release/vX.Y.Z` happens in between and can take any amount of time.
+Two phases, handled by the `git-release` skill (`/git-release`, from the `release-kit` plugin — project bindings live in `.claude/release-kit.json`). Cutting a release and shipping it are separate steps, since QA stabilization on `release/vX.Y.Z` happens in between and can take any amount of time. Run `/git-release`; it detects the phase from the current branch.
 
-### Phase 1 — Cut the release branch (on `dev`)
+### Phase 1 — Cut (on `dev`)
 
 1. Ensure all features for this release are merged to `dev`.
-2. Finalize `CHANGELOG.md` on `dev`: rename `## [Unreleased]` to `## [vX.Y.Z] - YYYY-MM-DD`, add a fresh empty `## [Unreleased]` above it. Commit and push to `dev`.
-   **This entry is never edited again on any branch** — the later `release/vX.Y.Z → main` merge relies on that to stay conflict-free.
-3. Cut `release/vX.Y.Z` from `dev` and push it.
+2. `/git-release` on `dev` — the skill renames `## [Unreleased]` to `## [vX.Y.Z] - YYYY-MM-DD` and adds a fresh empty `## [Unreleased]` above it, commits and pushes to `dev`, then cuts and pushes `release/vX.Y.Z` from that commit.
+   **That `## [vX.Y.Z]` entry is never edited again on the release branch** — it keeps the `release/vX.Y.Z → main` merge clean.
 
 QA stabilizes on `release/vX.Y.Z` from here. Bugs found during stabilization go through `fix/*` branched off `release/vX.Y.Z` and merged back into it via PR.
 
 ### Phase 2 — Ship (on `release/vX.Y.Z`)
 
-4. Once QA signs off, run the full test suite on `release/vX.Y.Z` — this is the mandatory gate (a `fix/*` PR may have landed since the cut, so this can't be skipped even if Phase 1 already tested clean).
-5. Create PR: `release/vX.Y.Z` → `main`. After merge, tag `origin/main` (never the release branch):
+3. `/git-release` on `release/vX.Y.Z` — the skill pulls any hotfix that reached `main` during stabilization, runs the mandatory test suite (a `fix/*` PR may have landed since the cut, so this can't be skipped), opens and merges the `release/vX.Y.Z` → `main` PR, then tags `origin/main`. GitHub Actions creates the release from the tag.
 
-```bash
-git checkout main
-git pull origin main
-git tag v1.x.0 -m "Release 1.x.0"
-git push origin v1.x.0
-```
+### Phase 3 — Reconcile (on `dev`)
 
-6. GitHub Actions creates the release automatically from the tag.
+4. After shipping, merge `main` back into `dev` so the stabilization fixes and the tag reach `dev`:
 
-`release/vX.Y.Z` is **not** back-merged into `dev` afterward — see the branch table above.
+   ```bash
+   git checkout dev && git pull && git merge origin/main && git push
+   ```
+
+   The merge is clean: `main`'s changes since the cut are `fix/*` commits and their bullets *inside* the frozen `## [vX.Y.Z]` section, while `dev`'s changes are new `## [Unreleased]` entries *above* it — two disjoint regions.
 
 ## Hotfix Process
 
 For an emergency production fix that can't wait for `dev`'s next `[Unreleased]` to ship:
 
 1. Branch `hotfix/vX.Y.Z` from `main`, fix, test, commit.
-2. Update `CHANGELOG.md` on the hotfix branch: insert the new `## [vX.Y.Z]` section directly above the previous release entry. **Never** touch `dev`'s `[Unreleased]` section from a hotfix branch.
-3. PR `hotfix/vX.Y.Z` → `main`, merge, tag `origin/main` the same way as a standard release.
-
-Not back-merged into `dev` — if `dev` needs the fix too, cherry-pick or reimplement it there separately.
+2. `/git-release` on the hotfix branch handles the rest: it inserts the new `## [vX.Y.Z]` section directly above the previous release entry (**never** touching `dev`'s `[Unreleased]`), runs the mandatory test suite, PRs `hotfix/vX.Y.Z` → `main`, merges, and tags `origin/main`.
+3. Reconcile: merge `main` back into `dev` (`git checkout dev && git pull && git merge origin/main && git push`) so the fix and its CHANGELOG section reach `dev`. Keep the hotfix's `## [vX.Y.Z]` section above the previous release; leave `dev`'s `## [Unreleased]` untouched.
 
 ## Versioning (SemVer)
 
