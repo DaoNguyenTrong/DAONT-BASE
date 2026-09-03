@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.5.1] - 2026-09-03
+
+### Changed
+
+- Release and hotfix workflows now run from the shared `release-kit` plugin (`/git-release`) instead of a project-local skill copy, with bindings in `.claude/release-kit.json`. After a release or hotfix ships, `main` is now reconciled back into `dev` rather than left un-merged.
+
 ## [v1.5.0] - 2026-09-01
 
 ### Added
