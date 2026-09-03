@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.5.2] - 2026-09-03
+
+### Changed
+
+- The release workflow runs backend tests via `backend/scripts/test.sh`, matching the canonical local test command instead of duplicating a raw `dotnet test` invocation.
+
 ## [v1.5.1] - 2026-09-03
 
 ### Changed
