@@ -28,7 +28,7 @@ jobs:
         run: cp backend/src/StarterKit.API/appsettings.Example.json backend/src/StarterKit.API/appsettings.json
 
       - name: Test (backend)
-        run: dotnet test backend/StarterKit.sln --no-restore -m:1
+        run: backend/scripts/test.sh
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
