@@ -83,7 +83,7 @@ QA stabilizes on `release/vX.Y.Z` from here. Bugs found during stabilization go 
 
 ### Phase 2 — Ship (on `release/vX.Y.Z`)
 
-3. `/git-release` on `release/vX.Y.Z` — the skill pulls any hotfix that reached `main` during stabilization, runs the mandatory test suite (a `fix/*` PR may have landed since the cut, so this can't be skipped), opens and merges the `release/vX.Y.Z` → `main` PR, then tags `origin/main`. GitHub Actions creates the release from the tag.
+3. `/git-release` on `release/vX.Y.Z` — the skill pulls any hotfix that reached `main` during stabilization, runs the mandatory test suite (a `fix/*` PR may have landed since the cut, so this can't be skipped), opens and merges the `release/vX.Y.Z` → `main` PR, then tags `origin/main`. The tag's pipeline (`.github/workflows/release.yml`, or `.gitlab-ci.yml` on GitLab) runs the tests, builds and pushes the production images versioned from the tag, then creates the release. Protect `v*` tags so only maintainers can push one.
 
 ### Phase 3 — Reconcile (on `dev`)
 

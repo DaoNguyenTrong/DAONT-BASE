@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Resources;
+using StarterKit.Application.Services.Accounts;
 using StarterKit.Domain.Entities;
 using StarterKit.Domain.Exceptions;
 using StarterKit.Domain.Interfaces;
@@ -15,9 +16,12 @@ public sealed class AuthService(
     ITenantAccessService tenantAccessService,
     IPasswordHasher passwordHasher,
     IEnumerable<IExternalAuthProvider> externalAuthProviders,
+    IPasswordAttemptStore passwordAttemptStore,
+    IOptions<LoginLockoutSettings> lockoutOptions,
     IOptions<JwtSettings> jwtOptions) : IAuthService
 {
     private readonly JwtSettings jwtSettings = jwtOptions.Value;
+    private readonly LoginLockoutSettings lockoutSettings = lockoutOptions.Value;
 
     public async Task<AuthResult> LoginAsync(
         LoginRequest request,
@@ -25,16 +29,53 @@ public sealed class AuthService(
         string? ipAddress,
         CancellationToken cancellationToken)
     {
+        string username = Account.NormalizeUsername(request.Username);
         Account account = await unitOfWork.Repository<Account, Guid>()
-            .FirstOrDefaultAsync(account => account.Username == request.Username, cancellationToken)
+            .FirstOrDefaultAsync(account => account.Username == username, cancellationToken)
             ?? throw new UnauthorizedException(ApplicationMessages.InvalidUsernameOrPassword);
 
-        if (!account.Status ||
-            string.IsNullOrWhiteSpace(account.PasswordHash) ||
-            !passwordHasher.Verify(request.Password, account.PasswordHash))
+        // A deactivated or password-less account has no password to guess: the generic message, nothing
+        // counted — a lock message would say more about it than "invalid" does.
+        if (!account.Status || string.IsNullOrWhiteSpace(account.PasswordHash))
         {
             throw new UnauthorizedException(ApplicationMessages.InvalidUsernameOrPassword);
         }
+
+        DateTime utcNow = DateTime.UtcNow;
+
+        // Reserved before the password is checked, so parallel guesses can't all slip in under the limit.
+        // The lock is reported before the check too: refusing only a correct password would tell a guesser
+        // which guess was right. It reveals no more than /register's "username taken" already does.
+        int? attempt = await passwordAttemptStore.ReserveAttemptAsync(
+            PasswordAttemptPurpose.Login,
+            account.Id,
+            utcNow,
+            TimeSpan.FromMinutes(lockoutSettings.WindowMinutes),
+            cancellationToken);
+        if (attempt is not { } attemptNumber || attemptNumber > lockoutSettings.MaxFailedAttempts)
+        {
+            throw new UnauthorizedException(ApplicationMessages.AccountTemporarilyLocked);
+        }
+
+        if (!passwordHasher.Verify(request.Password, account.PasswordHash))
+        {
+            if (attemptNumber == lockoutSettings.MaxFailedAttempts)
+            {
+                // Not the request's token: a guesser who drops the connection during the hash check would
+                // otherwise cancel the lock write and keep guessing once the window rolls over.
+                await passwordAttemptStore.LockAsync(
+                    PasswordAttemptPurpose.Login,
+                    account.Id,
+                    utcNow.AddMinutes(lockoutSettings.LockDurationMinutes),
+                    CancellationToken.None);
+            }
+
+            throw new UnauthorizedException(ApplicationMessages.InvalidUsernameOrPassword);
+        }
+
+        // The password is right even if the account can't sign in yet (unconfirmed email) — counting on
+        // would lock it out on its own.
+        await passwordAttemptStore.ClearAsync(PasswordAttemptPurpose.Login, account.Id, cancellationToken);
 
         if (!account.EmailConfirmed)
         {
@@ -195,8 +236,9 @@ public sealed class AuthService(
         }
         else
         {
+            string email = Account.NormalizeEmail(userInfo.Email);
             Account? matchedAccount = await accountRepository.FirstOrDefaultAsync(
-                a => a.Email == userInfo.Email, cancellationToken);
+                a => a.Email == email, cancellationToken);
 
             if (matchedAccount is not null)
             {
@@ -215,8 +257,7 @@ public sealed class AuthService(
                 account = Account.Create(new AccountParams(
                     Name: string.IsNullOrWhiteSpace(userInfo.Name) ? username : userInfo.Name,
                     Username: username,
-                    Email: userInfo.Email,
-                    Status: true));
+                    Email: email));
                 account.ConfirmEmail();
 
                 await accountRepository.AddAsync(account, cancellationToken);
@@ -226,6 +267,9 @@ public sealed class AuthService(
                 account.Id, authProvider.ProviderName, userInfo.ProviderUserId, userInfo.Email));
             await externalLoginRepository.AddAsync(login, cancellationToken);
         }
+
+        // The lock only defends against password guessing; the provider has just proven identity.
+        await passwordAttemptStore.ClearAsync(PasswordAttemptPurpose.Login, account.Id, cancellationToken);
 
         Guid? organizationId = await tokenIssuer.ResolveDefaultOrganizationIdAsync(account.Id, cancellationToken);
 
@@ -301,7 +345,7 @@ public sealed class AuthService(
         string email,
         CancellationToken cancellationToken)
     {
-        string baseUsername = email.Split('@')[0];
+        string baseUsername = Account.NormalizeUsername(email.Split('@')[0]);
         string candidate = baseUsername;
         int suffix = 0;
 

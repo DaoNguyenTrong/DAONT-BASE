@@ -20,6 +20,8 @@ describe('MicrosoftLoginButton', () => {
   })
 
   it('renders nothing and never constructs MSAL when no client ID is configured', async () => {
+    // Explicitly empty: a developer's real frontend/.env would otherwise configure it.
+    vi.stubEnv('VITE_MICROSOFT_CLIENT_ID', '')
     const { wrapper } = await renderComponent(MicrosoftLoginButton)
     await flushPromises()
 

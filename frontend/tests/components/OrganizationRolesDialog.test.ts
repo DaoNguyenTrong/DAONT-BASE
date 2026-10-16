@@ -5,32 +5,14 @@ import OrganizationRolesDialog from '@/components/OrganizationRolesDialog.vue'
 import type { OrganizationDto, PermissionDto, RoleDto } from '@/api/types'
 import { server } from '../helpers/msw/server'
 import { renderComponent } from '../helpers/render'
+import { makeOrganization, makeRole } from '../factories/organization'
+import en from '@/locales/en'
 
 const mockOpen = vi.hoisted(() => vi.fn())
 
 vi.mock('@/composables/use-app-dialog-naive', () => ({
   useAppDialogNaive: () => ({ open: mockOpen }),
 }))
-
-function makeOrganization(overrides: Partial<OrganizationDto> = {}): OrganizationDto {
-  return {
-    id: 'org-1',
-    name: 'Acme Inc',
-    slug: 'acme',
-    status: true,
-    myRoleNames: ['Owner'],
-    myPermissionCodes: [
-      'organizations.manage',
-      'organizations.members.manage',
-      'organizations.roles.manage',
-    ],
-    ...overrides,
-  }
-}
-
-function makeRole(overrides: Partial<RoleDto> = {}): RoleDto {
-  return { id: 'role-owner', name: 'Owner', isSystem: true, permissionCodes: [], ...overrides }
-}
 
 function mockRolesEndpoints(
   organizationId: string,
@@ -65,8 +47,10 @@ describe('OrganizationRolesDialog', () => {
     const { wrapper } = await openDialog(organization)
 
     expect(wrapper.text()).toContain('Owner')
-    expect(wrapper.text()).toContain('System')
-    expect(wrapper.findAll('button[aria-label="Edit role"]')).toHaveLength(0)
+    expect(wrapper.text()).toContain(en.organizations.roleSystemBadge)
+    expect(wrapper.findAll(`button[aria-label="${en.organizations.editRoleTitle}"]`)).toHaveLength(
+      0,
+    )
   })
 
   it('shows edit/delete buttons for a custom role when the caller can manage roles', async () => {
@@ -76,7 +60,9 @@ describe('OrganizationRolesDialog', () => {
 
     const { wrapper } = await openDialog(organization)
 
-    expect(wrapper.find('button[aria-label="Edit role"]').exists()).toBe(true)
+    expect(wrapper.find(`button[aria-label="${en.organizations.editRoleTitle}"]`).exists()).toBe(
+      true,
+    )
     expect(
       wrapper
         .find(
@@ -95,8 +81,10 @@ describe('OrganizationRolesDialog', () => {
 
     const { wrapper } = await openDialog(organization)
 
-    expect(wrapper.find('button[aria-label="Edit role"]').exists()).toBe(false)
-    expect(wrapper.text()).not.toContain('Create role')
+    expect(wrapper.find(`button[aria-label="${en.organizations.editRoleTitle}"]`).exists()).toBe(
+      false,
+    )
+    expect(wrapper.text()).not.toContain(en.organizations.createRole)
   })
 
   it('opens the create-role dialog and creates a role on confirm', async () => {
@@ -120,7 +108,9 @@ describe('OrganizationRolesDialog', () => {
 
     const { wrapper } = await openDialog(organization)
 
-    const createButton = wrapper.findAll('button').find((b) => b.text().includes('Create role'))
+    const createButton = wrapper
+      .findAll('button')
+      .find((b) => b.text().includes(en.organizations.createRole))
     expect(createButton).toBeDefined()
     await createButton!.trigger('click')
     expect(mockOpen).toHaveBeenCalledTimes(1)

@@ -56,6 +56,39 @@ public sealed class NotificationsControllerTests(ApiFactoryFixture fixture) : IA
         Assert.Equal(0, result.TotalCount);
     }
 
+    [Theory]
+    [InlineData("", 2)]
+    [InlineData("?readState=Unread", 1)]
+    [InlineData("?readState=read", 1)]
+    public async Task GetAll_FiltersByReadState(string query, int expected)
+    {
+        (HttpClient client, Account caller) = await CreateAuthedClientAsync();
+        await using (AppDbContext context = CreateDbContext())
+        {
+            Notification read = Notification.Create(new NotificationParams(caller.Id, NotificationTypes.OrganizationMemberAdded));
+            read.MarkRead();
+            context.Notifications.AddRange(
+                read, Notification.Create(new NotificationParams(caller.Id, NotificationTypes.OrganizationMemberAdded)));
+            await context.SaveChangesAsync();
+        }
+
+        HttpResponseMessage response = await client.GetAsync($"/api/notifications{query}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        PagedResult<NotificationDto>? result = await response.Content.ReadJsonAsync<PagedResult<NotificationDto>>();
+        Assert.Equal(expected, result!.TotalCount);
+    }
+
+    [Fact]
+    public async Task GetAll_UnknownReadState_ReturnsBadRequest()
+    {
+        (HttpClient client, _) = await CreateAuthedClientAsync();
+
+        HttpResponseMessage response = await client.GetAsync("/api/notifications?readState=archived");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     [Fact]
     public async Task AddOrganizationMember_NotifiesTargetAccount()
     {

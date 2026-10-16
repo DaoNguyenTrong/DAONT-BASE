@@ -3,6 +3,7 @@ import { http, HttpResponse } from 'msw'
 import NotificationBell from '@/components/NotificationBell.vue'
 import { renderComponent } from '../helpers/render'
 import { server } from '../../tests/helpers/msw/server'
+import en from '@/locales/en'
 
 function emptyList() {
   return HttpResponse.json({
@@ -37,24 +38,17 @@ function listWithOne() {
 }
 
 describe('NotificationBell', () => {
-  it('hides the badge count when there are no unread notifications', async () => {
+  it.each([
+    ['hides the badge count when there are no unread notifications', 0, false],
+    ['shows the badge count when there are unread notifications', 5, true],
+  ])('%s', async (_title, unreadCount, badgeShown) => {
     server.use(http.get('*/api/notifications', emptyList))
     const { wrapper } = await renderComponent(NotificationBell, {
-      initialState: { notifications: { unreadCount: 0 } },
+      initialState: { notifications: { unreadCount } },
       global: { stubs: { teleport: true } },
     })
 
-    expect(wrapper.text()).not.toContain('5')
-  })
-
-  it('shows the badge count when there are unread notifications', async () => {
-    server.use(http.get('*/api/notifications', emptyList))
-    const { wrapper } = await renderComponent(NotificationBell, {
-      initialState: { notifications: { unreadCount: 5 } },
-      global: { stubs: { teleport: true } },
-    })
-
-    expect(wrapper.text()).toContain('5')
+    expect(wrapper.text().includes('5')).toBe(badgeShown)
   })
 
   it('shows the empty state when the list has no notifications', async () => {
@@ -67,7 +61,7 @@ describe('NotificationBell', () => {
     await wrapper.find('button').trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('No notifications yet.')
+    expect(wrapper.text()).toContain(en.notifications.empty)
   })
 
   it('renders the translated notification text for a known type', async () => {
@@ -101,7 +95,9 @@ describe('NotificationBell', () => {
     await wrapper.find('button').trigger('click')
     await flushPromises()
 
-    const markAllButton = wrapper.findAll('button').find((b) => b.text().includes('Mark all as read'))
+    const markAllButton = wrapper
+      .findAll('button')
+      .find((b) => b.text().includes(en.notifications.markAllRead))
     await markAllButton?.trigger('click')
     await flushPromises()
 

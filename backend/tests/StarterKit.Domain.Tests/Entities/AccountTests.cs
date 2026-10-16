@@ -13,8 +13,7 @@ public class AccountTests
             Email: "nva@example.com",
             Phone: null,
             Position: null,
-            Address: null,
-            Status: true);
+            Address: null);
     }
 
     [Fact]
@@ -131,13 +130,69 @@ public class AccountTests
     }
 
     [Fact]
-    public void Create_WithStatusFalse_AssignsStatusFalse()
+    public void Update_NeverChangesStatus()
     {
-        AccountParams p = ValidParams() with { Status = false };
+        // AccountParams carries no Status: a profile edit can't silently (re)activate an account by
+        // forgetting to copy the current value through.
+        Account account = Account.Create(ValidParams());
 
-        Account account = Account.Create(p);
+        account.Update(ValidParams() with { Name = "Renamed" });
 
+        Assert.True(account.Status);
+    }
+
+    [Fact]
+    public void Deactivate_ThenActivate_TogglesStatus()
+    {
+        Account account = Account.Create(ValidParams());
+
+        account.Deactivate();
         Assert.False(account.Status);
+
+        account.Activate();
+        Assert.True(account.Status);
+    }
+
+    [Fact]
+    public void Create_LowerCasesUsernameAndEmail()
+    {
+        Account account = Account.Create(ValidParams() with { Username = " NvA ", Email = " NVA@Example.COM " });
+
+        Assert.Equal("nva", account.Username);
+        Assert.Equal("nva@example.com", account.Email);
+    }
+
+    [Theory]
+    [InlineData("Alice", "alice")]
+    [InlineData("  BOB  ", "bob")]
+    [InlineData("carol", "carol")]
+    public void NormalizeUsername_TrimsAndLowerCases(string input, string expected)
+    {
+        Assert.Equal(expected, Account.NormalizeUsername(input));
+    }
+
+    [Theory]
+    [InlineData("A@X.com", "a@x.com")]
+    [InlineData(" a@x.com ", "a@x.com")]
+    public void NormalizeEmail_TrimsAndLowerCases(string input, string expected)
+    {
+        Assert.Equal(expected, Account.NormalizeEmail(input));
+    }
+
+    [Fact]
+    public void NormalizeUsername_UsesInvariantCulture()
+    {
+        // Turkish-I: culture-sensitive lower-casing would turn "I" into a dotless "ı" under tr-TR.
+        System.Globalization.CultureInfo previous = System.Globalization.CultureInfo.CurrentCulture;
+        System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("tr-TR");
+        try
+        {
+            Assert.Equal("ivan", Account.NormalizeUsername("IVAN"));
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = previous;
+        }
     }
 
     [Fact]

@@ -10,13 +10,14 @@ Both the backend API and the frontend UI support Vietnamese (`vi`, default) and 
 
 ## Backend Message Files
 
-| Type               | Location                                                              |
-|--------------------|-----------------------------------------------------------------------|
-| Validation errors  | `backend/src/StarterKit.Application/Resources/Messages.{vi,en}.resx`           |
-| Domain exceptions  | `backend/src/StarterKit.Domain/DomainMessages.cs`                               |
-| Application errors | `backend/src/StarterKit.Application/ApplicationMessages.cs`                     |
+| What                          | Location                                                                 |
+|-------------------------------|--------------------------------------------------------------------------|
+| Message text — `vi` (default) | `backend/src/StarterKit.Application/Resources/Messages.resx`             |
+| Message text — `en`           | `backend/src/StarterKit.Application/Resources/Messages.en.resx`          |
+| Domain exception keys         | `backend/src/StarterKit.Domain/Exceptions/DomainMessages.cs`             |
+| Application error keys        | `backend/src/StarterKit.Application/Resources/ApplicationMessages.cs`    |
 
-Validation messages are surfaced via DataAnnotations localization. Domain and application messages are string constants — add both `vi` and `en` entries whenever adding new messages.
+`DomainMessages`/`ApplicationMessages` hold only **keys** (`const string X = nameof(X)`); the text lives in the two `.resx` files (the neutral `Messages.resx` is Vietnamese — `vi` is the default request culture in `Program.cs`). Validation messages are surfaced via DataAnnotations localization from the same files. Whenever you add a key, add its entry to **both** `Messages.resx` and `Messages.en.resx`.
 
 ## Frontend Message Files
 
@@ -24,4 +25,4 @@ vue-i18n, locale files at `frontend/src/locales/{vi,en}.ts` (plus `naive-ui.ts` 
 
 ## Cross-Cutting Rule
 
-Backend messages (Resx/exception strings) reach the user only when the frontend chooses to render them verbatim (e.g. an error `detail` shown as-is) — that path bypasses vue-i18n entirely. When a backend message is meant to be **displayed** in the UI rather than just logged, prefer having the frontend map the error to its own `locales/{vi,en}.ts` key (e.g. by error code) instead of rendering the backend string directly — otherwise the UI ends up mixing two independently-maintained translation systems. If you add a backend message and it needs a UI-facing counterpart, add it to both `Messages.{vi,en}.resx` and `frontend/src/locales/{vi,en}.ts`.
+Backend messages (Resx/exception strings) reach the user only when the frontend chooses to render them verbatim (e.g. an error `detail` shown as-is) — that path bypasses vue-i18n entirely. When a backend message is meant to be **displayed** in the UI rather than just logged, prefer having the frontend map the error to its own `locales/{vi,en}.ts` key (e.g. by error code) instead of rendering the backend string directly — otherwise the UI ends up mixing two independently-maintained translation systems. If you add a backend message and it needs a UI-facing counterpart, add it to both `Messages.resx`/`Messages.en.resx` and `frontend/src/locales/{vi,en}.ts`.

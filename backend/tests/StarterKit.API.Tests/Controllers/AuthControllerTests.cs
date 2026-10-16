@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StarterKit.API.Tests.TestSupport;
@@ -15,6 +17,11 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
     public Task InitializeAsync() => Task.CompletedTask;
 
     public Task DisposeAsync() => fixture.ResetAsync();
+
+    private static string VerificationToken(SentEmail email) =>
+        Regex.Match(email.HtmlBody, "[?&]token=([A-Za-z0-9_-]+)") is { Success: true } match
+            ? match.Groups[1].Value
+            : throw new InvalidOperationException($"No verification token in the email to {email.ToEmail}.");
 
     private AppDbContext CreateDbContext() =>
         fixture.Services.CreateScope().ServiceProvider.GetRequiredService<AppDbContext>();
@@ -34,6 +41,39 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         Assert.Equal("nva-register@example.com", result!.Email);
     }
 
+    // The link in the email is the only place the raw token exists (the server keeps its hash), so this is the
+    // one test that proves what is mailed is what verify-email accepts.
+    [Fact]
+    public async Task Register_Valid_MailsAVerificationLinkWhoseTokenVerifiesTheAccount()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        RegisterRequest request = new("Nguyen Van B", "nvb-register", "nvb-register@example.com", "password123");
+
+        await client.PostAsJsonAsync("/api/auth/register", request);
+
+        SentEmail email = Assert.Single(fixture.Emails.Sent);
+        Assert.Equal("nvb-register@example.com", email.ToEmail);
+        HttpResponseMessage verify = await client.PostAsJsonAsync(
+            "/api/auth/verify-email", new VerifyEmailRequest(VerificationToken(email)));
+        Assert.Equal(HttpStatusCode.OK, verify.StatusCode);
+    }
+
+    // Anyone can register with someone else's address, so the name is attacker-controlled text inside a mail
+    // sent from our domain — it must arrive as text, never as markup (a phishing link, say).
+    [Fact]
+    public async Task Register_NameWithMarkup_IsMailedAsTextNotHtml()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        const string name = "<a href=\"https://evil.example\">Click</a>";
+
+        await client.PostAsJsonAsync(
+            "/api/auth/register", new RegisterRequest(name, "markup-name", "markup-name@example.com", "password123"));
+
+        SentEmail email = Assert.Single(fixture.Emails.Sent);
+        Assert.DoesNotContain("evil.example\">", email.HtmlBody);
+        Assert.Contains("&lt;a href=&quot;https://evil.example&quot;&gt;Click&lt;/a&gt;", email.HtmlBody);
+    }
+
     [Fact]
     public async Task Register_DuplicateUsername_ReturnsConflict()
     {
@@ -47,6 +87,24 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/register", request);
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Register_SameUsernameAndEmailInDifferentCase_ReturnsConflict()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        await using (AppDbContext context = CreateDbContext())
+        {
+            await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "case-user", email: "case-user@example.com");
+        }
+
+        HttpResponseMessage byUsername = await client.PostAsJsonAsync(
+            "/api/auth/register", new RegisterRequest("New Name", "CASE-User", "other@example.com", "password123"));
+        HttpResponseMessage byEmail = await client.PostAsJsonAsync(
+            "/api/auth/register", new RegisterRequest("New Name", "other-user", "Case-User@Example.COM", "password123"));
+
+        Assert.Equal(HttpStatusCode.Conflict, byUsername.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, byEmail.StatusCode);
     }
 
     [Fact]
@@ -69,7 +127,7 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         await using (AppDbContext context = CreateDbContext())
         {
             Account account = Account.Create(new AccountParams("Unconfirmed", "unconfirmed-user", "unconfirmed@example.com"));
-            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", 12));
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", FastPasswordHasher.WorkFactor));
             context.Accounts.Add(account);
             await context.SaveChangesAsync();
         }
@@ -88,7 +146,7 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         {
             Account account = await AuthTestHelper.SeedConfirmedAccountAsync(
                 context, username: "wrong-password-user", email: "wrong-password@example.com", passwordHash: null);
-            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", 12));
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", FastPasswordHasher.WorkFactor));
             context.Accounts.Update(account);
             await context.SaveChangesAsync();
         }
@@ -99,6 +157,56 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    // End to end through the real Postgres statements: after the allowed wrong passwords, even the right
+    // one is refused with the lock code until the lock runs out.
+    [Fact]
+    public async Task Login_AfterTooManyWrongPasswords_IsLockedEvenWithTheRightOne()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        await using (AppDbContext context = CreateDbContext())
+        {
+            Account account = await AuthTestHelper.SeedConfirmedAccountAsync(
+                context, username: "lockout-user", email: "lockout@example.com", passwordHash: null);
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", FastPasswordHasher.WorkFactor));
+            context.Accounts.Update(account);
+            await context.SaveChangesAsync();
+        }
+
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            HttpResponseMessage wrong = await client.PostAsJsonAsync(
+                "/api/auth/login", new LoginRequest("lockout-user", "totally-wrong"));
+            Assert.Equal("InvalidUsernameOrPassword", await ErrorCodeAsync(wrong));
+        }
+
+        HttpResponseMessage locked = await client.PostAsJsonAsync(
+            "/api/auth/login", new LoginRequest("lockout-user", "correct-password"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, locked.StatusCode);
+        Assert.Equal("AccountTemporarilyLocked", await ErrorCodeAsync(locked));
+    }
+
+    // Login only compares against the stored hash: an account whose password predates a stricter policy
+    // (here: shorter than today's minimum) must still be able to sign in, or a policy change locks it out.
+    [Fact]
+    public async Task Login_PasswordShorterThanTheCurrentPolicy_StillSignsIn()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        await using (AppDbContext context = CreateDbContext())
+        {
+            Account account = await AuthTestHelper.SeedConfirmedAccountAsync(
+                context, username: "legacy-password-user", email: "legacy-password@example.com", passwordHash: null);
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("short", FastPasswordHasher.WorkFactor));
+            context.Accounts.Update(account);
+            await context.SaveChangesAsync();
+        }
+
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/auth/login", new LoginRequest("legacy-password-user", "short"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     [Fact]
     public async Task Login_ValidCredentials_ReturnsTokensAndSetsCookies()
     {
@@ -107,7 +215,7 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         {
             Account account = await AuthTestHelper.SeedConfirmedAccountAsync(
                 context, username: "login-success-user", email: "login-success@example.com", passwordHash: null);
-            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", 12));
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", FastPasswordHasher.WorkFactor));
             context.Accounts.Update(account);
             await context.SaveChangesAsync();
         }
@@ -130,6 +238,25 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
     }
 
     // VerifyEmail
+
+    [Fact]
+    public async Task Login_UsernameInDifferentCaseAndPadded_Succeeds()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        await using (AppDbContext context = CreateDbContext())
+        {
+            Account account = await AuthTestHelper.SeedConfirmedAccountAsync(
+                context, username: "mixed-case-user", email: "mixed-case@example.com", passwordHash: null);
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", FastPasswordHasher.WorkFactor));
+            context.Accounts.Update(account);
+            await context.SaveChangesAsync();
+        }
+
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/auth/login", new LoginRequest(" Mixed-Case-USER ", "correct-password"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
 
     [Fact]
     public async Task VerifyEmail_ValidToken_ReturnsOkWithTokens()
@@ -176,6 +303,35 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
             "/api/auth/resend-verification", new ResendVerificationRequest("unknown-nobody@example.com"));
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    // Same 204 as a real pending account, and nothing mailed — the response must not reveal which emails exist.
+    [Fact]
+    public async Task ResendVerification_UnknownEmail_SendsNoEmail()
+    {
+        HttpClient client = fixture.CreateTestClient();
+
+        await client.PostAsJsonAsync(
+            "/api/auth/resend-verification", new ResendVerificationRequest("unknown-nobody@example.com"));
+
+        Assert.Empty(fixture.Emails.Sent);
+    }
+
+    [Fact]
+    public async Task ResendVerification_PendingAccount_MailsANewLinkThatVerifies()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        await client.PostAsJsonAsync(
+            "/api/auth/register", new RegisterRequest("Pending", "resend-pending", "resend-pending@example.com", "password123"));
+
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/auth/resend-verification", new ResendVerificationRequest("resend-pending@example.com"));
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(2, fixture.Emails.Sent.Count);
+        HttpResponseMessage verify = await client.PostAsJsonAsync(
+            "/api/auth/verify-email", new VerifyEmailRequest(VerificationToken(fixture.Emails.Sent[^1])));
+        Assert.Equal(HttpStatusCode.OK, verify.StatusCode);
     }
 
     [Fact]
@@ -393,6 +549,12 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         HttpResponseMessage response = await client.GetAsync("/api/permissions");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    private static async Task<string?> ErrorCodeAsync(HttpResponseMessage response)
+    {
+        using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return body.RootElement.TryGetProperty("code", out JsonElement code) ? code.GetString() : null;
     }
 
     private static string ComputeSha256(string input)

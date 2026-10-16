@@ -6,6 +6,7 @@ import VerifyEmailView from '@/views/VerifyEmailView.vue'
 import { makeAuthResponse } from '../helpers/msw/fixtures'
 import { server } from '../helpers/msw/server'
 import { renderComponent } from '../helpers/render'
+import en from '@/locales/en'
 
 function problemResponse(body: Record<string, unknown>, status: number) {
   return HttpResponse.json(body, {
@@ -27,7 +28,7 @@ describe('VerifyEmailView', () => {
     const { wrapper } = await renderComponent(VerifyEmailView, { initialRoute: '/verify-email' })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('This verification link is missing or malformed.')
+    expect(wrapper.text()).toContain(en.auth.verifyEmailMissingToken)
     expect(called).toBe(false)
   })
 
@@ -65,7 +66,7 @@ describe('VerifyEmailView', () => {
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('This verification link is invalid or has expired.')
+    expect(wrapper.text()).toContain(en.auth.verifyEmailInvalidToken)
     expect(wrapper.findComponent(ResendVerificationForm).exists()).toBe(true)
     expect(router.currentRoute.value.name).not.toBe('home')
   })
@@ -73,7 +74,10 @@ describe('VerifyEmailView', () => {
   it('shows the generic fallback message for an unrelated error', async () => {
     server.use(
       http.post('*/api/auth/verify-email', () =>
-        problemResponse({ status: 500, title: 'Internal Server Error', code: 'InternalServerError' }, 500),
+        problemResponse(
+          { status: 500, title: 'Internal Server Error', code: 'InternalServerError' },
+          500,
+        ),
       ),
     )
 
@@ -82,6 +86,6 @@ describe('VerifyEmailView', () => {
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Unable to verify your email right now. Please try again.')
+    expect(wrapper.text()).toContain(en.auth.verifyEmailFailed)
   })
 })

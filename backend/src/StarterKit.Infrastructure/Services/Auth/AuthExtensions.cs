@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using StarterKit.Application.Common.Authorization;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Infrastructure.Services.Auth;
@@ -29,7 +30,15 @@ internal static class AuthExtensions
         if (jwtSettings.Audiences.Length == 0)
             throw new InvalidOperationException("JwtSettings:Audiences must contain at least one audience.");
 
+        LoginLockoutSettings lockoutSettings = configuration.GetSection(nameof(LoginLockoutSettings)).Get<LoginLockoutSettings>()
+            ?? new LoginLockoutSettings();
+
+        if (lockoutSettings.MaxFailedAttempts <= 0 || lockoutSettings.WindowMinutes <= 0 || lockoutSettings.LockDurationMinutes <= 0)
+            throw new InvalidOperationException(
+                "LoginLockoutSettings:MaxFailedAttempts, WindowMinutes and LockDurationMinutes must all be positive.");
+
         services.Configure<JwtSettings>(configuration.GetSection(nameof(JwtSettings)));
+        services.Configure<LoginLockoutSettings>(configuration.GetSection(nameof(LoginLockoutSettings)));
         services.Configure<TenantAccessSettings>(configuration.GetSection(nameof(TenantAccessSettings)));
         services.Configure<PermissionResolverSettings>(configuration.GetSection(nameof(PermissionResolverSettings)));
         services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -64,7 +73,7 @@ internal static class AuthExtensions
                     OnMessageReceived = context =>
                     {
                         if (string.IsNullOrEmpty(context.Token) &&
-                            context.Request.Cookies.TryGetValue("access_token", out string? token))
+                            context.Request.Cookies.TryGetValue(AuthCookieSettings.AccessTokenCookieName, out string? token))
                         {
                             context.Token = token;
                         }

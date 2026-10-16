@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using StarterKit.Application.Common.Authorization;
 using StarterKit.Application.Common.Models;
 using StarterKit.Application.Services.Files;
-using StarterKit.Infrastructure.Services.Auth;
 
 namespace StarterKit.API.Controllers;
 

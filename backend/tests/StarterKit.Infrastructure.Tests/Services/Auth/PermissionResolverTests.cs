@@ -11,7 +11,7 @@ using StarterKit.Infrastructure.Tests.TestSupport;
 
 namespace StarterKit.Infrastructure.Tests.Services.Auth;
 
-[Collection(nameof(PostgresCollection))]
+[Collection(nameof(PostgresCollectionB))]
 public sealed class PermissionResolverTests(PostgresContainerFixture fixture) : IAsyncLifetime
 {
     private AppDbContext context = null!;

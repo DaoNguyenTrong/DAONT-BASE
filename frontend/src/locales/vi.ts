@@ -56,6 +56,8 @@ const vi: LocaleSchema = {
     usernameRequired: 'Vui lòng nhập tên đăng nhập.',
     passwordRequired: 'Vui lòng nhập mật khẩu.',
     invalidCredentials: 'Tên đăng nhập hoặc mật khẩu không đúng.',
+    accountTemporarilyLocked:
+      'Tài khoản tạm thời bị khoá do đăng nhập sai nhiều lần. Vui lòng thử lại sau ít phút.',
     loginFailed: 'Không thể đăng nhập lúc này. Vui lòng thử lại.',
     logoutConfirmMessage: 'Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc này không?',
     logoutFailed:
@@ -70,7 +72,7 @@ const vi: LocaleSchema = {
     resendVerificationFailed: 'Không thể gửi lại email xác thực lúc này. Vui lòng thử lại.',
     nameRequired: 'Vui lòng nhập họ tên.',
     emailInvalid: 'Địa chỉ email không hợp lệ.',
-    passwordTooShort: 'Mật khẩu phải có ít nhất 8 ký tự.',
+    passwordTooShort: 'Mật khẩu phải có ít nhất {min} ký tự.',
     usernameAlreadyExists: 'Tên đăng nhập này đã được sử dụng.',
     emailAlreadyExists: 'Đã có tài khoản sử dụng email này.',
     registerFailed: 'Không thể tạo tài khoản lúc này. Vui lòng thử lại.',
@@ -132,7 +134,9 @@ const vi: LocaleSchema = {
     newPasswordPlaceholder: 'Nhập mật khẩu mới',
     currentPasswordRequired: 'Vui lòng nhập mật khẩu hiện tại.',
     newPasswordRequired: 'Vui lòng nhập mật khẩu mới.',
-    newPasswordTooShort: 'Mật khẩu mới phải có ít nhất 8 ký tự.',
+    newPasswordTooShort: 'Mật khẩu mới phải có ít nhất {min} ký tự.',
+    passwordChangeTemporarilyLocked:
+      'Đổi mật khẩu tạm thời bị khoá do nhập sai mật khẩu hiện tại nhiều lần. Vui lòng thử lại sau ít phút.',
     name: 'Họ tên',
     namePlaceholder: 'Nhập họ tên',
     nameRequired: 'Vui lòng nhập họ tên.',
@@ -182,8 +186,6 @@ const vi: LocaleSchema = {
     empty: 'Chưa có tổ chức nào',
     emptyHint: 'Tạo một tổ chức để bắt đầu.',
     created: 'Đã tạo tổ chức',
-    switchedTo: 'Đã chuyển sang {name}',
-    switchedToPersonal: 'Đã chuyển về không gian cá nhân',
     members: 'Thành viên',
     membersTitle: 'Thành viên của {name}',
     membersEmpty: 'Chưa có thành viên nào.',

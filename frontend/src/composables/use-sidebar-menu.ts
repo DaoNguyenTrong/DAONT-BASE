@@ -35,14 +35,17 @@ function bySidebarOrder(a: RouteRecordRaw, b: RouteRecordRaw) {
   return (a.meta?.sidebar?.order ?? 0) - (b.meta?.sidebar?.order ?? 0)
 }
 
-function toSidebarItem(route: RouteRecordRaw): SidebarMenuItem | null {
+function toSidebarItem(
+  route: RouteRecordRaw,
+  hasPermission: (code: string) => boolean,
+): SidebarMenuItem | null {
   const sidebarMeta = route.meta?.sidebar as SidebarRouteMeta | undefined
 
   if (!sidebarMeta) {
     return null
   }
 
-  const children = buildSidebarMenu(route.children ?? [])
+  const children = buildSidebarMenu(route.children ?? [], hasPermission)
 
   if (children.length > 0) {
     return {
@@ -63,17 +66,25 @@ function toSidebarItem(route: RouteRecordRaw): SidebarMenuItem | null {
   }
 }
 
-function buildSidebarMenu(routes: readonly RouteRecordRaw[]) {
-  return routes
-    .filter((route) => Boolean(route.meta?.sidebar))
-    .slice()
-    .sort(bySidebarOrder)
-    .map((route) => toSidebarItem(route))
-    .filter((item): item is SidebarMenuItem => item !== null)
+function buildSidebarMenu(
+  routes: readonly RouteRecordRaw[],
+  hasPermission: (code: string) => boolean,
+): SidebarMenuItem[] {
+  return (
+    routes
+      .filter((route) => Boolean(route.meta?.sidebar))
+      // Same gate as the router guard, so the menu never offers a page the guard would bounce.
+      .filter((route) => !route.meta?.permission || hasPermission(route.meta.permission))
+      .slice()
+      .sort(bySidebarOrder)
+      .map((route) => toSidebarItem(route, hasPermission))
+      .filter((item): item is SidebarMenuItem => item !== null)
+  )
 }
 
 export function useSidebarMenu() {
   const router = useRouter()
+  const auth = useAuthStore()
   const version = getRouterVersion(router)
 
   return computed(() => {
@@ -81,6 +92,6 @@ export function useSidebarMenu() {
 
     const layoutRoute = router.options.routes.find((route) => route.path === '/')
 
-    return buildSidebarMenu(layoutRoute?.children ?? [])
+    return buildSidebarMenu(layoutRoute?.children ?? [], auth.hasPermission)
   })
 }

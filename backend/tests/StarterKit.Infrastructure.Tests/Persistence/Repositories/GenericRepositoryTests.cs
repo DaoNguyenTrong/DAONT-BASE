@@ -7,7 +7,7 @@ using StarterKit.Infrastructure.Tests.TestSupport;
 
 namespace StarterKit.Infrastructure.Tests.Persistence.Repositories;
 
-[Collection(nameof(PostgresCollection))]
+[Collection(nameof(PostgresCollectionB))]
 public sealed class GenericRepositoryTests(PostgresContainerFixture fixture) : IAsyncLifetime
 {
     private AppDbContext context = null!;
@@ -105,6 +105,20 @@ public sealed class GenericRepositoryTests(PostgresContainerFixture fixture) : I
         Assert.Equal(2, result.Count);
     }
 
+    // Projected in SQL: only the selected columns come back, not whole entities.
+    [Fact]
+    public async Task ListAsync_WithSelector_ReturnsOnlyTheProjectionOfMatchingRows()
+    {
+        await SeedAsync(CreateApiKey("Active-1"), CreateApiKey("Active-2"));
+        ApiKey inactive = CreateApiKey("Inactive-1");
+        inactive.Deactivate();
+        await SeedAsync(inactive);
+
+        IReadOnlyList<string> names = await repository.ListAsync(k => k.IsActive, k => k.Name);
+
+        Assert.Equal(["Active-1", "Active-2"], names.Order());
+    }
+
     // ListPagedAsync (page, size)
 
     [Fact]
@@ -140,6 +154,34 @@ public sealed class GenericRepositoryTests(PostgresContainerFixture fixture) : I
         Assert.Equal(2, totalCount);
         Assert.Equal("Newer", items[0].Name);
         Assert.Equal("Older", items[1].Name);
+    }
+
+    [Fact]
+    public async Task ListPagedAsync_RowsShareCreatedAt_PagesAreDisjointAndTieBrokenById()
+    {
+        // One SeedAsync = one SaveChanges, so SetAuditFields stamps the same CreatedAt on all five.
+        ApiKey[] keys = Enumerable.Range(1, 5).Select(i => CreateApiKey($"Key {i}")).ToArray();
+        await SeedAsync(keys);
+
+        // Postgres orders uuid by its canonical byte sequence, i.e. the lowercase hex string —
+        // not by System.Guid.CompareTo, which compares the mixed-endian fields differently.
+        List<Guid> expected = keys
+            .Select(k => k.Id)
+            .OrderByDescending(id => id.ToString(), StringComparer.Ordinal)
+            .ToList();
+
+        List<Guid> withPredicate = new();
+        List<Guid> withSearch = new();
+        for (int page = 1; page <= 3; page++)
+        {
+            (IReadOnlyList<ApiKey> a, _) = await repository.ListPagedAsync(_ => true, page, 2);
+            (IReadOnlyList<ApiKey> b, _) = await repository.ListPagedAsync(_ => true, null, [k => k.Name], page, 2);
+            withPredicate.AddRange(a.Select(k => k.Id));
+            withSearch.AddRange(b.Select(k => k.Id));
+        }
+
+        Assert.Equal(expected, withPredicate);
+        Assert.Equal(expected, withSearch);
     }
 
     // ListPagedAsync (predicate, searchTerm, searchColumns, page, size) — Npgsql ILike path

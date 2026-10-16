@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.SignalR;
-using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Services.Notifications;
 
 namespace StarterKit.Infrastructure.Services.Notifications;

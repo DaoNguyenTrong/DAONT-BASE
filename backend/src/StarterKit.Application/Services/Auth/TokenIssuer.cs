@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using StarterKit.Application.Common.Interfaces;
-using StarterKit.Application.Common.Mappings;
 using StarterKit.Application.Common.Settings;
+using StarterKit.Application.Services.Accounts;
 using StarterKit.Domain.Entities;
 
 namespace StarterKit.Application.Services.Auth;
@@ -63,7 +63,7 @@ internal sealed class TokenIssuer(
             accessToken,
             refreshToken,
             accessTokenExpiry,
-            EntityMapper.ToDto(account),
+            AccountMapper.ToDto(account),
             isPersistent,
             organizationId,
             organizationName,

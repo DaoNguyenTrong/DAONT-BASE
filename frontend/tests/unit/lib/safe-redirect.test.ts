@@ -16,22 +16,17 @@ describe('safeRedirectTarget', () => {
     expect(safeRedirectTarget('')).toBeNull()
   })
 
-  it('rejects absolute URLs', () => {
-    expect(safeRedirectTarget('https://evil.example/phish')).toBeNull()
-    expect(safeRedirectTarget('mailto:someone@example.com')).toBeNull()
-  })
-
-  it('rejects protocol-relative and backslash-normalised off-origin values', () => {
-    expect(safeRedirectTarget('//evil.example')).toBeNull()
-    expect(safeRedirectTarget('/\\evil.example')).toBeNull()
-  })
-
-  it('rejects values that do not start at the root', () => {
-    expect(safeRedirectTarget('organizations')).toBeNull()
-  })
-
-  it('rejects the auth screens themselves', () => {
-    expect(safeRedirectTarget('/login')).toBeNull()
-    expect(safeRedirectTarget('/register?foo=1')).toBeNull()
+  it.each([
+    ['rejects absolute URLs', ['https://evil.example/phish', 'mailto:someone@example.com']],
+    [
+      'rejects protocol-relative and backslash-normalised off-origin values',
+      ['//evil.example', '/\\evil.example'],
+    ],
+    ['rejects values that do not start at the root', ['organizations']],
+    ['rejects the auth screens themselves', ['/login', '/register?foo=1']],
+  ])('%s', (_title, values) => {
+    for (const value of values) {
+      expect(safeRedirectTarget(value)).toBeNull()
+    }
   })
 })

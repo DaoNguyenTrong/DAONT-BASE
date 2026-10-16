@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppHeader from '@/layouts/AppHeader.vue'
 import { useSidebarStore } from '@/stores/sidebar-store'
+import en from '@/locales/en'
 
 const stub = { template: '<div />' }
 
@@ -83,7 +84,15 @@ describe('AppHeader', () => {
 
     const items = wrapper.findAll('.n-breadcrumb-item')
     expect(items).toHaveLength(2)
-    expect(items[1]!.text()).toContain('Organizations')
+    expect(items[1]!.text()).toContain(en.nav.organizations)
+  })
+
+  // The crumb is cut with an ellipsis when it is long, so its full text must stay reachable on hover.
+  it('keeps the full crumb label in a title, for when a long one is truncated', async () => {
+    const { wrapper } = await mountHeader('/organizations')
+
+    const crumb = wrapper.get('[data-testid="app-header-crumb-text"]')
+    expect(crumb.attributes('title')).toBe(en.nav.organizations)
   })
 
   it('navigates to the clicked breadcrumb without a full page reload', async () => {

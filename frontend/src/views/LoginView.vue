@@ -56,6 +56,8 @@ async function handleSubmit() {
       if (error.problem.code === 'EmailNotConfirmed') {
         submitError.value = t('auth.emailNotConfirmed')
         showResendVerification.value = true
+      } else if (error.problem.code === 'AccountTemporarilyLocked') {
+        submitError.value = t('auth.accountTemporarilyLocked')
       } else if (error.status === 401) {
         submitError.value = t('auth.invalidCredentials')
       } else {
@@ -71,11 +73,11 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <section class="relative min-h-screen bg-surface-50 px-4 py-8 dark:bg-surface-950">
+  <section class="relative min-h-dvh bg-surface-50 px-4 py-8 dark:bg-surface-950">
     <div class="absolute right-4 top-4">
       <AppControls />
     </div>
-    <div class="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md items-center justify-center">
+    <div class="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-md items-center justify-center">
       <div
         class="w-full overflow-hidden rounded-2xl border border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900"
       >

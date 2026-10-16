@@ -15,6 +15,20 @@ public class MemoryCacheServiceTests
         return new MemoryCacheService(memoryCache, options);
     }
 
+    // MemoryCache.Set throws on a non-positive TTL; a TTL configured to 0 must mean "don't cache", not a 500.
+    [Fact]
+    public async Task Expiration_ZeroOrNegative_IsNotCached()
+    {
+        MemoryCacheService service = CreateService(out _);
+
+        await service.SetAsync("scope", "one", "1", TimeSpan.Zero);
+        string value = await service.GetOrSetAsync("scope", "two", _ => Task.FromResult("2"), TimeSpan.FromSeconds(-1));
+
+        Assert.Equal("2", value);
+        Assert.Null(await service.GetAsync<string>("scope", "one"));
+        Assert.Null(await service.GetAsync<string>("scope", "two"));
+    }
+
     [Fact]
     public async Task GetAsync_Miss_ReturnsDefault()
     {
@@ -134,5 +148,53 @@ public class MemoryCacheServiceTests
         await service.SetAsync("prefix", "one", "1-new");
 
         Assert.Equal("1-new", await service.GetAsync<string>("prefix", "one"));
+    }
+
+    [Fact]
+    public async Task GetOrSetAsync_InvalidatedWhileFactoryRuns_DoesNotServeStaleValueAfterwards()
+    {
+        MemoryCacheService service = CreateService(out _);
+
+        // The factory reads state that a concurrent writer changes and then invalidates the
+        // scope before the factory returns — the value it computed is already stale.
+        string value = await service.GetOrSetAsync("prefix", "one", async _ =>
+        {
+            await service.InvalidateScopeAsync("prefix");
+            return "stale";
+        });
+
+        Assert.Equal("stale", value);
+        Assert.Null(await service.GetAsync<string>("prefix", "one"));
+    }
+
+    [Fact]
+    public async Task GetOrSetAsync_RemovedWhileFactoryRuns_DoesNotServeStaleValueAfterwards()
+    {
+        MemoryCacheService service = CreateService(out _);
+
+        // e.g. a member's role is revoked (RemoveAsync on that member's key) while another request
+        // is still loading the pre-revocation permission set for the same key.
+        string value = await service.GetOrSetAsync("prefix", "one", async _ =>
+        {
+            await service.RemoveAsync("prefix", "one");
+            return "stale";
+        });
+
+        Assert.Equal("stale", value);
+        Assert.Null(await service.GetAsync<string>("prefix", "one"));
+    }
+
+    [Fact]
+    public async Task RemoveAsync_ThenSetAsync_NewEntryIsVisibleAndSiblingsUntouched()
+    {
+        MemoryCacheService service = CreateService(out _);
+        await service.SetAsync("prefix", "one", "1");
+        await service.SetAsync("prefix", "two", "2");
+
+        await service.RemoveAsync("prefix", "one");
+        await service.SetAsync("prefix", "one", "1-new");
+
+        Assert.Equal("1-new", await service.GetAsync<string>("prefix", "one"));
+        Assert.Equal("2", await service.GetAsync<string>("prefix", "two"));
     }
 }

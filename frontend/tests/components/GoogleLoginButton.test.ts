@@ -11,6 +11,8 @@ describe('GoogleLoginButton', () => {
   })
 
   it('renders nothing and never touches window.google when no client ID is configured', async () => {
+    // Explicitly empty: a developer's real frontend/.env would otherwise configure it.
+    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', '')
     const initialize = vi.fn()
     const prompt = vi.fn()
     vi.stubGlobal('google', { accounts: { id: { initialize, prompt } } })

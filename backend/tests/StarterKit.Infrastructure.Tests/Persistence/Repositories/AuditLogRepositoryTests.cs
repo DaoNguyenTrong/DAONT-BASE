@@ -7,7 +7,7 @@ using StarterKit.Infrastructure.Tests.TestSupport;
 
 namespace StarterKit.Infrastructure.Tests.Persistence.Repositories;
 
-[Collection(nameof(PostgresCollection))]
+[Collection(nameof(PostgresCollectionB))]
 public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : IAsyncLifetime
 {
     private AppDbContext context = null!;
@@ -50,6 +50,25 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
     {
         context.AuditLogs.AddRange(logs);
         await context.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task ListPagedAsync_LogsShareTimestamp_PagesAreDisjointNewestIdFirst()
+    {
+        // The audit interceptor stamps one `now` on every row of a SaveChanges batch.
+        DateTime sameInstant = DateTime.UtcNow;
+        AuditLog[] logs = Enumerable.Range(1, 5).Select(_ => CreateAuditLog(timestamp: sameInstant)).ToArray();
+        await SeedAsync(logs);
+
+        List<long> paged = new();
+        for (int page = 1; page <= 3; page++)
+        {
+            (IReadOnlyList<AuditLogDto> items, _) = await repository.ListPagedAsync(
+                DefaultOrganizationId, page, 2, null, null, null);
+            paged.AddRange(items.Select(item => item.Id));
+        }
+
+        Assert.Equal(logs.Select(log => log.Id).OrderByDescending(id => id), paged);
     }
 
     // ListPagedAsync — search (ILike)

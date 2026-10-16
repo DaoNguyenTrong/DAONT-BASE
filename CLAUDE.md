@@ -12,7 +12,7 @@ Three top-level trees, each with its own stack and rule surface:
 | `frontend/` | Vue 3 + Vite + TypeScript, Pinia, naive-ui, vue-i18n, Tailwind                                           | `frontend-conventions.md`, `commands.md`                                     |
 | `shared/`   | `docs/` (architecture & API docs), `openapi/` (contract exported from `backend`, consumed by `frontend`) | `api-contract.md`                                                            |
 
-`shared/openapi/` is the reason this is a monorepo rather than two separate repos: the backend's OpenAPI export is meant to be the single source of truth the frontend generates its client/types from (see `.claude/decisions.md` — "Monorepo: backend/frontend/shared, overriding..."). Codegen isn't wired up yet — see `api-contract.md` for the current state and what changes when it is.
+`shared/openapi/` is the reason this is a monorepo rather than two separate repos: the backend's OpenAPI export is meant to be the single source of truth the frontend generates its client/types from (see `.claude/decisions.md` — "Monorepo: backend/frontend/shared, overriding..."). Codegen is wired up: `orval` regenerates `frontend/src/api/generated/**` (gitignored) from the committed `openapi.json` on every `bun install` — see `api-contract.md` for the regenerate workflow.
 
 CodeGraph is indexed repo-wide (backend + frontend) and is the tool for cross-file impact-check on both sides. Serena's symbol-navigation LSP covers `backend/` (C#), plus `frontend/` TypeScript and Vue for read-only symbol lookup — but its caller-search/rename tools (`find_referencing_symbols`, `rename_symbol`) are reliable for `backend/` (C#) only; see `serena.md` for why.
 
@@ -28,8 +28,20 @@ Follow this order for every non-trivial task:
 4. **Orient (micro)** — for backend C#, use Serena (`find_symbol`/`get_symbols_overview`) to drill into a specific symbol once CodeGraph has located the module. For frontend, CodeGraph's step-3 response already includes verbatim source — skip a separate Serena call unless you need `find_declaration` to confirm what a specific template-tag usage resolves to.
 5. **Impact check** — before editing, review every caller of the symbol you plan to modify. For backend C# symbols, prefer Serena's `find_referencing_symbols` (exact call sites with line-level snippets); fall back to `codegraph_explore` only when the symbol has dynamic dispatch across multiple implementations (interface/base-class methods). For any frontend symbol (`.ts` or `.vue`), use `codegraph_explore`'s blast-radius — never Serena's `find_referencing_symbols`/`rename_symbol`, which silently miss any caller inside a `.vue` file regardless of import style (verified, not a config gap).
 6. **Execute** — make changes
-7. **Verify** — run the test suite for whichever side you touched (`dotnet test backend/StarterKit.sln --no-restore -m:1` for `backend/`, `bun run --cwd frontend test:run` for `frontend/` — see `commands.md`); it must pass before considering the task done
-8. **Log decisions** — record only choices that affect system design (architecture, contracts, security posture) in `.claude/decisions.md`, titled `### YYYY-MM-DD — <decision>`; skip branding/UI/copy calls and routine bug fixes. **Gate: before writing, show the user the proposed entry and get explicit confirmation — never write to `.claude/decisions.md` unprompted.**
+7. **Verify** — run the test suite for whichever side you touched (`backend/scripts/test.sh` for `backend/`, `bun run --cwd frontend test:run` for `frontend/` — see `commands.md`); it must pass before considering the task done
+8. **Log decisions** — record only choices that affect system design (architecture, contracts, security posture) in `.claude/decisions.md`, titled `### YYYY-MM-DD — <decision>`, written in English; skip branding/UI/copy calls and routine bug fixes. **Gate: before writing, show the user the proposed entry and get explicit confirmation — never write to `.claude/decisions.md` unprompted.**
+
+### Worktrees
+
+A git worktree (including an agent's `isolation: "worktree"`) has only tracked files: no `backend/src/StarterKit.API/appsettings*.json`, no `.env*`, no `frontend/node_modules`, `frontend/src/api/generated/` or `frontend/src/typings/` (run `bun install --cwd frontend` there to regenerate the last two). Copy the gitignored config in before building or testing, and remove the worktree (`git worktree remove <path>`) when done. `isolation: "worktree"` branches from `origin`'s default branch, not the local `HEAD` — an agent there does not see unpushed local commits, so hand it the branch or the diff explicitly.
+
+### Commits
+
+- A question is not an order to commit — "is this ready?" or "what changed?" gets an answer, not a commit.
+- Run `git branch --show-current` before every commit; never commit on `main` (the Lefthook branch guard blocks it) or on a branch you didn't expect.
+- Stage only the files the task changed, by explicit path — never `git add -A`/`git add .`/`git commit -a`; leave changes that predate the task unstaged. Subagents working in parallel each commit their own paths, so one never sweeps up another's half-finished files.
+- A commit rejected by Lefthook (commitlint, prettier, secretlint) means fix the message or re-stage — not `--no-verify`.
+- Push, merge, or open a PR only on the user's explicit order.
 
 ### Tool Selection
 
@@ -68,13 +80,27 @@ CodeGraph sees the codebase as a **graph of relationships** — it answers "what
 Serena sees the codebase as a **tree of symbols** — it answers "what does this specific thing contain."
 `Read` is the last resort, not the first instinct.
 
+### Superpowers Integration
+
+If the superpowers plugin is installed, its skills yield to this file. Where a skill's default disagrees, these win:
+
+- **Where it fits** — brainstorming / systematic-debugging / writing-plans run after Pre-Task steps 1–4: their "explore the context" _is_ memory → live state → CodeGraph → Serena.
+- **Specs and plans** go in `docs/superpowers/{specs,plans}/` (the plugin's default). Root `plans/` holds the earlier numbered plans — don't add new ones there. A spec or plan is **not committed** unless the user says so, whatever the skill's own "commit the design doc" step says.
+- **Requirement gaps stop the run** — subagent-driven development's "rulings, not stalls" covers technical ambiguity only. A missing or conflicting business rule or acceptance criterion means stop and ask; never write a ruling that invents business behavior.
+- **Branch & worktree** — work in the current checkout on one `feature/*` branch cut from `dev`. Don't create a worktree for a skill run: the gitignored config and generated client are missing there (see Worktrees). Subagents that build the backend run one at a time (`-m:1`, shared `obj/`).
+- **Commits** — implementers may commit per task on `feature/*` (local only, never on `dev`/`main`) so per-task review ranges work, following Commits above.
+- **TDD** — "delete the code and start over" applies only to code written in the current task, never to changes already on the branch.
+- **Tests** — baseline and verification use `backend/scripts/test.sh` and `bun run --cwd frontend test:run`.
+- **Finishing** — base is `dev` (`main` only for a hotfix); never merge locally or delete the branch. Without an explicit order to push or open a PR, leave the branch as it is.
+- **Gated side effects** — push/PR and `.claude/decisions.md` (confirmation gate) still need the user, even mid-plan.
+
 ## Critical Invariants
 
 **Entity Pattern** — private constructor + `static Create(XxxParams p)` factory + `Update(XxxParams p)`. Domain validation lives in `Update`. Never construct entities via EF or Mapperly — always use the factory.
 
 ## Decision Log
 
-Record only decisions that affect **system design** in `.claude/decisions.md` — architecture, module/layer boundaries, API or data contracts, security posture, or other cross-cutting structural choices that carry a real trade-off, an external constraint, a rejected alternative, or would be costly to re-derive later. Out of scope: visual/branding/UI styling, copy/content wording, and one-off bug fixes — even ones that took real investigation — unless the fix itself changed a structural/contract/security decision. Skip routine decisions — following an existing pattern, a standard CRUD addition, a mechanical rename — even if you had to think about them briefly; those add noise without future value. Write only the **why** — the reasoning and rejected alternative — never "what was done" or "how" (that's git log/diff's job; don't restate file names, method names, or a narrative of the change), and only when the why isn't obvious from reading the code. Title format: `### YYYY-MM-DD — <decision>`. Newest entry at top — prepend new entries directly below the header note, do not append at the bottom. Keep each entry under ~80 words (excluding heading).
+Record only decisions that affect **system design** in `.claude/decisions.md` — architecture, module/layer boundaries, API or data contracts, security posture, or other cross-cutting structural choices that carry a real trade-off, an external constraint, a rejected alternative, or would be costly to re-derive later. Out of scope: visual/branding/UI styling, copy/content wording, and one-off bug fixes — even ones that took real investigation — unless the fix itself changed a structural/contract/security decision. Skip routine decisions — following an existing pattern, a standard CRUD addition, a mechanical rename — even if you had to think about them briefly; those add noise without future value. Write only the **why** — the reasoning and rejected alternative — never "what was done" or "how" (that's git log/diff's job; don't restate file names, method names, or a narrative of the change), and only when the why isn't obvious from reading the code. Title format: `### YYYY-MM-DD — <decision>`. Write every entry (title and body) in English, whatever language the conversation is in. Newest entry at top — prepend new entries directly below the header note, do not append at the bottom. Keep each entry under ~80 words (excluding heading).
 
 **Gate:** never write to `.claude/decisions.md` without asking first. Draft the proposed entry, show it to the user, and wait for explicit confirmation before prepending it.
 

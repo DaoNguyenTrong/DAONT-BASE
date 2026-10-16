@@ -3,17 +3,15 @@ import { nextTick } from 'vue'
 import {
   dialog,
   requestConfirmationNaive,
-  setConfirmationOverrideNaive,
   showErrorMessageNaive,
   showInfoMessageNaive,
   showSuccessMessageNaive,
 } from '@/lib/feedback-naive'
+import { setConfirmationOverrideNaive } from '@/lib/confirmation-override'
 
 // `message` isn't exported (only `dialog` is, for composable reuse), and
-// `createDiscreteApi` runs once at module load — before any per-file `vi.mock`
-// could intercept it, since `tests/setup.ts` already imports this module for
-// `setConfirmationOverrideNaive`. So message assertions go through the real,
-// teleported DOM output instead of a mock.
+// `createDiscreteApi` runs once at module load, so message assertions go
+// through the real, teleported DOM output instead of a mock.
 async function flushMessage() {
   await nextTick()
   await new Promise((resolve) => setTimeout(resolve, 20))

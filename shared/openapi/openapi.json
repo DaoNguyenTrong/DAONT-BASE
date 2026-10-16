@@ -1465,14 +1465,6 @@
         "operationId": "Files_Upload",
         "parameters": [
           {
-            "name": "ownerId",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
             "name": "description",
             "in": "query",
             "schema": {
@@ -1579,7 +1571,7 @@
         "tags": [
           "Files"
         ],
-        "summary": "Returns a paginated list of files, with optional filtering by owner and category.",
+        "summary": "Returns a paginated list of files for the caller's active organization.",
         "operationId": "Files_GetAll",
         "parameters": [
           {
@@ -1803,6 +1795,26 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1967,6 +1979,7 @@
           "Notifications"
         ],
         "summary": "Returns a paginated list of the current account's notifications, newest first.",
+        "description": "`readState`: `All` (default), `Unread` or `Read`.",
         "operationId": "Notifications_GetAll",
         "parameters": [
           {
@@ -1994,17 +2007,10 @@
             }
           },
           {
-            "name": "search",
+            "name": "readState",
             "in": "query",
             "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "unreadOnly",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
+              "$ref": "#/components/schemas/NotificationReadState"
             }
           },
           {
@@ -2035,6 +2041,26 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PagedResultOfNotificationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -4481,7 +4507,7 @@
           "size",
           "storagePath",
           "publicUrl",
-          "ownerId",
+          "organizationId",
           "description",
           "category",
           "createdAt",
@@ -4513,11 +4539,8 @@
           "publicUrl": {
             "type": "string"
           },
-          "ownerId": {
-            "type": [
-              "null",
-              "string"
-            ],
+          "organizationId": {
+            "type": "string",
             "format": "uuid"
           },
           "description": {
@@ -4717,6 +4740,14 @@
             "format": "date-time"
           }
         }
+      },
+      "NotificationReadState": {
+        "enum": [
+          "All",
+          "Unread",
+          "Read"
+        ],
+        "type": "string"
       },
       "OrganizationDto": {
         "required": [

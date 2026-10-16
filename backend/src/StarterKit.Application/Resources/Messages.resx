@@ -48,8 +48,14 @@
   <data name="InvalidUsernameOrPassword" xml:space="preserve">
     <value>Tên đăng nhập hoặc mật khẩu không hợp lệ.</value>
   </data>
+  <data name="AccountTemporarilyLocked" xml:space="preserve">
+    <value>Tài khoản tạm thời bị khoá do đăng nhập sai nhiều lần. Vui lòng thử lại sau ít phút.</value>
+  </data>
   <data name="InvalidCurrentPassword" xml:space="preserve">
     <value>Mật khẩu hiện tại không hợp lệ.</value>
+  </data>
+  <data name="PasswordChangeTemporarilyLocked" xml:space="preserve">
+    <value>Đổi mật khẩu tạm thời bị khoá do nhập sai mật khẩu hiện tại nhiều lần. Vui lòng thử lại sau ít phút.</value>
   </data>
   <data name="InvalidRefreshToken" xml:space="preserve">
     <value>Refresh token không hợp lệ.</value>
@@ -128,6 +134,9 @@
   </data>
   <data name="RoleNameRequired" xml:space="preserve">
     <value>Tên vai trò là bắt buộc.</value>
+  </data>
+  <data name="NotificationDedupeKeyTooLong" xml:space="preserve">
+    <value>Khoá khử trùng của thông báo không được dài quá 200 ký tự.</value>
   </data>
   <data name="NotificationTypeRequired" xml:space="preserve">
     <value>Loại thông báo là bắt buộc.</value>

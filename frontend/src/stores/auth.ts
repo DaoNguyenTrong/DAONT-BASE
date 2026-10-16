@@ -1,5 +1,6 @@
 import { getAuth } from '@/api/generated/auth/auth'
 import { refreshClient } from '@/api/client'
+import { reloadToLogin } from '@/lib/session-exit'
 import type {
   Account,
   AuthResponse,
@@ -11,7 +12,6 @@ import type {
   RegisterResult,
   ResendVerificationRequest,
   SessionDto,
-  SwitchOrganizationRequest,
   VerifyEmailRequest,
 } from '@/api/types'
 
@@ -19,7 +19,7 @@ export const useAuthStore = defineStore('auth', () => {
   const account = ref<Account | null>(null)
   const organizationId = ref<string | null>(null)
   const organizationName = ref<string | null>(null)
-  // Active-org permission set — refreshed on login/switchOrganization/refreshToken, same
+  // Active-org permission set — refreshed on login/refreshToken (an organization switch reloads the page, see useOrganizationSwitch), same
   // staleness characteristics organizationId/organizationName already have. A UI-only gate;
   // the real authorization boundary is always the server's per-request permission check.
   const permissions = ref<string[]>([])
@@ -92,6 +92,11 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       clearKeepLoginPreference()
       clearAuth()
+      // Synchronously, right after clearAuth: the session-lapse watcher in App.vue reacts to the
+      // same isAuthenticated flip with a reload to login?redirect=<current page>. The logout's
+      // plain login must win (first call wins), or the next account to sign in in this tab is sent
+      // to the previous account's page.
+      reloadToLogin()
     }
   }
 
@@ -106,12 +111,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function revokeOtherSessions(): Promise<void> {
     await client.authRevokeOtherSessions()
-  }
-
-  async function switchOrganization(data: SwitchOrganizationRequest): Promise<AuthResponse> {
-    const response = await client.authSwitchOrganization(data)
-    setAuth(response)
-    return response
   }
 
   return {
@@ -133,6 +132,5 @@ export const useAuthStore = defineStore('auth', () => {
     getSessions,
     revokeSession,
     revokeOtherSessions,
-    switchOrganization,
   }
 })

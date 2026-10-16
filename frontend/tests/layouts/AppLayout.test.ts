@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { renderComponent } from '../helpers/render'
 
@@ -34,5 +35,24 @@ describe('AppLayout', () => {
     const html = wrapper.html()
     expect(html.indexOf('marker-header')).toBeLessThan(html.indexOf('<main'))
     expect(html.indexOf('<main')).toBeLessThan(html.indexOf('marker-footer'))
+  })
+
+  it('scrolls the main area back to the top on a path change, not on a query change', async () => {
+    const { wrapper, router } = await renderComponent(AppLayout, {
+      global: {
+        stubs: { AppSidebar: true, AppHeader: true, AppFooter: true },
+      },
+    })
+    const main = wrapper.find('main').element as HTMLElement
+    const scrollTo = vi.fn()
+    main.scrollTo = scrollTo as unknown as HTMLElement['scrollTo']
+
+    await router.push('/?page=2')
+    await flushPromises()
+    expect(scrollTo).not.toHaveBeenCalled()
+
+    await router.push('/organizations')
+    await flushPromises()
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0 })
   })
 })

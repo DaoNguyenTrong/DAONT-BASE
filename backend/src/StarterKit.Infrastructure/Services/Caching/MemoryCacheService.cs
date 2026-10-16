@@ -13,6 +13,12 @@ internal sealed class MemoryCacheService(
     private readonly CacheSettings settings = cacheOptions.Value;
     private readonly ConcurrentDictionary<string, long> scopeGenerations = new();
 
+    // Per-key generation, bumped by RemoveAsync — same reason as the scope generation: a GetOrSetAsync
+    // whose factory was already running when the key was removed must write into a generation nobody
+    // reads anymore, rather than re-publish the just-invalidated value under the live key. Only keys
+    // ever removed get an entry here.
+    private readonly ConcurrentDictionary<string, long> keyGenerations = new();
+
     public Task<T?> GetAsync<T>(string scope, string key, CancellationToken cancellationToken = default)
     {
         memoryCache.TryGetValue(PhysicalKey(scope, key), out T? value);
@@ -27,9 +33,7 @@ internal sealed class MemoryCacheService(
         TimeSpan? expiration = null,
         CancellationToken cancellationToken = default)
     {
-        TimeSpan cacheExpiration = expiration ?? TimeSpan.FromMinutes(settings.DefaultExpirationMinutes);
-
-        memoryCache.Set(PhysicalKey(scope, key), value, cacheExpiration);
+        Write(PhysicalKey(scope, key), value, expiration);
 
         return Task.CompletedTask;
     }
@@ -53,14 +57,31 @@ internal sealed class MemoryCacheService(
         }
 
         T value = await factory(cancellationToken);
-        await SetAsync(scope, key, value, expiration, cancellationToken);
+
+        // Write under the generation captured BEFORE the factory ran (see RedisCacheService): an
+        // invalidation that lands mid-factory must strand this now-stale value, not publish it.
+        Write(physicalKey, value, expiration);
 
         return value;
     }
 
+    private void Write<T>(string physicalKey, T value, TimeSpan? expiration)
+    {
+        TimeSpan entryExpiration = CacheExpiration.Resolve(settings, expiration);
+        if (entryExpiration <= TimeSpan.Zero)
+        {
+            return;
+        }
+
+        memoryCache.Set(physicalKey, value, entryExpiration);
+    }
+
     public Task RemoveAsync(string scope, string key, CancellationToken cancellationToken = default)
     {
-        memoryCache.Remove(PhysicalKey(scope, key));
+        string previous = PhysicalKey(scope, key);
+        keyGenerations.AddOrUpdate(ScopedKey(scope, key), 1, (_, generation) => generation + 1);
+        // Not required for correctness (nothing reads the old generation again) — just frees it now.
+        memoryCache.Remove(previous);
 
         return Task.CompletedTask;
     }
@@ -81,6 +102,13 @@ internal sealed class MemoryCacheService(
     // every entry under a scope with one atomic counter bump instead of enumerating and evicting keys
     // — the same technique a distributed cache (e.g. Redis, via INCR) uses to make scope invalidation
     // visible to every instance immediately, unlike per-process key tracking.
-    private string PhysicalKey(string scope, string key) =>
-        $"{scope}{ScopeSeparator}{scopeGenerations.GetOrAdd(scope, 0)}{ScopeSeparator}{key}";
+    private string PhysicalKey(string scope, string key)
+    {
+        long scopeGeneration = scopeGenerations.GetOrAdd(scope, 0);
+        long keyGeneration = keyGenerations.TryGetValue(ScopedKey(scope, key), out long generation) ? generation : 0;
+
+        return $"{scope}{ScopeSeparator}{scopeGeneration}{ScopeSeparator}{keyGeneration}{ScopeSeparator}{key}";
+    }
+
+    private static string ScopedKey(string scope, string key) => $"{scope}{ScopeSeparator}{key}";
 }

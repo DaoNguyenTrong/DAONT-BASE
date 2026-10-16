@@ -68,8 +68,10 @@ Never construct entities via EF or Mapperly directly — that bypasses domain va
 
 ## Mapperly
 
-- `EntityMapper.ToDto(entity)` — entity → DTO
-- `request.ToParams()` — request → Params record (extension method in `EntityMapper`)
+One `[Mapper] static partial class` per feature, next to its service (`Services/Accounts/AccountMapper.cs`, `Services/Notifications/NotificationMapper.cs`) — no shared mapper in `Common/`, which would make every feature namespace depend on every other one (`ArchitectureTests.Namespaces_HaveNoDependencyCycles` fails on that).
+
+- `AccountMapper.ToDto(entity)` — entity → DTO
+- `request.ToParams()` — request → Params record (extension method in the feature's mapper)
 
 ## EF Core (NoTracking global)
 
@@ -88,3 +90,9 @@ await unitOfWork.SaveChangesAsync(ct);
 repository.Delete(project);   // handles detached automatically
 await unitOfWork.SaveChangesAsync(ct);
 ```
+
+## Hangfire Jobs
+
+- **One lock across every entry point of a job.** `[DisableConcurrentExecution]` without a `resource` locks on `Type.Method` (Hangfire 1.8), so a recurring `RunAsync` and an on-startup `RunIfMissingAsync` of the same job only exclude *themselves* and can run the same work at once. Give every entry point the same explicit resource (`[DisableConcurrentExecution(RecurringJobId, timeoutInSeconds)]`), and test that the attributes' `Resource` values are equal and non-null — not just that the attribute exists.
+- **Every queue you enqueue to must be in `options.Queues`** (`HangfireExtensions`). A job enqueued on an unlisted queue sits in storage forever with no error; add the queue there in the same change that first uses it (see `NotificationQueues.Default`).
+- **Jobs and seeders are idempotent.** Hangfire retries a failed job (`[AutomaticRetry]`) and a startup seeder runs on every boot and on every instance, so re-running either must leave the same state — check-then-insert or upsert, never a blind insert.

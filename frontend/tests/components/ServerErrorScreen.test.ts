@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import ServerErrorScreen from '@/components/ServerErrorScreen.vue'
 import { server } from '../helpers/msw/server'
 import { renderComponent } from '../helpers/render'
+import en from '@/locales/en'
 
 function flushHttp() {
   return new Promise((resolve) => setTimeout(resolve, 0))
@@ -13,8 +14,8 @@ describe('ServerErrorScreen', () => {
     const { wrapper } = await renderComponent(ServerErrorScreen)
 
     expect(wrapper.text()).toContain('500')
-    expect(wrapper.text()).toContain('We can’t reach the server')
-    expect(wrapper.text()).toContain('Try again')
+    expect(wrapper.text()).toContain(en.errors.serverErrorTitle)
+    expect(wrapper.text()).toContain(en.errors.serverErrorRetry)
   })
 
   it('re-checks the health endpoint when Retry is clicked', async () => {
@@ -35,7 +36,9 @@ describe('ServerErrorScreen', () => {
     hits.mockClear()
 
     // The screen also renders <AppControls> (several buttons) — target Retry by label.
-    const retry = wrapper.findAll('button').find((b) => b.text().includes('Try again'))
+    const retry = wrapper
+      .findAll('button')
+      .find((b) => b.text().includes(en.errors.serverErrorRetry))
     await retry!.trigger('click')
     await flushHttp()
 

@@ -40,19 +40,13 @@ describe('getStoredFontSize', () => {
 })
 
 describe('applyFontSize', () => {
-  it('clamps values above the maximum', () => {
-    expect(applyFontSize(MAX_FONT_SIZE + 10)).toBe(MAX_FONT_SIZE)
-    expect(document.documentElement.style.fontSize).toBe(`${MAX_FONT_SIZE}px`)
-  })
-
-  it('clamps values below the minimum', () => {
-    expect(applyFontSize(MIN_FONT_SIZE - 10)).toBe(MIN_FONT_SIZE)
-    expect(document.documentElement.style.fontSize).toBe(`${MIN_FONT_SIZE}px`)
-  })
-
-  it('rounds fractional values before applying', () => {
-    expect(applyFontSize(16.7)).toBe(17)
-    expect(document.documentElement.style.fontSize).toBe('17px')
+  it.each([
+    ['clamps values above the maximum', MAX_FONT_SIZE + 10, MAX_FONT_SIZE],
+    ['clamps values below the minimum', MIN_FONT_SIZE - 10, MIN_FONT_SIZE],
+    ['rounds fractional values before applying', 16.7, 17],
+  ])('%s', (_title, input, expected) => {
+    expect(applyFontSize(input)).toBe(expected)
+    expect(document.documentElement.style.fontSize).toBe(`${expected}px`)
   })
 })
 

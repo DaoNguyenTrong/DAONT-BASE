@@ -4,6 +4,7 @@ using NSubstitute;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Resources;
+using StarterKit.Application.Services.Accounts;
 using StarterKit.Application.Services.Auth;
 using StarterKit.Application.Tests.TestSupport;
 using StarterKit.Domain.Entities;
@@ -28,7 +29,8 @@ public class AuthServiceTests
         IExternalAuthProvider ExternalAuthProvider,
         ICurrentUserService CurrentUserService,
         IRepository<OrganizationMember, Guid> OrganizationMemberRepo,
-        IRepository<Organization, Guid> OrganizationRepo);
+        IRepository<Organization, Guid> OrganizationRepo,
+        IPasswordAttemptStore LoginAttempts);
 
     private static Fixture CreateFixture(
         int accessTokenExpiryMinutes = 15,
@@ -71,6 +73,11 @@ public class AuthServiceTests
 
         ICurrentUserService currentUserService = Substitute.For<ICurrentUserService>();
 
+        // Default: first attempt of a fresh window — tests about the lock seed their own count.
+        IPasswordAttemptStore loginAttempts = Substitute.For<IPasswordAttemptStore>();
+        loginAttempts.ReserveAttemptAsync(PasswordAttemptPurpose.Login, Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(1);
+
         IOptions<JwtSettings> jwtOptions = Options.Create(new JwtSettings
         {
             AccessTokenExpiryMinutes = accessTokenExpiryMinutes,
@@ -90,6 +97,8 @@ public class AuthServiceTests
             tenantAccessService,
             passwordHasher,
             [externalAuthProvider],
+            loginAttempts,
+            Options.Create(new LoginLockoutSettings { MaxFailedAttempts = 5, WindowMinutes = 15, LockDurationMinutes = 15 }),
             jwtOptions);
 
         return new Fixture(
@@ -104,7 +113,8 @@ public class AuthServiceTests
             externalAuthProvider,
             currentUserService,
             organizationMemberRepo,
-            organizationRepo);
+            organizationRepo,
+            loginAttempts);
     }
 
     private static Account CreateAccount(
@@ -117,8 +127,12 @@ public class AuthServiceTests
         Account account = Account.Create(new AccountParams(
             Name: "Nguyen Van A",
             Username: username,
-            Email: email,
-            Status: status));
+            Email: email));
+
+        if (!status)
+        {
+            account.Deactivate();
+        }
 
         if (passwordHash is not null)
         {
@@ -216,6 +230,168 @@ public class AuthServiceTests
             () => f.Service.LoginAsync(request, null, null, CancellationToken.None));
 
         f.PasswordHasher.Received(1).Verify(request.Password, account.PasswordHash!);
+    }
+
+    // Temporary lockout
+
+    [Fact]
+    public async Task LoginAsync_Locked_RefusesWithTheLockMessage_WithoutCheckingThePassword()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+        f.LoginAttempts.ReserveAttemptAsync(PasswordAttemptPurpose.Login, account.Id, Arg.Any<DateTime>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns((int?)null);
+        LoginRequest request = new(account.Username, "correct-password");
+
+        // Before the password check on purpose: refusing only a correct password would tell a guesser
+        // which guess was right, and the lock would stop nothing.
+        await ApplicationAssert.ThrowsWithMessageAsync<UnauthorizedException>(
+            ApplicationMessages.AccountTemporarilyLocked,
+            () => f.Service.LoginAsync(request, null, null, CancellationToken.None));
+
+        f.PasswordHasher.DidNotReceiveWithAnyArgs().Verify(default!, default!);
+    }
+
+    // Parallel guesses that reserved attempts past the limit while the last allowed one was still running.
+    [Fact]
+    public async Task LoginAsync_AttemptBeyondTheLimit_IsRefusedWithoutCheckingThePassword()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+        f.LoginAttempts.ReserveAttemptAsync(PasswordAttemptPurpose.Login, account.Id, Arg.Any<DateTime>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(6);
+
+        await ApplicationAssert.ThrowsWithMessageAsync<UnauthorizedException>(
+            ApplicationMessages.AccountTemporarilyLocked,
+            () => f.Service.LoginAsync(new LoginRequest(account.Username, "guess"), null, null, CancellationToken.None));
+
+        f.PasswordHasher.DidNotReceiveWithAnyArgs().Verify(default!, default!);
+    }
+
+    [Fact]
+    public async Task LoginAsync_WrongPasswordOnTheLastAllowedAttempt_LocksTheAccount()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+        f.LoginAttempts.ReserveAttemptAsync(PasswordAttemptPurpose.Login, account.Id, Arg.Any<DateTime>(), TimeSpan.FromMinutes(15), Arg.Any<CancellationToken>())
+            .Returns(5);
+        f.PasswordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
+        DateTime before = DateTime.UtcNow;
+
+        await ApplicationAssert.ThrowsWithMessageAsync<UnauthorizedException>(
+            ApplicationMessages.InvalidUsernameOrPassword,
+            () => f.Service.LoginAsync(new LoginRequest(account.Username, "wrong"), null, null, CancellationToken.None));
+
+        await f.LoginAttempts.Received(1).LockAsync(
+            PasswordAttemptPurpose.Login,
+            account.Id,
+            Arg.Is<DateTime>(until => until >= before.AddMinutes(15) && until <= DateTime.UtcNow.AddMinutes(15)),
+            Arg.Any<CancellationToken>());
+    }
+
+    // A guesser who drops the connection during the hash check must not be able to skip the lock write.
+    [Fact]
+    public async Task LoginAsync_WrongPasswordOnTheLastAllowedAttempt_LocksEvenWhenTheRequestIsAborted()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+        f.LoginAttempts.ReserveAttemptAsync(PasswordAttemptPurpose.Login, account.Id, Arg.Any<DateTime>(), TimeSpan.FromMinutes(15), Arg.Any<CancellationToken>())
+            .Returns(5);
+        f.PasswordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
+        using CancellationTokenSource aborted = new();
+        await aborted.CancelAsync();
+
+        await ApplicationAssert.ThrowsWithMessageAsync<UnauthorizedException>(
+            ApplicationMessages.InvalidUsernameOrPassword,
+            () => f.Service.LoginAsync(new LoginRequest(account.Username, "wrong"), null, null, aborted.Token));
+
+        await f.LoginAttempts.Received(1).LockAsync(
+            PasswordAttemptPurpose.Login,
+            account.Id, Arg.Any<DateTime>(), Arg.Is<CancellationToken>(token => !token.CanBeCanceled));
+    }
+
+    [Fact]
+    public async Task LoginAsync_WrongPasswordBelowTheLimit_DoesNotLock()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+        f.LoginAttempts.ReserveAttemptAsync(PasswordAttemptPurpose.Login, account.Id, Arg.Any<DateTime>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(4);
+        f.PasswordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(
+            () => f.Service.LoginAsync(new LoginRequest(account.Username, "wrong"), null, null, CancellationToken.None));
+
+        await f.LoginAttempts.DidNotReceiveWithAnyArgs().LockAsync(PasswordAttemptPurpose.Login, default, default, default);
+        await f.LoginAttempts.DidNotReceiveWithAnyArgs().ClearAsync(PasswordAttemptPurpose.Login, default, default);
+    }
+
+    [Fact]
+    public async Task LoginAsync_CorrectPassword_ClearsTheCounter()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+        f.LoginAttempts.ReserveAttemptAsync(PasswordAttemptPurpose.Login, account.Id, Arg.Any<DateTime>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(5);
+        f.PasswordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+
+        await f.Service.LoginAsync(new LoginRequest(account.Username, "correct-password"), null, null, CancellationToken.None);
+
+        await f.LoginAttempts.Received(1).ClearAsync(PasswordAttemptPurpose.Login, account.Id, Arg.Any<CancellationToken>());
+        await f.LoginAttempts.DidNotReceiveWithAnyArgs().LockAsync(PasswordAttemptPurpose.Login, default, default, default);
+    }
+
+    // The password was right; the account just isn't usable yet — keep counting and it would lock itself.
+    [Fact]
+    public async Task LoginAsync_CorrectPasswordButEmailNotConfirmed_StillClearsTheCounter()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount(emailConfirmed: false);
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+        f.PasswordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(
+            () => f.Service.LoginAsync(new LoginRequest(account.Username, "correct-password"), null, null, CancellationToken.None));
+
+        await f.LoginAttempts.Received(1).ClearAsync(PasswordAttemptPurpose.Login, account.Id, Arg.Any<CancellationToken>());
+    }
+
+    // Unknown, deactivated and password-less accounts get the generic message and count nothing: there is no
+    // password to guess, and a lock message would say more than "invalid" does.
+    [Theory]
+    [InlineData("unknown")]
+    [InlineData("inactive")]
+    [InlineData("no-password")]
+    public async Task LoginAsync_NothingToGuess_DoesNotCountTheAttempt(string state)
+    {
+        Fixture f = CreateFixture();
+        Account? account = state switch
+        {
+            "inactive" => CreateAccount(status: false),
+            "no-password" => CreateAccount(passwordHash: null),
+            _ => null
+        };
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+
+        await ApplicationAssert.ThrowsWithMessageAsync<UnauthorizedException>(
+            ApplicationMessages.InvalidUsernameOrPassword,
+            () => f.Service.LoginAsync(new LoginRequest("nva", "guess"), null, null, CancellationToken.None));
+
+        await f.LoginAttempts.DidNotReceiveWithAnyArgs().ReserveAttemptAsync(PasswordAttemptPurpose.Login, default, default, default, default);
     }
 
     [Fact]
@@ -322,6 +498,28 @@ public class AuthServiceTests
         await f.AccountRepo.DidNotReceive().AddAsync(Arg.Any<Account>(), Arg.Any<CancellationToken>());
         await f.ExternalLoginRepo.DidNotReceive().AddAsync(Arg.Any<ExternalLogin>(), Arg.Any<CancellationToken>());
         Assert.Equal("fake-access-token", result.AccessToken);
+    }
+
+    // The lock defends against password guessing; signing in through the provider proves identity another
+    // way, so it gets in and resets the counter.
+    [Fact]
+    public async Task ExternalLoginAsync_LockedAccount_SignsInAndClearsTheCounter()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        ExternalLogin link = ExternalLogin.Create(new ExternalLoginParams(
+            account.Id, GoogleProviderName, "google-sub-1", account.Email));
+        RepositoryPredicateStub.StubFirstOrDefault(f.ExternalLoginRepo, [link]);
+        f.AccountRepo.GetByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+        f.ExternalAuthProvider.ValidateAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new ExternalUserInfo("google-sub-1", account.Email, "Nguyen Van A", EmailVerified: true));
+
+        AuthResult result = await f.Service.ExternalLoginAsync(
+            "google", new ExternalLoginRequest("some-credential"), null, null, CancellationToken.None);
+
+        Assert.Equal("fake-access-token", result.AccessToken);
+        await f.LoginAttempts.Received(1).ClearAsync(PasswordAttemptPurpose.Login, account.Id, Arg.Any<CancellationToken>());
+        await f.LoginAttempts.DidNotReceiveWithAnyArgs().ReserveAttemptAsync(PasswordAttemptPurpose.Login, default, default, default, default);
     }
 
     [Fact]

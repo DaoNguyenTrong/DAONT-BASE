@@ -5,26 +5,8 @@ import OrganizationMembersDialog from '@/components/OrganizationMembersDialog.vu
 import type { OrganizationDto, OrganizationMemberDto, RoleDto } from '@/api/types'
 import { server } from '../helpers/msw/server'
 import { renderComponent } from '../helpers/render'
-
-function makeOrganization(overrides: Partial<OrganizationDto> = {}): OrganizationDto {
-  return {
-    id: 'org-1',
-    name: 'Acme Inc',
-    slug: 'acme',
-    status: true,
-    myRoleNames: ['Owner'],
-    myPermissionCodes: [
-      'organizations.manage',
-      'organizations.members.manage',
-      'organizations.roles.manage',
-    ],
-    ...overrides,
-  }
-}
-
-function makeRole(overrides: Partial<RoleDto> = {}): RoleDto {
-  return { id: 'role-owner', name: 'Owner', isSystem: true, permissionCodes: [], ...overrides }
-}
+import { makeOrganization, makeRole } from '../factories/organization'
+import en from '@/locales/en'
 
 function makeMember(overrides: Partial<OrganizationMemberDto> = {}): OrganizationMemberDto {
   return {
@@ -97,7 +79,7 @@ describe('OrganizationMembersDialog', () => {
 
     const { wrapper } = await openDialog(organization)
 
-    expect(wrapper.text()).not.toContain('Deactivate organization')
+    expect(wrapper.text()).not.toContain(en.organizations.deactivate)
   })
 
   it('reassigns a member roles and shows the updated selection', async () => {

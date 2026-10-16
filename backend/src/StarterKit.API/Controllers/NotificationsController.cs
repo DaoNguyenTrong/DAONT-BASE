@@ -11,15 +11,16 @@ namespace StarterKit.API.Controllers;
 public sealed class NotificationsController(INotificationService notificationService) : ControllerBase
 {
     /// <summary>Returns a paginated list of the current account's notifications, newest first.</summary>
+    /// <remarks><c>readState</c>: <c>All</c> (default), <c>Unread</c> or <c>Read</c>.</remarks>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<NotificationDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResult<NotificationDto>>> GetAll(
-        [FromQuery] PaginationRequest request,
-        [FromQuery] bool? unreadOnly,
+        [FromQuery] NotificationListQuery query,
         CancellationToken cancellationToken)
     {
-        return Ok(await notificationService.GetMyNotificationsAsync(request, unreadOnly, cancellationToken));
+        return Ok(await notificationService.GetMyNotificationsAsync(query, cancellationToken));
     }
 
     /// <summary>Returns the unread notification count for the current account.</summary>

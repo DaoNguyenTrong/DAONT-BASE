@@ -52,6 +52,7 @@ export interface LocaleSchema {
     usernameRequired: string
     passwordRequired: string
     invalidCredentials: string
+    accountTemporarilyLocked: string
     loginFailed: string
     logoutConfirmMessage: string
     logoutFailed: string
@@ -123,6 +124,7 @@ export interface LocaleSchema {
     currentPasswordRequired: string
     newPasswordRequired: string
     newPasswordTooShort: string
+    passwordChangeTemporarilyLocked: string
     name: string
     namePlaceholder: string
     nameRequired: string
@@ -172,8 +174,6 @@ export interface LocaleSchema {
     empty: string
     emptyHint: string
     created: string
-    switchedTo: string
-    switchedToPersonal: string
     members: string
     membersTitle: string
     membersEmpty: string
@@ -283,6 +283,8 @@ const en: LocaleSchema = {
     usernameRequired: 'Username is required.',
     passwordRequired: 'Password is required.',
     invalidCredentials: 'Your username or password is incorrect.',
+    accountTemporarilyLocked:
+      'This account is temporarily locked after too many failed sign-in attempts. Please try again in a few minutes.',
     loginFailed: 'Unable to sign in right now. Please try again.',
     logoutConfirmMessage: 'Do you want to sign out from this session?',
     logoutFailed:
@@ -299,7 +301,7 @@ const en: LocaleSchema = {
       'Unable to resend the verification email right now. Please try again.',
     nameRequired: 'Name is required.',
     emailInvalid: 'Enter a valid email address.',
-    passwordTooShort: 'Password must be at least 8 characters.',
+    passwordTooShort: 'Password must be at least {min} characters.',
     usernameAlreadyExists: 'This username is already taken.',
     emailAlreadyExists: 'An account with this email already exists.',
     registerFailed: 'Unable to create your account right now. Please try again.',
@@ -361,7 +363,9 @@ const en: LocaleSchema = {
     newPasswordPlaceholder: 'Enter a new password',
     currentPasswordRequired: 'Current password is required.',
     newPasswordRequired: 'New password is required.',
-    newPasswordTooShort: 'New password must be at least 8 characters.',
+    newPasswordTooShort: 'New password must be at least {min} characters.',
+    passwordChangeTemporarilyLocked:
+      'Changing the password is temporarily locked after too many wrong current passwords. Please try again in a few minutes.',
     name: 'Name',
     namePlaceholder: 'Enter the full name',
     nameRequired: 'Name is required.',
@@ -411,8 +415,6 @@ const en: LocaleSchema = {
     empty: 'No organizations yet',
     emptyHint: 'Create an organization to get started.',
     created: 'Organization created',
-    switchedTo: 'Switched to {name}',
-    switchedToPersonal: 'Switched to your personal workspace',
     members: 'Members',
     membersTitle: 'Members of {name}',
     membersEmpty: 'No members yet.',

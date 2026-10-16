@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Domain.Entities;
@@ -43,5 +44,25 @@ public sealed class UnitOfWork(
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task ExecuteInTransactionAsync(
+        Func<CancellationToken, Task> operation,
+        CancellationToken cancellationToken = default)
+    {
+        // Postgres can't nest transactions — join the open one and leave commit/rollback to its owner.
+        if (dbContext.Database.CurrentTransaction is not null)
+        {
+            await operation(cancellationToken);
+            return;
+        }
+
+        // Disposing without a commit (operation threw) rolls back.
+        await using IDbContextTransaction transaction =
+            await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        await operation(cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
     }
 }

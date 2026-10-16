@@ -3,6 +3,7 @@ import AppControls from '@/components/AppControls.vue'
 import { useThemePreference } from '@/composables/use-theme-preference'
 import { DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '@/lib/font-size'
 import { renderComponent } from '../helpers/render'
+import en from '@/locales/en'
 
 async function openFontMenu(wrapper: Awaited<ReturnType<typeof renderComponent>>['wrapper']) {
   await wrapper.findAll('button')[1]!.trigger('click')
@@ -28,72 +29,67 @@ describe('AppControls', () => {
     document.documentElement.style.fontSize = ''
   })
 
-  it('disables the increase button at the max font size', async () => {
-    document.documentElement.style.fontSize = `${MAX_FONT_SIZE}px`
+  it.each([
+    [
+      'disables the increase button at the max font size',
+      MAX_FONT_SIZE,
+      en.common.increaseFontSize,
+      en.common.decreaseFontSize,
+    ],
+    [
+      'disables the decrease button at the min font size',
+      MIN_FONT_SIZE,
+      en.common.decreaseFontSize,
+      en.common.increaseFontSize,
+    ],
+    [
+      'disables the reset button at the default font size',
+      DEFAULT_FONT_SIZE,
+      en.common.resetFontSize,
+      null,
+    ],
+  ])('%s', async (_title, fontSize, disabledLabel, enabledLabel) => {
+    document.documentElement.style.fontSize = `${fontSize}px`
     const { wrapper } = await renderComponent(AppControls, {
       global: { stubs: { teleport: true } },
     })
     await openFontMenu(wrapper)
 
-    expect(fontMenuButton(wrapper, 'Increase font size')?.attributes('disabled')).toBeDefined()
-    expect(fontMenuButton(wrapper, 'Decrease font size')?.attributes('disabled')).toBeUndefined()
+    expect(fontMenuButton(wrapper, disabledLabel)?.attributes('disabled')).toBeDefined()
+    if (enabledLabel !== null) {
+      expect(fontMenuButton(wrapper, enabledLabel)?.attributes('disabled')).toBeUndefined()
+    }
   })
 
-  it('disables the decrease button at the min font size', async () => {
-    document.documentElement.style.fontSize = `${MIN_FONT_SIZE}px`
+  it.each([
+    [
+      'increases the font size and updates the DOM style on click',
+      DEFAULT_FONT_SIZE,
+      en.common.increaseFontSize,
+      DEFAULT_FONT_SIZE + 1,
+    ],
+    [
+      'decreases the font size and updates the DOM style on click',
+      DEFAULT_FONT_SIZE,
+      en.common.decreaseFontSize,
+      DEFAULT_FONT_SIZE - 1,
+    ],
+    [
+      'resets the font size to default on click',
+      MAX_FONT_SIZE,
+      en.common.resetFontSize,
+      DEFAULT_FONT_SIZE,
+    ],
+  ])('%s', async (_title, fontSize, label, expected) => {
+    document.documentElement.style.fontSize = `${fontSize}px`
     const { wrapper } = await renderComponent(AppControls, {
       global: { stubs: { teleport: true } },
     })
     await openFontMenu(wrapper)
 
-    expect(fontMenuButton(wrapper, 'Decrease font size')?.attributes('disabled')).toBeDefined()
-    expect(fontMenuButton(wrapper, 'Increase font size')?.attributes('disabled')).toBeUndefined()
-  })
+    await fontMenuButton(wrapper, label)?.trigger('click')
 
-  it('disables the reset button at the default font size', async () => {
-    document.documentElement.style.fontSize = `${DEFAULT_FONT_SIZE}px`
-    const { wrapper } = await renderComponent(AppControls, {
-      global: { stubs: { teleport: true } },
-    })
-    await openFontMenu(wrapper)
-
-    expect(fontMenuButton(wrapper, 'Reset font size')?.attributes('disabled')).toBeDefined()
-  })
-
-  it('increases the font size and updates the DOM style on click', async () => {
-    document.documentElement.style.fontSize = `${DEFAULT_FONT_SIZE}px`
-    const { wrapper } = await renderComponent(AppControls, {
-      global: { stubs: { teleport: true } },
-    })
-    await openFontMenu(wrapper)
-
-    await fontMenuButton(wrapper, 'Increase font size')?.trigger('click')
-
-    expect(document.documentElement.style.fontSize).toBe(`${DEFAULT_FONT_SIZE + 1}px`)
-  })
-
-  it('decreases the font size and updates the DOM style on click', async () => {
-    document.documentElement.style.fontSize = `${DEFAULT_FONT_SIZE}px`
-    const { wrapper } = await renderComponent(AppControls, {
-      global: { stubs: { teleport: true } },
-    })
-    await openFontMenu(wrapper)
-
-    await fontMenuButton(wrapper, 'Decrease font size')?.trigger('click')
-
-    expect(document.documentElement.style.fontSize).toBe(`${DEFAULT_FONT_SIZE - 1}px`)
-  })
-
-  it('resets the font size to default on click', async () => {
-    document.documentElement.style.fontSize = `${MAX_FONT_SIZE}px`
-    const { wrapper } = await renderComponent(AppControls, {
-      global: { stubs: { teleport: true } },
-    })
-    await openFontMenu(wrapper)
-
-    await fontMenuButton(wrapper, 'Reset font size')?.trigger('click')
-
-    expect(document.documentElement.style.fontSize).toBe(`${DEFAULT_FONT_SIZE}px`)
+    expect(document.documentElement.style.fontSize).toBe(`${expected}px`)
   })
 
   it('toggles the theme icon between sun and moon on click', async () => {

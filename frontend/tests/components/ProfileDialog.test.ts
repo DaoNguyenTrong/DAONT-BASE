@@ -6,6 +6,7 @@ import * as feedback from '@/lib/feedback'
 import { server } from '../helpers/msw/server'
 import { renderComponent } from '../helpers/render'
 import type { ProfileDto, SessionDto } from '@/api/types'
+import en from '@/locales/en'
 
 function makeProfile(overrides: Partial<ProfileDto> = {}): ProfileDto {
   return {
@@ -112,7 +113,7 @@ describe('ProfileDialog', () => {
 
     const { wrapper } = await openDialog()
 
-    expect(placeholderInput(wrapper, 'Enter the full name').element.value).toBe('Jane Doe')
+    expect(placeholderInput(wrapper, en.profile.namePlaceholder).element.value).toBe('Jane Doe')
   })
 
   it('shows a load-error alert instead of the form when the profile request fails', async () => {
@@ -125,7 +126,7 @@ describe('ProfileDialog', () => {
     const { wrapper } = await openDialog()
 
     expect(wrapper.text()).toContain('Server error')
-    expect(placeholderInput(wrapper, 'Enter the full name').exists()).toBe(false)
+    expect(placeholderInput(wrapper, en.profile.namePlaceholder).exists()).toBe(false)
   })
 
   it('trims strings and sends null for empty optional fields on update', async () => {
@@ -140,10 +141,10 @@ describe('ProfileDialog', () => {
 
     const { wrapper } = await openDialog()
 
-    await placeholderInput(wrapper, 'Enter the full name').setValue('  Jane Doe  ')
-    await placeholderInput(wrapper, 'Enter the phone number').setValue('  ')
-    await placeholderInput(wrapper, 'Enter the position').setValue('')
-    await placeholderInput(wrapper, 'Enter the address').setValue('')
+    await placeholderInput(wrapper, en.profile.namePlaceholder).setValue('  Jane Doe  ')
+    await placeholderInput(wrapper, en.profile.phonePlaceholder).setValue('  ')
+    await placeholderInput(wrapper, en.profile.positionPlaceholder).setValue('')
+    await placeholderInput(wrapper, en.profile.addressPlaceholder).setValue('')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
@@ -166,7 +167,7 @@ describe('ProfileDialog', () => {
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
-    expect(placeholderInput(wrapper, 'Enter the full name').element.value).toBe('New Name')
+    expect(placeholderInput(wrapper, en.profile.namePlaceholder).element.value).toBe('New Name')
     expect(successSpy).toHaveBeenCalled()
   })
 
@@ -210,15 +211,15 @@ describe('ProfileDialog', () => {
 
     const { wrapper } = await openDialog()
     await openChangePasswordTab(wrapper)
-    await placeholderInput(wrapper, 'Enter your current password').setValue('old-pass')
-    await placeholderInput(wrapper, 'Enter a new password').setValue('new-pass')
+    await placeholderInput(wrapper, en.profile.currentPasswordPlaceholder).setValue('old-pass')
+    await placeholderInput(wrapper, en.profile.newPasswordPlaceholder).setValue('new-pass')
 
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
     expect(successSpy).toHaveBeenCalled()
-    expect(placeholderInput(wrapper, 'Enter your current password').element.value).toBe('')
-    expect(placeholderInput(wrapper, 'Enter a new password').element.value).toBe('')
+    expect(placeholderInput(wrapper, en.profile.currentPasswordPlaceholder).element.value).toBe('')
+    expect(placeholderInput(wrapper, en.profile.newPasswordPlaceholder).element.value).toBe('')
   })
 
   it('maps a 401 password-change failure to the current-password field specifically', async () => {
@@ -235,13 +236,40 @@ describe('ProfileDialog', () => {
 
     const { wrapper } = await openDialog()
     await openChangePasswordTab(wrapper)
-    await placeholderInput(wrapper, 'Enter your current password').setValue('old-pass')
-    await placeholderInput(wrapper, 'Enter a new password').setValue('new-pass')
+    await placeholderInput(wrapper, en.profile.currentPasswordPlaceholder).setValue('old-pass')
+    await placeholderInput(wrapper, en.profile.newPasswordPlaceholder).setValue('new-pass')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
     expect(wrapper.text()).toContain('Current password is incorrect')
     expect(errorSpy).not.toHaveBeenCalled()
+  })
+
+  it('shows its own message when the password change is locked, not the backend text', async () => {
+    server.use(http.get('*/api/profile', () => HttpResponse.json(makeProfile())))
+    server.use(
+      http.put('*/api/profile/password', () =>
+        problemResponse(
+          {
+            status: 401,
+            title: 'Unauthorized',
+            code: 'PasswordChangeTemporarilyLocked',
+            detail: 'backend text',
+          },
+          401,
+        ),
+      ),
+    )
+
+    const { wrapper } = await openDialog()
+    await openChangePasswordTab(wrapper)
+    await placeholderInput(wrapper, en.profile.currentPasswordPlaceholder).setValue('old-pass')
+    await placeholderInput(wrapper, en.profile.newPasswordPlaceholder).setValue('new-pass')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Changing the password is temporarily locked')
+    expect(wrapper.text()).not.toContain('backend text')
   })
 
   it('maps other password-change validation errors the same way as the profile form', async () => {
@@ -257,8 +285,8 @@ describe('ProfileDialog', () => {
 
     const { wrapper } = await openDialog()
     await openChangePasswordTab(wrapper)
-    await placeholderInput(wrapper, 'Enter your current password').setValue('old-pass')
-    await placeholderInput(wrapper, 'Enter a new password').setValue('new-pass')
+    await placeholderInput(wrapper, en.profile.currentPasswordPlaceholder).setValue('old-pass')
+    await placeholderInput(wrapper, en.profile.newPasswordPlaceholder).setValue('new-pass')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
@@ -276,8 +304,8 @@ describe('ProfileDialog', () => {
 
     const { wrapper } = await openDialog()
     await openChangePasswordTab(wrapper)
-    await placeholderInput(wrapper, 'Enter your current password').setValue('old-pass')
-    await placeholderInput(wrapper, 'Enter a new password').setValue('new-pass')
+    await placeholderInput(wrapper, en.profile.currentPasswordPlaceholder).setValue('old-pass')
+    await placeholderInput(wrapper, en.profile.newPasswordPlaceholder).setValue('new-pass')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
@@ -308,7 +336,8 @@ describe('ProfileDialog', () => {
       makeSession({
         id: 2,
         isCurrent: false,
-        deviceInfo: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:120.0) Gecko/20100101 Firefox/120.0',
+        deviceInfo:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:120.0) Gecko/20100101 Firefox/120.0',
       }),
     ])
 
@@ -317,7 +346,7 @@ describe('ProfileDialog', () => {
 
     expect(wrapper.text()).toContain('Chrome on Linux')
     expect(wrapper.text()).toContain('Firefox on macOS')
-    expect(wrapper.text()).toContain('This device')
+    expect(wrapper.text()).toContain(en.profile.currentDevice)
   })
 
   it('shows the empty state when there are no sessions', async () => {
@@ -327,7 +356,7 @@ describe('ProfileDialog', () => {
     const { wrapper } = await openDialog()
     await openSessionsTab(wrapper)
 
-    expect(wrapper.text()).toContain('No active sessions.')
+    expect(wrapper.text()).toContain(en.profile.sessionsEmpty)
   })
 
   it('does not offer a revoke button for the current session', async () => {
@@ -347,7 +376,8 @@ describe('ProfileDialog', () => {
       makeSession({
         id: 2,
         isCurrent: false,
-        deviceInfo: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:120.0) Gecko/20100101 Firefox/120.0',
+        deviceInfo:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:120.0) Gecko/20100101 Firefox/120.0',
       }),
     ])
     let revokedId: string | undefined
@@ -378,7 +408,7 @@ describe('ProfileDialog', () => {
     await openSessionsTab(wrapper)
 
     expect(
-      wrapper.findAll('button').find((b) => b.text().includes('Sign out of other devices')),
+      wrapper.findAll('button').find((b) => b.text().includes(en.profile.signOutOtherDevices)),
     ).toBeUndefined()
   })
 
@@ -394,7 +424,8 @@ describe('ProfileDialog', () => {
       makeSession({
         id: 2,
         isCurrent: false,
-        deviceInfo: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:120.0) Gecko/20100101 Firefox/120.0',
+        deviceInfo:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:120.0) Gecko/20100101 Firefox/120.0',
       }),
     ])
     let revokeOthersCalled = false
@@ -410,7 +441,7 @@ describe('ProfileDialog', () => {
 
     const button = wrapper
       .findAll('button')
-      .find((b) => b.text().includes('Sign out of other devices'))
+      .find((b) => b.text().includes(en.profile.signOutOtherDevices))
     await button!.trigger('click')
     await flushPromises()
 

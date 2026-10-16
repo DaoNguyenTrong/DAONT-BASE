@@ -53,7 +53,11 @@ const passwordRules = computed<FormRules>(() => ({
   ],
   newPassword: [
     { required: true, message: t('profile.newPasswordRequired'), trigger: ['input', 'blur'] },
-    { min: 8, message: t('profile.newPasswordTooShort'), trigger: ['input', 'blur'] },
+    {
+      min: PASSWORD_MIN_LENGTH,
+      message: t('profile.newPasswordTooShort', { min: PASSWORD_MIN_LENGTH }),
+      trigger: ['input', 'blur'],
+    },
   ],
 }))
 
@@ -153,7 +157,9 @@ async function changePassword() {
   } catch (error) {
     if (error instanceof ApiError) {
       passwordErrors.value = mapValidationErrors(error.problem.errors)
-      if (error.status === 401) {
+      if (error.problem.code === 'PasswordChangeTemporarilyLocked') {
+        passwordErrors.value.currentpassword = t('profile.passwordChangeTemporarilyLocked')
+      } else if (error.status === 401) {
         passwordErrors.value.currentpassword = error.problem.detail ?? error.problem.title
       } else {
         showErrorMessage(error.problem.title, error.problem.detail ?? t('errors.requestFailed'))
@@ -477,7 +483,12 @@ watch(visible, (open) => {
             {{ t('profile.sessionsEmpty') }}
           </p>
 
-          <ul v-else class="mt-3 space-y-2">
+          <!-- Many sessions scroll inside the tab instead of stretching the dialog past the viewport. -->
+          <ul
+            v-else
+            data-testid="profile-sessions-list"
+            class="mt-3 max-h-[min(24rem,50vh)] space-y-2 overflow-y-auto overscroll-contain pr-1"
+          >
             <li
               v-for="session in sessions"
               :key="session.id"

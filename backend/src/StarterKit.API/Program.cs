@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Reflection;
 using System.Threading.RateLimiting;
 using Hangfire;
 using Hangfire.Dashboard;
@@ -9,18 +10,18 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using StarterKit.API.Authorization;
+using StarterKit.API.Commands;
 using StarterKit.API.Common;
 using StarterKit.API.Extensions;
 using StarterKit.API.Middleware;
 using StarterKit.API.Json;
 using StarterKit.Application;
+using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Resources;
 using StarterKit.Infrastructure;
-using StarterKit.Infrastructure.Persistence;
 using StarterKit.Infrastructure.Services.Notifications;
 using Prometheus;
 using Serilog;
@@ -88,6 +89,10 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowCredentials());
 });
+AuthCookieSettings authCookieSettings = builder.Configuration
+    .GetSection(nameof(AuthCookieSettings)).Get<AuthCookieSettings>() ?? new AuthCookieSettings();
+AuthCookies.Validate(authCookieSettings);
+builder.Services.Configure<AuthCookieSettings>(builder.Configuration.GetSection(nameof(AuthCookieSettings)));
 ForwardedHeadersSettings forwardedHeadersSettings = builder.Configuration
     .GetSection(nameof(ForwardedHeadersSettings)).Get<ForwardedHeadersSettings>() ?? new ForwardedHeadersSettings();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -151,15 +156,35 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-if (!app.Environment.IsDevelopment())
+// One-shot commands (`-- migrate`, see Commands/ICliCommand.cs) need only configuration and DI: run them right
+// after Build(), before any startup step below touches Postgres, Hangfire or storage, and exit with their code.
+if (await CliCommands.TryRunAsync(app.Services, args, CancellationToken.None) is int commandExitCode)
 {
-    using IServiceScope scope = app.Services.CreateScope();
-    AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await dbContext.Database.MigrateAsync();
+    // The web host never runs, so nothing else disposes it: flush the logger and dispose singletons here.
+    await app.DisposeAsync();
+    return commandExitCode;
 }
 
-app.UseBackgroundJobs();
-await app.UseStorageAsync();
+// The build-time OpenAPI export (-p:OpenApiGenerateDocumentsOnBuild=true) runs this file inside the
+// GetDocument.Insider tool to build the host, then reads the document without starting the server.
+// Every startup step that reaches Postgres or S3 is skipped there, so the export needs no running
+// services and doesn't fail with connection errors that look like contract errors. New startup work
+// that touches an external service belongs behind this flag too.
+bool isOpenApiExport = Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider";
+
+if (!isOpenApiExport)
+{
+    DatabaseSettings databaseSettings =
+        app.Configuration.GetSection(nameof(DatabaseSettings)).Get<DatabaseSettings>() ?? new DatabaseSettings();
+    if (!app.Environment.IsDevelopment() && databaseSettings.MigrateOnStartup)
+    {
+        using IServiceScope scope = app.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<IDatabaseMigrator>().MigrateAsync(CancellationToken.None);
+    }
+
+    app.UseBackgroundJobs();
+    await app.UseStorageAsync();
+}
 
 app.UseForwardedHeaders();
 // No UseHttpsRedirection(): no layer in this stack terminates TLS today (nginx in
@@ -222,3 +247,5 @@ app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapMetrics();
 
 app.Run();
+
+return 0;

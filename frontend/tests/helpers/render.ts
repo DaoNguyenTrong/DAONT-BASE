@@ -67,5 +67,5 @@ export async function renderComponent<C extends Component>(
 
   await router.isReady()
 
-  return { wrapper, router }
+  return { wrapper, router, pinia }
 }

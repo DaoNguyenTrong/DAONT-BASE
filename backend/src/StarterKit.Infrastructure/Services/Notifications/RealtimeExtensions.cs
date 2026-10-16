@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
-using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Settings;
+using StarterKit.Application.Services.Notifications;
 using StarterKit.Infrastructure.Services.Caching;
 using StarterKit.Infrastructure.Services.Notifications;
 

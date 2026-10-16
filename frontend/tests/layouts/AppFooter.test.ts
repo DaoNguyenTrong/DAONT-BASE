@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import AppFooter from '@/layouts/AppFooter.vue'
 import { renderComponent } from '../helpers/render'
+import en from '@/locales/en'
 
 // The footer only reflects the shared health store — polling is owned by App.vue —
 // so these tests seed the store state rather than mock the /api/health request.
@@ -9,7 +10,7 @@ describe('AppFooter', () => {
   it('renders the app name and version', async () => {
     const { wrapper } = await renderComponent(AppFooter)
 
-    expect(wrapper.text()).toContain('App Starter')
+    expect(wrapper.text()).toContain(en.app.name)
     expect(wrapper.text()).toMatch(/Version v?\d+\.\d+\.\d+/)
   })
 

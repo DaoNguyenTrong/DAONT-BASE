@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
+using StarterKit.API.Common;
 using StarterKit.Application.Resources;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Services.Auth;
@@ -16,11 +17,11 @@ public sealed class AuthController(
     IAuthService authService,
     IRegistrationService registrationService,
     ISessionService sessionService,
-    IOptions<JwtSettings> jwtOptions) : ControllerBase
+    IOptions<JwtSettings> jwtOptions,
+    IOptions<AuthCookieSettings> authCookieOptions) : ControllerBase
 {
-    private const string AccessTokenCookieName = "access_token";
-    private const string RefreshTokenCookieName = "refresh_token";
     private readonly JwtSettings jwtSettings = jwtOptions.Value;
+    private readonly AuthCookieSettings authCookieSettings = authCookieOptions.Value;
 
     /// <summary>Authenticates with username and password. Returns an access token and refresh token.</summary>
     /// <remarks>Tokens are also set as HttpOnly cookies (`access_token` and `refresh_token`) for browser client support. Fails with 401 if the account's email has not been verified yet.</remarks>
@@ -137,7 +138,7 @@ public sealed class AuthController(
         CancellationToken cancellationToken)
     {
         string refreshToken = request?.RefreshToken
-            ?? Request.Cookies[RefreshTokenCookieName]
+            ?? Request.Cookies[AuthCookies.RefreshTokenName]
             ?? throw new UnauthorizedException(ApplicationMessages.RefreshTokenRequired);
 
         AuthResult result = await authService.RefreshTokenAsync(
@@ -160,7 +161,7 @@ public sealed class AuthController(
         [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] RefreshTokenRequest? request,
         CancellationToken cancellationToken)
     {
-        string? refreshToken = request?.RefreshToken ?? Request.Cookies[RefreshTokenCookieName];
+        string? refreshToken = request?.RefreshToken ?? Request.Cookies[AuthCookies.RefreshTokenName];
 
         if (!string.IsNullOrWhiteSpace(refreshToken))
         {
@@ -179,7 +180,7 @@ public sealed class AuthController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IReadOnlyList<SessionDto>>> GetSessions(CancellationToken cancellationToken)
     {
-        string? currentRefreshToken = Request.Cookies[RefreshTokenCookieName];
+        string? currentRefreshToken = Request.Cookies[AuthCookies.RefreshTokenName];
 
         IReadOnlyList<SessionDto> sessions = await sessionService.GetSessionsAsync(
             currentRefreshToken, cancellationToken);
@@ -207,7 +208,7 @@ public sealed class AuthController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RevokeOtherSessions(CancellationToken cancellationToken)
     {
-        string? currentRefreshToken = Request.Cookies[RefreshTokenCookieName];
+        string? currentRefreshToken = Request.Cookies[AuthCookies.RefreshTokenName];
 
         await sessionService.RevokeOtherSessionsAsync(currentRefreshToken, cancellationToken);
 
@@ -239,53 +240,21 @@ public sealed class AuthController(
 
     private void SetAuthCookies(AuthResult result)
     {
-        Response.Cookies.Append(
-            AccessTokenCookieName,
-            result.AccessToken,
-            new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Path = "/",
-                Expires = result.AccessTokenExpiry
-            });
+        CookieOptions accessOptions = AuthCookies.CreateOptions(authCookieSettings);
+        accessOptions.Expires = result.AccessTokenExpiry;
+        Response.Cookies.Append(AuthCookies.AccessTokenName, result.AccessToken, accessOptions);
 
-        CookieOptions refreshOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-            Path = "/"
-        };
+        CookieOptions refreshOptions = AuthCookies.CreateOptions(authCookieSettings);
 
         if (result.IsPersistent)
         {
             refreshOptions.Expires = DateTimeOffset.UtcNow.AddDays(jwtSettings.RefreshTokenExpiryDays);
         }
 
-        Response.Cookies.Append(
-            RefreshTokenCookieName,
-            result.RefreshToken,
-            refreshOptions);
+        Response.Cookies.Append(AuthCookies.RefreshTokenName, result.RefreshToken, refreshOptions);
     }
 
-    private void ClearAuthCookies()
-    {
-        Response.Cookies.Delete(AccessTokenCookieName, new CookieOptions
-        {
-            Secure = true,
-            SameSite = SameSiteMode.None,
-            Path = "/"
-        });
-
-        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
-        {
-            Secure = true,
-            SameSite = SameSiteMode.None,
-            Path = "/"
-        });
-    }
+    private void ClearAuthCookies() => AuthCookies.Clear(Response, authCookieSettings);
 
     private static LoginResponse ToResponse(AuthResult result)
     {

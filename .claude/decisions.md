@@ -4,33 +4,54 @@ Record only decisions that affect **system design** — architecture, module/lay
 Newest entry at top — prepend new entries directly below this line, do not append at the bottom.
 Title format: `### YYYY-MM-DD — <decision>` (date the decision was made, not a due date).
 Write only the **why** — the reasoning and rejected alternative. Never "what was done" or "how" (git log/diff already has that; do not restate file names, method names, or a narrative of the change). Keep each entry under ~80 words (excluding heading).
+**Language:** write every entry in English, even when the conversation that produced it is in another language.
 **Gate:** never write to this file without asking first — draft the proposed entry, show it to the user, and wait for explicit confirmation before prepending it.
 
 ---
 
-### 2026-08-25 — Cache + SignalR chọn Memory/Redis qua config, không hard-require Redis
+### 2026-10-16 — One-shot CLI commands run through the API host
 
-Single-instance giữ in-memory; multi-instance bật Redis bằng `CacheSettings:Provider` và `RealtimeSettings:Backplane` cùng một `ConnectionStrings:Redis`. Rejected hard-wiring Redis vào mọi môi trường — thêm dependency/ops không cần thiết khi chỉ chạy 1 replica. Fail-fast khi chọn Redis mà thiếu connection, tránh silent single-node behaviour lúc scale.
+Seed/import/admin tasks need the API's configuration and DI but not the web server, and must work when HTTP doesn't, from scripts branching on exit codes. Commands implement `ICliCommand` and run right after `Build()`, before any startup step. Rejected: EF or Infrastructure inside commands/`Program.cs` — migrations go through the `IDatabaseMigrator` Application port, so commands keep the Infrastructure-only-in-composition-root rule.
 
-### 2026-08-25 — Cache scope invalidation qua generation counter, không enumerate key
+### 2026-10-16 — Each password check has its own lockout counter
 
-`ICacheService.RemoveByPrefixAsync` thay bằng `InvalidateScopeAsync`, dựa trên generation counter theo scope thay vì track/enumerate key trong process. Key-tracking local (cách cũ) không lan sang instance khác khi cache dùng chung (Redis) — revoke quyền sẽ stale ở instance khác đến khi hết TTL. Tăng generation là thao tác atomic, đúng với mọi backing store dùng chung, không cần thiết kế lại khi thêm Redis. Cũng thêm `CacheSettings.Provider` + keyed DI để chọn provider qua config, khớp pattern `StorageExtensions`.
+The change-password current-password check had no limit, so a stolen session could brute-force it and then take the account over. It reuses the sign-in lockout on separate state. Rejected: sharing the sign-in counter — a session holder could then lock the owner out of signing in, and failed sign-ins would block the owner from changing a leaked password; a per-session rate limit alone — a fresh session resets it.
 
-### 2026-08-25 — backend/Dockerfile build context chuyển sang repo root để MinVer thấy được .git
+### 2026-10-16 — Login lockout reserves the attempt before the password check, in column-scoped SQL
 
-`api.build.context` trong `docker-compose.prod.yml` đổi từ `./backend` sang `.` (`dockerfile: backend/Dockerfile`) — verify thực nghiệm cho thấy MinVer luôn fallback về `0.0.0-preview` khi context chỉ chứa `backend/` vì `.git` nằm ngoài context, khiến `/api/health.Version` vô dụng để xác minh bản deploy. `.dockerignore` root và `backend/.dockerignore` được gộp làm một (`backend/.dockerignore` xoá) vì cả 2 Dockerfile giờ dùng chung context root.
+Counting after BCrypt lets parallel guesses all read the same count, so a distributed attacker bypasses the limit; reserving first caps guesses per window at the cost of a burst locking the owner out sooner. Rejected: load-modify-save on the entity — a full-row write around the ~0.3s hash can revert a concurrent password change or deactivation. The lock is reported before verification; after it, the lock would act as a password oracle.
 
-### 2026-08-25 — SeaweedFS storage provider: S3 Gateway API, auto-create bucket lúc khởi động
+### 2026-10-16 — Namespaces must not form dependency cycles; mappers live per feature
 
-Thêm `SeaweedFsFileProvider` implement `IStorageProvider` có sẵn (keyed DI theo `StorageSettings:Provider`) — không sửa `FileService`/`FilesController`/entity. Chọn gọi qua S3 Gateway (AWSSDK.S3, `ForcePathStyle=true`) thay vì Filer HTTP API thuần — nặng hơn (thêm dependency + container `-s3`) nhưng code tái dùng được cho AWS S3/MinIO thật sau này, chỉ đổi `ServiceURL`. Bucket tự tạo lúc khởi động nếu thiếu, ưu tiên DX hơn yêu cầu operator tạo sẵn. Static-file serving local (`Program.cs`) giờ chỉ mount khi `Provider == "Local"`; `FileDto.PublicUrl` cần bucket cấu hình public-read mới hoạt động đúng với SeaweedFS.
+A shared `Common/Mappings` mapper and ports in `Common/Interfaces` that name feature DTOs tied every feature namespace to every other, so no feature could change in isolation. Shared types now live with the side that is depended on, enforced by an architecture test rather than review. Rejected: a shrink-only allowlist (CIMP's interim step) — base had a single cycle, so the strict rule was cheaper than a ratchet.
 
-### 2026-08-09 — Backend test runner song song hoá theo tiến trình OS thay vì bỏ -m:1
+### 2026-10-16 — Cache generation counters expire; Redis must run noeviction
 
-`dotnet test backend/StarterKit.sln --no-restore -m:1` serialize cả 4 test project dù phần lớn wall-clock (55,8s/479 test) là overhead build/khởi động tiến trình mỗi project, không phải thời gian chạy test — đã kiểm chứng thực nghiệm. Không bỏ `-m:1` (rủi ro tái kích hoạt bug parallel-MSBuild đã biết). Thay vào đó `backend/scripts/test.sh` build 1 lần tuần tự rồi chạy mỗi project bằng tiến trình `dotnet test --no-build` độc lập (vẫn `-m:1` nội bộ) — còn ~35s, kết quả test không đổi.
+Counters without a TTL leaked one key per removed cache key forever. A TTL is only safe if a counter outlives every entry it versions, so entry TTLs are capped (`MaxExpirationMinutes`, clamped rather than rejected — callers pass configured TTLs on every request) and every write extends the counters. Rejected: no TTL (unbounded growth). Consequence: any eviction policy, `volatile-*` included, can drop a counter early and resurrect stale entries, so `noeviction` is mandatory.
 
-### 2026-08-07 — Docker production: một nginx biên (same-origin), appsettings.json bind-mount thay vì bake vào image
+### 2026-08-25 — Cache + SignalR pick Memory/Redis via config; Redis is not hard-required
 
-Chọn một nginx vừa serve frontend static vừa proxy `/api`,`/hubs` sang API thay vì thêm container reverse-proxy riêng — mọi request thành same-origin nên không cần biết domain thật lúc build image (`VITE_API_BASE_URL` để trống). Secret backend vẫn theo convention cũ (`appsettings.Example.json` → `appsettings.json` gitignored) nhưng bind-mount vào container thay vì bake vào image hay dàn trải qua hàng chục env var lồng nhau. Chỉ single-instance — cache và SignalR in-memory, không scale `api` >1 replica nếu chưa thêm Redis.
+Single-instance stays in-memory; multi-instance turns on Redis via `CacheSettings:Provider` and `RealtimeSettings:Backplane`, sharing one `ConnectionStrings:Redis`. Rejected hard-wiring Redis into every environment — needless dependency/ops when running a single replica. Selecting Redis without a connection string fails fast, avoiding silent single-node behaviour when scaling out.
+
+### 2026-08-25 — Cache scope invalidation via a generation counter, not key enumeration
+
+`ICacheService.RemoveByPrefixAsync` was replaced by `InvalidateScopeAsync`, built on a per-scope generation counter instead of tracking/enumerating keys in-process. Local key tracking (the old approach) doesn't reach other instances once the cache is shared (Redis) — a permission revoke would stay stale on the other instances until the TTL ran out. Bumping a generation is atomic and correct for any shared backing store, so adding Redis needed no redesign. Also added `CacheSettings.Provider` + keyed DI to choose the provider via config, matching the `StorageExtensions` pattern.
+
+### 2026-08-25 — backend/Dockerfile build context moved to the repo root so MinVer can see .git
+
+`api.build.context` in `docker-compose.prod.yml` changed from `./backend` to `.` (`dockerfile: backend/Dockerfile`) — verified empirically that MinVer always falls back to `0.0.0-preview` when the context holds only `backend/`, because `.git` sits outside it, which made `/api/health.Version` useless for confirming what is deployed. The root `.dockerignore` and `backend/.dockerignore` were merged into one (`backend/.dockerignore` deleted) since both Dockerfiles now share the root context.
+
+### 2026-08-25 — SeaweedFS storage provider: S3 Gateway API, bucket auto-created at startup
+
+Added `SeaweedFsFileProvider` implementing the existing `IStorageProvider` (keyed DI on `StorageSettings:Provider`) — no change to `FileService`/`FilesController`/entities. Chose the S3 Gateway (AWSSDK.S3, `ForcePathStyle=true`) over the plain Filer HTTP API — heavier (extra dependency + an `-s3` container) but the code carries over to real AWS S3/MinIO later by changing only `ServiceURL`. A missing bucket is created at startup, favouring DX over requiring the operator to pre-create it. Local static-file serving (`Program.cs`) is now mounted only when `Provider == "Local"`; `FileDto.PublicUrl` only works with SeaweedFS once the bucket is configured public-read.
+
+### 2026-08-09 — Backend test runner parallelised across OS processes instead of dropping -m:1
+
+`dotnet test backend/StarterKit.sln --no-restore -m:1` serialises all 4 test projects, though most of the wall-clock (55.8s for 479 tests) is per-project build/process-startup overhead, not test execution — verified empirically. Kept `-m:1` (dropping it risks re-triggering the known parallel-MSBuild bug). Instead `backend/scripts/test.sh` builds once, serially, then runs each project as an independent `dotnet test --no-build` process (still `-m:1` internally) — down to ~35s, same test results.
+
+### 2026-08-07 — Docker production: one edge nginx (same-origin), appsettings.json bind-mounted instead of baked into the image
+
+Chose a single nginx that both serves the static frontend and proxies `/api`, `/hubs` to the API, instead of a separate reverse-proxy container — every request becomes same-origin, so the real domain needn't be known at image build time (`VITE_API_BASE_URL` left empty). Backend secrets keep the existing convention (`appsettings.Example.json` → gitignored `appsettings.json`) but are bind-mounted into the container rather than baked into the image or spread over dozens of nested env vars. Single-instance only — cache and SignalR are in-memory; don't scale `api` beyond 1 replica until Redis is added.
 
 ### 2026-08-04 — Notification email content defaults to `vi`, not per-account locale
 
@@ -46,7 +67,7 @@ Chọn một nginx vừa serve frontend static vừa proxy `/api`,`/hubs` sang A
 
 ### 2026-08-03 — Prometheus/Grafana monitoring: prometheus-net over OpenTelemetry, local-dev scope only
 
-Chọn prometheus-net.AspNetCore thay vì OpenTelemetry .NET — exporter Prometheus chính thức của OTel (`OpenTelemetry.Exporter.Prometheus.AspNetCore`) vẫn đang beta (1.17.0-beta.1) tại thời điểm này, không phù hợp để ship trong một starter kit dùng lại cho nhiều project. `/metrics` không đặt dưới `/api` nên tự động bỏ qua `UserTimeZoneMiddleware`/rate limiter/auth giống `/hangfire` — giữ nguyên mô hình "mở, chặn ở network layer" thay vì thêm auth code. Phạm vi lần này chỉ local dev (docker-compose scrape qua host.docker.internal) — chưa containerize API cho production.
+Chose prometheus-net.AspNetCore over OpenTelemetry .NET — OTel's official Prometheus exporter (`OpenTelemetry.Exporter.Prometheus.AspNetCore`) is still beta (1.17.0-beta.1) at this point, not fit to ship in a starter kit reused across projects. `/metrics` sits outside `/api`, so like `/hangfire` it skips `UserTimeZoneMiddleware`/rate limiter/auth automatically — keeping the "open, restricted at the network layer" model instead of adding auth code. Scope this time is local dev only (docker-compose scrapes via host.docker.internal) — the API isn't containerised for production yet.
 
 ### 2026-08-03 — Add Hangfire (PostgreSQL storage) as reusable background-job infrastructure
 
