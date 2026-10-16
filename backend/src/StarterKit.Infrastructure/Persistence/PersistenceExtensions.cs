@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StarterKit.Application.Common.Interfaces;
+using StarterKit.Application.Services.Accounts;
 using StarterKit.Application.Services.AuditLogs;
 using StarterKit.Domain.Interfaces;
 using StarterKit.Infrastructure.Persistence;
@@ -31,6 +32,7 @@ internal static class PersistenceExtensions
         services.AddScoped(typeof(IRepository<,>), typeof(GenericRepository<,>));
         services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<IPasswordAttemptStore, PasswordAttemptStore>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StarterKit.API.Tests.TestSupport;
@@ -115,6 +116,35 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
             "/api/auth/login", new LoginRequest("wrong-password-user", "totally-wrong"));
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    // End to end through the real Postgres statements: after the allowed wrong passwords, even the right
+    // one is refused with the lock code until the lock runs out.
+    [Fact]
+    public async Task Login_AfterTooManyWrongPasswords_IsLockedEvenWithTheRightOne()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        await using (AppDbContext context = CreateDbContext())
+        {
+            Account account = await AuthTestHelper.SeedConfirmedAccountAsync(
+                context, username: "lockout-user", email: "lockout@example.com", passwordHash: null);
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", FastPasswordHasher.WorkFactor));
+            context.Accounts.Update(account);
+            await context.SaveChangesAsync();
+        }
+
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            HttpResponseMessage wrong = await client.PostAsJsonAsync(
+                "/api/auth/login", new LoginRequest("lockout-user", "totally-wrong"));
+            Assert.Equal("InvalidUsernameOrPassword", await ErrorCodeAsync(wrong));
+        }
+
+        HttpResponseMessage locked = await client.PostAsJsonAsync(
+            "/api/auth/login", new LoginRequest("lockout-user", "correct-password"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, locked.StatusCode);
+        Assert.Equal("AccountTemporarilyLocked", await ErrorCodeAsync(locked));
     }
 
     [Fact]
@@ -430,6 +460,12 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         HttpResponseMessage response = await client.GetAsync("/api/permissions");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    private static async Task<string?> ErrorCodeAsync(HttpResponseMessage response)
+    {
+        using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return body.RootElement.TryGetProperty("code", out JsonElement code) ? code.GetString() : null;
     }
 
     private static string ComputeSha256(string input)

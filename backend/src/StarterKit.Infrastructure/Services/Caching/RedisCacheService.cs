@@ -90,9 +90,9 @@ internal sealed class RedisCacheService(
 
         T value = await factory(cancellationToken);
 
-        // Write under the generations read BEFORE the factory ran, not freshly re-read ones: if the
-        // scope or this key was invalidated while the factory was computing, the value is already
-        // stale and must land in an abandoned generation, where nobody will read it again.
+        // Guarded by the generations read BEFORE the factory ran, not freshly re-read ones: if the scope
+        // or this key was invalidated while the factory was computing, the value is already stale and
+        // the write is dropped.
         try
         {
             await WriteAsync(slot, value, expiration);
@@ -141,35 +141,33 @@ internal sealed class RedisCacheService(
     private static bool IsRedisFailure(Exception exception) =>
         exception is RedisException or TimeoutException;
 
-    // Every counter carries a TTL longer than any entry can live (CacheExpiration.GenerationTtl), and
-    // each write below pushes both counters' expiry past the entry's own. So a counter only expires once
-    // every entry it versions has, and restarting it from 0 can't resurrect anything. Redis must expire
-    // keys only through their TTL — maxmemory-policy noeviction; any eviction policy could drop a
-    // counter early. A full Redis then rejects the INCR, which surfaces as a logged invalidation failure.
+    // Every counter carries a TTL longer than any entry can live (CacheExpiration.GenerationTtl), and a
+    // write extends both counters in the same transaction that stores the entry — so a counter only
+    // expires once every entry it versions has, and restarting it from 0 can't resurrect anything. Redis
+    // must expire keys only through their TTL — maxmemory-policy noeviction; any eviction policy could
+    // drop a counter early. A full Redis then rejects the INCR, which surfaces as a logged invalidation
+    // failure.
     private async Task WriteAsync<T>(CacheSlot slot, T value, TimeSpan? expiration)
     {
-        TimeSpan generationTtl = CacheExpiration.GenerationTtl(settings);
-
-        // Unconditional: a counter read as missing (generation 0) may have been created by an
-        // invalidation while the factory ran, and this entry still belongs to it.
-        bool scopeCounterAlive = await redis.KeyExpireAsync(slot.ScopeCounter, generationTtl);
-        bool keyCounterAlive = await redis.KeyExpireAsync(slot.KeyCounter, generationTtl);
-
-        // A counter read as > 0 that is gone now expired after the read: it restarts from 0 and may
-        // climb back to the generation this value would be written under, so don't write it.
-        if ((slot.ScopeGeneration > 0 && !scopeCounterAlive) || (slot.KeyGeneration > 0 && !keyCounterAlive))
+        TimeSpan entryExpiration = CacheExpiration.Resolve(settings, expiration);
+        if (entryExpiration <= TimeSpan.Zero)
         {
             return;
         }
 
-        await redis.StringSetAsync(slot.PhysicalKey, Serialize(value), CacheExpiration.Resolve(settings, expiration));
+        // Commits only while both counters still hold the generations read before the factory ran: an
+        // invalidation (or a counter that expired and was re-created) since then means the value may
+        // already be stale, and nobody would read it back under a live generation anyway.
+        await redis.SetIfGenerationsUnchangedAsync(
+            slot.PhysicalKey,
+            Serialize(value),
+            entryExpiration,
+            [new GenerationGuard(slot.ScopeCounter, slot.ScopeGeneration), new GenerationGuard(slot.KeyCounter, slot.KeyGeneration)],
+            CacheExpiration.GenerationTtl(settings));
     }
 
-    private async Task IncrementGenerationAsync(string counter)
-    {
-        await redis.StringIncrementAsync(counter);
-        await redis.KeyExpireAsync(counter, CacheExpiration.GenerationTtl(settings));
-    }
+    private Task IncrementGenerationAsync(string counter) =>
+        redis.IncrementAsync(counter, CacheExpiration.GenerationTtl(settings));
 
     // Both generation counters come back in one MGET.
     private async Task<CacheSlot> SlotAsync(string scope, string key)
@@ -181,7 +179,7 @@ internal sealed class RedisCacheService(
         long keyGeneration = generations[1].IsNullOrEmpty ? 0 : (long)generations[1];
 
         string physicalKey =
-            $"{KeyPrefix}{ScopeSeparator}{scope}{ScopeSeparator}{scopeGeneration}{ScopeSeparator}{keyGeneration}{ScopeSeparator}{key}";
+            $"{KeyPrefix}{ScopeSeparator}{{{scope}}}{ScopeSeparator}{scopeGeneration}{ScopeSeparator}{keyGeneration}{ScopeSeparator}{key}";
 
         return new CacheSlot(physicalKey, scopeCounter, scopeGeneration, keyCounter, keyGeneration);
     }
@@ -193,9 +191,9 @@ internal sealed class RedisCacheService(
         string KeyCounter,
         long KeyGeneration);
 
-    // The scope sits in a {hash tag} in both counter keys so the MGET above stays on one Redis Cluster
-    // slot; without it the cluster answers CROSSSLOT, which the outage fallback would turn into a
-    // silently disabled cache.
+    // The scope sits in a {hash tag} in the entry key and both counter keys so the MGET above and the
+    // write transaction stay on one Redis Cluster slot; without it the cluster answers CROSSSLOT, which
+    // the outage fallback would turn into a silently disabled cache.
     private static string ScopeGenerationKey(string scope) =>
         $"{KeyPrefix}{ScopeSeparator}gen{ScopeSeparator}{{{scope}}}";
 

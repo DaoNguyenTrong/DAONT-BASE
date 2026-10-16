@@ -48,8 +48,14 @@
   <data name="InvalidUsernameOrPassword" xml:space="preserve">
     <value>Invalid username or password.</value>
   </data>
+  <data name="AccountTemporarilyLocked" xml:space="preserve">
+    <value>This account is temporarily locked after too many failed sign-in attempts. Please try again in a few minutes.</value>
+  </data>
   <data name="InvalidCurrentPassword" xml:space="preserve">
     <value>Invalid current password.</value>
+  </data>
+  <data name="PasswordChangeTemporarilyLocked" xml:space="preserve">
+    <value>Changing the password is temporarily locked after too many wrong current passwords. Please try again in a few minutes.</value>
   </data>
   <data name="InvalidRefreshToken" xml:space="preserve">
     <value>Invalid refresh token.</value>
@@ -128,6 +134,9 @@
   </data>
   <data name="RoleNameRequired" xml:space="preserve">
     <value>Role name is required.</value>
+  </data>
+  <data name="NotificationDedupeKeyTooLong" xml:space="preserve">
+    <value>A notification dedupe key cannot exceed 200 characters.</value>
   </data>
   <data name="NotificationTypeRequired" xml:space="preserve">
     <value>Notification type is required.</value>

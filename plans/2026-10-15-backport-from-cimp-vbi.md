@@ -280,13 +280,26 @@ Tiêu chí: công sức S, không đổi interface hay hợp đồng API, không
 
 ### v1.7.0 Architecture & DX (khoảng 1,5–2 tuần)
 
-- [ ] **B7 + A12**: ArchitectureTests và mapper theo feature.
-- [ ] **B8**: khóa tài khoản tạm thời.
-- [ ] **B9**: thông báo; đổi hợp đồng API, phải regen orval.
-- [ ] **F8** cổng phân quyền, **F10** mobile.
-- [ ] **D2** `rename.sh` + fork checklist, **D7** CI không phụ thuộc nhà cung cấp + build từ tag.
-- [ ] **A7–A11**: tùy chọn quy trình.
-- [ ] **T10**: một container Postgres, mỗi collection clone DB từ template đã migrate. Hoãn từ W7, xem lý do ở mục 7 của v1.6.0.
+- [x] **B7 + A12**: ArchitectureTests và mapper theo feature.
+  - Base chỉ có đúng một vòng (`Common.Interfaces`/`Common.Mappings` ↔ `Accounts`/`Notifications`), nên đi thẳng tới test cấm vòng tuyệt đối như bản cuối của CIMP, bỏ qua giai đoạn ratchet.
+  - `EntityMapper` tách thành `AccountMapper` + `NotificationMapper`; `IRealtimeNotifier` dời về `Services.Notifications`; `AuthorizationPolicies` dời sang `Application.Common.Authorization`, controller hết import Infrastructure.
+  - Gỡ skill `crud-entity`. `openapi.json` không đổi.
+- [x] **B8**: khóa tài khoản tạm thời. Migration `20261016100000_AddAccountLoginLockout` (3 cột).
+  - User chốt (2026-10-16): giữ lượt **trước** BCrypt bằng một `UPDATE … RETURNING`, nên đoán song song không vượt được 5 lần. Login ngoài được cho qua và xoá bộ đếm. Tài khoản deactivate vẫn trả lỗi chung.
+  - Khác CIMP: CIMP load account, kiểm BCrypt rồi `Update` cả dòng, nên có thể ghi đè một lần đổi mật khẩu/deactivate xảy ra giữa chừng. Base chỉ ghi đúng 3 cột lockout, và EF không bao giờ ghi các cột này khi update thường.
+  - Báo khoá **trước** khi kiểm mật khẩu: nếu chỉ báo khi mật khẩu đúng thì khoá thành máy dò mật khẩu. Việc này không lộ thêm gì, vì `/register` đã cho biết username tồn tại.
+- [x] **B9**: thông báo; đổi hợp đồng API, phải regen orval. Migration `20261016110000_AddNotificationDedupeKey`.
+  - User chốt (2026-10-16): `readState=All|Unread|Read` thay `unreadOnly`, bỏ `search` (**breaking** cho client ngoài, ghi release note); `NotifyAsync` đi chung đường khử trùng với `NotifyManyAsync`.
+  - `NotifyManyAsync`: một lần lưu, job dispatch chia lô 500 id. `DispatchAsync(Guid)` giữ lại cho job cũ còn trong hàng đợi.
+  - Khác CIMP: lọc khoá đã gửi theo cả account, kiểm độ dài `DedupeKey` ở domain; race giữa hai lần chạy đồng thời để index unique chặn, caller retry.
+- [x] **F8** cổng phân quyền: một trường `meta.permission` vừa ẩn mục sidebar vừa chặn route (chuyển về `home`). Không port `requiresSystemAdmin` (base không có admin toàn cục) và `resolveLandingRoute` (base vẫn có trang chủ). Base chưa có route nào dùng; đây là cơ chế cho fork.
+- [x] **F10** mobile. Kiểm bằng Playwright ở 375px (API giả lập) và 1280px: trang không cuộn ngang, panel thông báo vừa màn hình, menu tổ chức mở lên trên trong drawer, nút điều khiển 40px trên màn chạm.
+  - Phát hiện thêm và sửa: footer drawer của Naive là flex hàng ngang canh phải, nên switcher tổ chức trên mobile bị đẩy hẳn ra ngoài mép trái (x = −287). Lỗi có từ trước.
+  - Trên điện thoại chuông chuyển sang mép phải (chỉ dưới `sm`), để panel neo theo chuông có đủ bề rộng. Desktop giữ nguyên.
+  - Chưa port `MobileFilterCollapse`: base chưa có màn danh sách nào có bộ lọc.
+- [x] **D2** `rename.sh` + fork checklist, **D7** CI không phụ thuộc nhà cung cấp + build từ tag.
+- [x] **A7–A11**: tùy chọn quy trình.
+- [x] **T10**: một container Postgres, mỗi collection clone DB từ template đã migrate. Hoãn từ W7, xem lý do ở mục 7 của v1.6.0.
 
 ### Backlog / recipes
 

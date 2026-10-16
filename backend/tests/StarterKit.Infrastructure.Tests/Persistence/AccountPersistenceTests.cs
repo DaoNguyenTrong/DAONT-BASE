@@ -6,7 +6,7 @@ using StarterKit.Infrastructure.Tests.TestSupport;
 
 namespace StarterKit.Infrastructure.Tests.Persistence;
 
-[Collection(nameof(PostgresCollection))]
+[Collection(nameof(PostgresCollectionB))]
 public sealed class AccountPersistenceTests(PostgresContainerFixture fixture) : IAsyncLifetime
 {
     private AppDbContext context = null!;

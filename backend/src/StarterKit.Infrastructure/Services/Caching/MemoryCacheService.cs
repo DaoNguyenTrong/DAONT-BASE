@@ -67,7 +67,13 @@ internal sealed class MemoryCacheService(
 
     private void Write<T>(string physicalKey, T value, TimeSpan? expiration)
     {
-        memoryCache.Set(physicalKey, value, CacheExpiration.Resolve(settings, expiration));
+        TimeSpan entryExpiration = CacheExpiration.Resolve(settings, expiration);
+        if (entryExpiration <= TimeSpan.Zero)
+        {
+            return;
+        }
+
+        memoryCache.Set(physicalKey, value, entryExpiration);
     }
 
     public Task RemoveAsync(string scope, string key, CancellationToken cancellationToken = default)

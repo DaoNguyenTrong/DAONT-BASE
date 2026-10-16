@@ -29,8 +29,7 @@ public class CacheExpirationTests
     [InlineData(5, 0)]
     [InlineData(0, 60)]
     [InlineData(-1, 60)]
-    [InlineData(61, 60)]
-    public void Validate_RejectsAnInconsistentConfiguration(int defaultMinutes, int maxMinutes)
+    public void Validate_RejectsANonPositiveExpiration(int defaultMinutes, int maxMinutes)
     {
         CacheSettings settings = new() { DefaultExpirationMinutes = defaultMinutes, MaxExpirationMinutes = maxMinutes };
 
@@ -39,4 +38,14 @@ public class CacheExpirationTests
 
     [Fact]
     public void Validate_AcceptsTheDefaults() => CacheExpiration.Validate(new CacheSettings());
+
+    // Clamped like any other TTL, so a long default in an existing configuration still starts.
+    [Fact]
+    public void DefaultAboveTheMaximum_IsAcceptedAndClamped()
+    {
+        CacheSettings settings = new() { DefaultExpirationMinutes = 2880, MaxExpirationMinutes = 1440 };
+
+        CacheExpiration.Validate(settings);
+        Assert.Equal(TimeSpan.FromMinutes(1440), CacheExpiration.Resolve(settings, null));
+    }
 }

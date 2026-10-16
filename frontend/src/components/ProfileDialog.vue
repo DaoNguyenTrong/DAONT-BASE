@@ -153,7 +153,9 @@ async function changePassword() {
   } catch (error) {
     if (error instanceof ApiError) {
       passwordErrors.value = mapValidationErrors(error.problem.errors)
-      if (error.status === 401) {
+      if (error.problem.code === 'PasswordChangeTemporarilyLocked') {
+        passwordErrors.value.currentpassword = t('profile.passwordChangeTemporarilyLocked')
+      } else if (error.status === 401) {
         passwordErrors.value.currentpassword = error.problem.detail ?? error.problem.title
       } else {
         showErrorMessage(error.problem.title, error.problem.detail ?? t('errors.requestFailed'))

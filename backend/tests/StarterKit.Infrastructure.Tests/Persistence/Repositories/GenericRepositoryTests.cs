@@ -7,7 +7,7 @@ using StarterKit.Infrastructure.Tests.TestSupport;
 
 namespace StarterKit.Infrastructure.Tests.Persistence.Repositories;
 
-[Collection(nameof(PostgresCollection))]
+[Collection(nameof(PostgresCollectionB))]
 public sealed class GenericRepositoryTests(PostgresContainerFixture fixture) : IAsyncLifetime
 {
     private AppDbContext context = null!;

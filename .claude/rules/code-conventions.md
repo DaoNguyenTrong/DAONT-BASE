@@ -68,8 +68,10 @@ Never construct entities via EF or Mapperly directly — that bypasses domain va
 
 ## Mapperly
 
-- `EntityMapper.ToDto(entity)` — entity → DTO
-- `request.ToParams()` — request → Params record (extension method in `EntityMapper`)
+One `[Mapper] static partial class` per feature, next to its service (`Services/Accounts/AccountMapper.cs`, `Services/Notifications/NotificationMapper.cs`) — no shared mapper in `Common/`, which would make every feature namespace depend on every other one (`ArchitectureTests.Namespaces_HaveNoDependencyCycles` fails on that).
+
+- `AccountMapper.ToDto(entity)` — entity → DTO
+- `request.ToParams()` — request → Params record (extension method in the feature's mapper)
 
 ## EF Core (NoTracking global)
 

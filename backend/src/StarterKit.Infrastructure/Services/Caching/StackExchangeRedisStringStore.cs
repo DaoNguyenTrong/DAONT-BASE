@@ -13,15 +13,38 @@ internal sealed class StackExchangeRedisStringStore(IConnectionMultiplexer conne
     public Task<RedisValue[]> StringGetAsync(string[] keys) =>
         database.StringGetAsync(Array.ConvertAll(keys, key => (RedisKey)key));
 
-    public async Task StringSetAsync(string key, string value, TimeSpan expiry) =>
-        await database.StringSetAsync(key, value, expiry);
-
     public async Task KeyDeleteAsync(string key) =>
         await database.KeyDeleteAsync(key);
 
-    public Task<long> StringIncrementAsync(string key) =>
-        database.StringIncrementAsync(key);
+    // Commands queued on a transaction complete only once it executes, so their tasks are not awaited
+    // individually; ExecuteAsync surfaces any failure.
+    public async Task IncrementAsync(string key, TimeSpan expiry)
+    {
+        ITransaction transaction = database.CreateTransaction();
+        _ = transaction.StringIncrementAsync(key);
+        _ = transaction.KeyExpireAsync(key, expiry);
+        await transaction.ExecuteAsync();
+    }
 
-    public Task<bool> KeyExpireAsync(string key, TimeSpan expiry) =>
-        database.KeyExpireAsync(key, expiry);
+    public async Task<bool> SetIfGenerationsUnchangedAsync(
+        string key,
+        string value,
+        TimeSpan expiry,
+        IReadOnlyList<GenerationGuard> guards,
+        TimeSpan guardExpiry)
+    {
+        ITransaction transaction = database.CreateTransaction();
+        foreach (GenerationGuard guard in guards)
+        {
+            // INCR never yields 0, so generation 0 means the counter has never been bumped (or expired).
+            transaction.AddCondition(guard.Generation == 0
+                ? Condition.KeyNotExists(guard.Key)
+                : Condition.StringEqual(guard.Key, guard.Generation));
+            _ = transaction.KeyExpireAsync(guard.Key, guardExpiry);
+        }
+
+        _ = transaction.StringSetAsync(key, value, expiry);
+
+        return await transaction.ExecuteAsync();
+    }
 }

@@ -19,3 +19,5 @@ Clean Architecture — four layers:
 Dependencies flow inward: API → Application → Domain. Infrastructure implements Domain interfaces.
 
 All four layer projects live under `backend/src/`; tests mirror the split under `backend/tests/`.
+
+`backend/tests/StarterKit.API.Tests/Architecture/ArchitectureTests.cs` enforces what `ProjectReference`s can't: no infrastructure/web packages in Domain/Application, Infrastructure used in the API only from `Program.cs`, the entity factory pattern, `AppException`-derived exceptions, and **no namespace dependency cycles** inside a project. A type shared between two features lives with the side that is depended on (a port next to its consumer, a mapper next to its feature) — never in a `Common/` namespace that would point back at a feature.

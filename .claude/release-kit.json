@@ -10,6 +10,6 @@
     "mandatory": "backend/scripts/test.sh && bun run --cwd frontend test:run"
   },
   "changelogPath": "CHANGELOG.md",
-  "ciTriggerNote": ".github/workflows/release.yml triggers on tag push; CI runs after the tag, there is no PR CI",
+  "ciTriggerNote": ".github/workflows/release.yml (GitHub) / .gitlab-ci.yml (GitLab) trigger on the v* tag push: test, then production images versioned from the tag, then the release; there is no PR CI",
   "modes": ["standard", "hotfix"]
 }

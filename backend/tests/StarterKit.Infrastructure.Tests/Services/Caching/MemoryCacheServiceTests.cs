@@ -15,6 +15,20 @@ public class MemoryCacheServiceTests
         return new MemoryCacheService(memoryCache, options);
     }
 
+    // MemoryCache.Set throws on a non-positive TTL; a TTL configured to 0 must mean "don't cache", not a 500.
+    [Fact]
+    public async Task Expiration_ZeroOrNegative_IsNotCached()
+    {
+        MemoryCacheService service = CreateService(out _);
+
+        await service.SetAsync("scope", "one", "1", TimeSpan.Zero);
+        string value = await service.GetOrSetAsync("scope", "two", _ => Task.FromResult("2"), TimeSpan.FromSeconds(-1));
+
+        Assert.Equal("2", value);
+        Assert.Null(await service.GetAsync<string>("scope", "one"));
+        Assert.Null(await service.GetAsync<string>("scope", "two"));
+    }
+
     [Fact]
     public async Task GetAsync_Miss_ReturnsDefault()
     {

@@ -35,6 +35,14 @@ Follow this order for every non-trivial task:
 
 A git worktree (including an agent's `isolation: "worktree"`) has only tracked files: no `backend/src/StarterKit.API/appsettings*.json`, no `.env*`, no `frontend/node_modules`, `frontend/src/api/generated/` or `frontend/src/typings/` (run `bun install --cwd frontend` there to regenerate the last two). Copy the gitignored config in before building or testing, and remove the worktree (`git worktree remove <path>`) when done. `isolation: "worktree"` branches from `origin`'s default branch, not the local `HEAD` — an agent there does not see unpushed local commits, so hand it the branch or the diff explicitly.
 
+### Commits
+
+- A question is not an order to commit — "is this ready?" or "what changed?" gets an answer, not a commit.
+- Run `git branch --show-current` before every commit; never commit on `main` (the Lefthook branch guard blocks it) or on a branch you didn't expect.
+- Stage only the files the task changed, by explicit path — never `git add -A`/`git add .`/`git commit -a`; leave changes that predate the task unstaged. Subagents working in parallel each commit their own paths, so one never sweeps up another's half-finished files.
+- A commit rejected by Lefthook (commitlint, prettier, secretlint) means fix the message or re-stage — not `--no-verify`.
+- Push, merge, or open a PR only on the user's explicit order.
+
 ### Tool Selection
 
 Two-tier model: **CodeGraph first** when you need orientation; **Serena next** when you know what to look at. Serena's reliable scope differs per capability — see the Scope column below, not just "is the language server configured."
@@ -71,6 +79,20 @@ Never grep first. Never open a file to orient — orient with CodeGraph, then dr
 CodeGraph sees the codebase as a **graph of relationships** — it answers "what connects to what."
 Serena sees the codebase as a **tree of symbols** — it answers "what does this specific thing contain."
 `Read` is the last resort, not the first instinct.
+
+### Superpowers Integration
+
+If the superpowers plugin is installed, its skills yield to this file. Where a skill's default disagrees, these win:
+
+- **Where it fits** — brainstorming / systematic-debugging / writing-plans run after Pre-Task steps 1–4: their "explore the context" _is_ memory → live state → CodeGraph → Serena.
+- **Specs and plans** go in `docs/superpowers/{specs,plans}/` (the plugin's default). Root `plans/` holds the earlier numbered plans — don't add new ones there. A spec or plan is **not committed** unless the user says so, whatever the skill's own "commit the design doc" step says.
+- **Requirement gaps stop the run** — subagent-driven development's "rulings, not stalls" covers technical ambiguity only. A missing or conflicting business rule or acceptance criterion means stop and ask; never write a ruling that invents business behavior.
+- **Branch & worktree** — work in the current checkout on one `feature/*` branch cut from `dev`. Don't create a worktree for a skill run: the gitignored config and generated client are missing there (see Worktrees). Subagents that build the backend run one at a time (`-m:1`, shared `obj/`).
+- **Commits** — implementers may commit per task on `feature/*` (local only, never on `dev`/`main`) so per-task review ranges work, following Commits above.
+- **TDD** — "delete the code and start over" applies only to code written in the current task, never to changes already on the branch.
+- **Tests** — baseline and verification use `backend/scripts/test.sh` and `bun run --cwd frontend test:run`.
+- **Finishing** — base is `dev` (`main` only for a hotfix); never merge locally or delete the branch. Without an explicit order to push or open a PR, leave the branch as it is.
+- **Gated side effects** — push/PR and `.claude/decisions.md` (confirmation gate) still need the user, even mid-plan.
 
 ## Critical Invariants
 

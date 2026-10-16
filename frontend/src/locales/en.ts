@@ -52,6 +52,7 @@ export interface LocaleSchema {
     usernameRequired: string
     passwordRequired: string
     invalidCredentials: string
+    accountTemporarilyLocked: string
     loginFailed: string
     logoutConfirmMessage: string
     logoutFailed: string
@@ -123,6 +124,7 @@ export interface LocaleSchema {
     currentPasswordRequired: string
     newPasswordRequired: string
     newPasswordTooShort: string
+    passwordChangeTemporarilyLocked: string
     name: string
     namePlaceholder: string
     nameRequired: string
@@ -281,6 +283,8 @@ const en: LocaleSchema = {
     usernameRequired: 'Username is required.',
     passwordRequired: 'Password is required.',
     invalidCredentials: 'Your username or password is incorrect.',
+    accountTemporarilyLocked:
+      'This account is temporarily locked after too many failed sign-in attempts. Please try again in a few minutes.',
     loginFailed: 'Unable to sign in right now. Please try again.',
     logoutConfirmMessage: 'Do you want to sign out from this session?',
     logoutFailed:
@@ -360,6 +364,8 @@ const en: LocaleSchema = {
     currentPasswordRequired: 'Current password is required.',
     newPasswordRequired: 'New password is required.',
     newPasswordTooShort: 'New password must be at least 8 characters.',
+    passwordChangeTemporarilyLocked:
+      'Changing the password is temporarily locked after too many wrong current passwords. Please try again in a few minutes.',
     name: 'Name',
     namePlaceholder: 'Enter the full name',
     nameRequired: 'Name is required.',

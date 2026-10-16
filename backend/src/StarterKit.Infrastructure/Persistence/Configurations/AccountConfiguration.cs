@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StarterKit.Domain.Entities;
 
@@ -43,6 +44,29 @@ public sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.Property(account => account.EmailConfirmed)
             .HasDefaultValue(false)
             .IsRequired();
+
+        // Written only by PasswordAttemptStore's column-scoped statements. An ordinary update saves every
+        // column of a detached account (NoTracking + repository.Update), and a stale copy must not write
+        // back a lockout state that changed since it was loaded.
+        builder.Property(account => account.FailedLoginCount)
+            .IsRequired()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+        builder.Property(account => account.FailedLoginWindowStartedAt)
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+        builder.Property(account => account.LockedUntil)
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+        builder.Property(account => account.FailedPasswordChangeCount)
+            .IsRequired()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+        builder.Property(account => account.PasswordChangeWindowStartedAt)
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+        builder.Property(account => account.PasswordChangeLockedUntil)
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
 
         builder.Property(account => account.CreatedAt)
             .IsRequired();

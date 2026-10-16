@@ -56,6 +56,8 @@ async function handleSubmit() {
       if (error.problem.code === 'EmailNotConfirmed') {
         submitError.value = t('auth.emailNotConfirmed')
         showResendVerification.value = true
+      } else if (error.problem.code === 'AccountTemporarilyLocked') {
+        submitError.value = t('auth.accountTemporarilyLocked')
       } else if (error.status === 401) {
         submitError.value = t('auth.invalidCredentials')
       } else {

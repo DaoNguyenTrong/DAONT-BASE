@@ -9,6 +9,18 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-10-16 — Each password check has its own lockout counter
+
+The change-password current-password check had no limit, so a stolen session could brute-force it and then take the account over. It reuses the sign-in lockout on separate state. Rejected: sharing the sign-in counter — a session holder could then lock the owner out of signing in, and failed sign-ins would block the owner from changing a leaked password; a per-session rate limit alone — a fresh session resets it.
+
+### 2026-10-16 — Login lockout reserves the attempt before the password check, in column-scoped SQL
+
+Counting after BCrypt lets parallel guesses all read the same count, so a distributed attacker bypasses the limit; reserving first caps guesses per window at the cost of a burst locking the owner out sooner. Rejected: load-modify-save on the entity — a full-row write around the ~0.3s hash can revert a concurrent password change or deactivation. The lock is reported before verification; after it, the lock would act as a password oracle.
+
+### 2026-10-16 — Namespaces must not form dependency cycles; mappers live per feature
+
+A shared `Common/Mappings` mapper and ports in `Common/Interfaces` that name feature DTOs tied every feature namespace to every other, so no feature could change in isolation. Shared types now live with the side that is depended on, enforced by an architecture test rather than review. Rejected: a shrink-only allowlist (CIMP's interim step) — base had a single cycle, so the strict rule was cheaper than a ratchet.
+
 ### 2026-10-16 — Cache generation counters expire; Redis must run noeviction
 
 Counters without a TTL leaked one key per removed cache key forever. A TTL is only safe if a counter outlives every entry it versions, so entry TTLs are capped (`MaxExpirationMinutes`, clamped rather than rejected — callers pass configured TTLs on every request) and every write extends the counters. Rejected: no TTL (unbounded growth). Consequence: any eviction policy, `volatile-*` included, can drop a counter early and resurrect stale entries, so `noeviction` is mandatory.

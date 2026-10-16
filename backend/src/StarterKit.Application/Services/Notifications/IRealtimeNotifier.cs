@@ -1,6 +1,4 @@
-using StarterKit.Application.Services.Notifications;
-
-namespace StarterKit.Application.Common.Interfaces;
+namespace StarterKit.Application.Services.Notifications;
 
 public interface IRealtimeNotifier
 {

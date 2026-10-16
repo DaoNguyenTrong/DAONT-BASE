@@ -43,7 +43,7 @@ function navigateTo(routeName: string, event: MouseEvent) {
     <n-button
       :aria-label="t('nav.toggleSidebar')"
       text
-      class="h-9 w-9 lg:h-8 lg:w-8"
+      class="h-9 w-9 shrink-0 max-lg:h-11! max-lg:w-11! lg:h-8 lg:w-8"
       @click="handleToggle"
     >
       <template #icon
@@ -65,8 +65,12 @@ function navigateTo(routeName: string, event: MouseEvent) {
 
     <div class="flex-1" />
 
-    <NotificationBell />
-    <AppControls />
+    <!-- On phones the bell goes rightmost, so its panel (anchored to the bell's right edge) has the whole
+         viewport width to open into instead of running off the left edge. -->
+    <div class="flex max-sm:order-2">
+      <NotificationBell />
+    </div>
+    <AppControls class="max-sm:order-1" />
   </header>
 </template>
 

@@ -20,6 +20,9 @@ public class RedisCacheServiceTests
 
         public List<string[]> MultiGets { get; } = new();
 
+        /// <summary>Every key each conditional write touched: the entry, then its guards.</summary>
+        public List<string[]> Transactions { get; } = new();
+
         public IEnumerable<string> CounterKeys =>
             Strings.Keys.Where(key => key.Contains("\u0001gen\u0001") || key.Contains("\u0001kgen\u0001"));
 
@@ -47,15 +50,6 @@ public class RedisCacheServiceTests
                 .Select(key => state.Strings.TryGetValue(key, out string? value) ? (RedisValue)value : RedisValue.Null)
                 .ToArray());
 
-        redis.StringSetAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>())
-            .Returns(callInfo =>
-            {
-                string key = callInfo.ArgAt<string>(0);
-                state.Strings[key] = callInfo.ArgAt<string>(1);
-                state.Expiries[key] = callInfo.ArgAt<TimeSpan>(2);
-                return Task.CompletedTask;
-            });
-
         redis.KeyDeleteAsync(Arg.Any<string>())
             .Returns(callInfo =>
             {
@@ -65,33 +59,46 @@ public class RedisCacheServiceTests
                 return Task.CompletedTask;
             });
 
-        // INCR keeps an existing TTL and creates a missing key without one — same as Redis.
-        redis.StringIncrementAsync(Arg.Any<string>())
+        // INCR then EXPIRE, as the real store's transaction does.
+        redis.IncrementAsync(Arg.Any<string>(), Arg.Any<TimeSpan>())
             .Returns(callInfo =>
             {
                 string key = callInfo.ArgAt<string>(0);
-                long current = 0;
-                if (state.Strings.TryGetValue(key, out string? raw) && long.TryParse(raw, out long parsed))
-                {
-                    current = parsed;
-                }
+                long current = state.Strings.TryGetValue(key, out string? raw) && long.TryParse(raw, out long parsed)
+                    ? parsed
+                    : 0;
 
-                long next = current + 1;
-                state.Strings[key] = next.ToString();
-                return next;
+                state.Strings[key] = (current + 1).ToString();
+                state.Expiries[key] = callInfo.ArgAt<TimeSpan>(1);
+                return Task.CompletedTask;
             });
 
-        // EXPIRE on a missing key is a no-op that answers false.
-        redis.KeyExpireAsync(Arg.Any<string>(), Arg.Any<TimeSpan>())
+        // Same contract as the real transaction: all-or-nothing on the guards' current values, EXPIRE on a
+        // missing guard is a no-op.
+        redis.SetIfGenerationsUnchangedAsync(
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<IReadOnlyList<GenerationGuard>>(),
+                Arg.Any<TimeSpan>())
             .Returns(callInfo =>
             {
                 string key = callInfo.ArgAt<string>(0);
-                if (!state.Strings.ContainsKey(key))
+                IReadOnlyList<GenerationGuard> guards = callInfo.ArgAt<IReadOnlyList<GenerationGuard>>(3);
+                state.Transactions.Add([key, .. guards.Select(guard => guard.Key)]);
+
+                bool unchanged = guards.All(guard => guard.Generation == 0
+                    ? !state.Strings.ContainsKey(guard.Key)
+                    : state.Strings.TryGetValue(guard.Key, out string? current) && current == guard.Generation.ToString());
+                if (!unchanged)
                 {
                     return false;
                 }
 
-                state.Expiries[key] = callInfo.ArgAt<TimeSpan>(1);
+                foreach (GenerationGuard guard in guards.Where(guard => state.Strings.ContainsKey(guard.Key)))
+                {
+                    state.Expiries[guard.Key] = callInfo.ArgAt<TimeSpan>(4);
+                }
+
+                state.Strings[key] = callInfo.ArgAt<string>(1);
+                state.Expiries[key] = callInfo.ArgAt<TimeSpan>(2);
                 return true;
             });
 
@@ -109,10 +116,12 @@ public class RedisCacheServiceTests
 
         redis.StringGetAsync(Arg.Any<string>()).Returns<Task<RedisValue>>(_ => throw down);
         redis.StringGetAsync(Arg.Any<string[]>()).Returns<Task<RedisValue[]>>(_ => throw down);
-        redis.StringSetAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>()).Returns<Task>(_ => throw down);
         redis.KeyDeleteAsync(Arg.Any<string>()).Returns<Task>(_ => throw down);
-        redis.StringIncrementAsync(Arg.Any<string>()).Returns<Task<long>>(_ => throw down);
-        redis.KeyExpireAsync(Arg.Any<string>(), Arg.Any<TimeSpan>()).Returns<Task<bool>>(_ => throw down);
+        redis.IncrementAsync(Arg.Any<string>(), Arg.Any<TimeSpan>()).Returns<Task>(_ => throw down);
+        redis.SetIfGenerationsUnchangedAsync(
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<IReadOnlyList<GenerationGuard>>(),
+                Arg.Any<TimeSpan>())
+            .Returns<Task<bool>>(_ => throw down);
 
         return new RedisCacheService(redis, Settings(), NullLogger<RedisCacheService>.Instance);
     }
@@ -335,10 +344,10 @@ public class RedisCacheServiceTests
         Assert.Equal("2", await service.GetAsync<string>("prefix", "two"));
     }
 
-    // Redis Cluster rejects a multi-key command whose keys hash to different slots (CROSSSLOT), and the
+    // Redis Cluster rejects a multi-key command or transaction whose keys hash to different slots (CROSSSLOT), and the
     // outage fallback would turn that into a silently disabled cache. Keys sharing a {hash tag} share a slot.
     [Fact]
-    public async Task MultiKeyReads_AllKeysShareOneHashTag()
+    public async Task MultiKeyCommands_AllKeysShareOneHashTag()
     {
         RedisCacheService service = CreateService(out FakeRedis fake);
 
@@ -347,7 +356,8 @@ public class RedisCacheServiceTests
         await service.GetOrSetAsync("permissions:org-1", "account-1", _ => Task.FromResult("value"));
 
         Assert.NotEmpty(fake.MultiGets);
-        Assert.All(fake.MultiGets, keys => Assert.Single(keys.Select(HashTag).Distinct()));
+        Assert.NotEmpty(fake.Transactions);
+        Assert.All(fake.MultiGets.Concat(fake.Transactions), keys => Assert.Single(keys.Select(HashTag).Distinct()));
     }
 
     // Under noeviction a key only disappears through its TTL, so nothing in the cache may be left
@@ -400,22 +410,43 @@ public class RedisCacheServiceTests
         Assert.All(fake.CounterKeys, counter => Assert.True(fake.Expiries[counter] > entryTtl));
     }
 
-    // The value was read as generation 0 (no counter yet) and an invalidation created the counter while
-    // the factory ran: the stale entry lands in generation 0, so the counter must still be extended.
+    // Read as generation 0 (no counter yet); an invalidation then created the counter while the factory
+    // ran, so the value is stale and must not be stored at all.
     [Fact]
-    public async Task Write_ExtendsACounterCreatedWhileTheFactoryRan()
+    public async Task GetOrSetAsync_CounterCreatedWhileFactoryRan_DoesNotWrite()
     {
         RedisCacheService service = CreateService(out FakeRedis fake);
 
-        await service.GetOrSetAsync("prefix", "one", async _ =>
+        string value = await service.GetOrSetAsync("prefix", "one", async _ =>
         {
             await service.InvalidateScopeAsync("prefix");
-            fake.Expiries[fake.CounterKeys.Single()] = TimeSpan.FromSeconds(1); // the factory ran long
             return "stale";
-        }, TimeSpan.FromMinutes(MaxExpirationMinutes));
+        });
 
-        TimeSpan entryTtl = fake.Expiries[Assert.Single(fake.EntryKeys)];
-        Assert.True(fake.Expiries[fake.CounterKeys.Single()] > entryTtl);
+        Assert.Equal("stale", value);
+        Assert.Empty(fake.EntryKeys);
+    }
+
+    // A counter that expired and was re-created by an INCR while the factory ran is not merely "still
+    // there": a write under the generation read before would be served again once the counter climbs back.
+    [Fact]
+    public async Task GetOrSetAsync_CounterExpiredAndRecreatedWhileFactoryRan_DoesNotServeStaleValue()
+    {
+        RedisCacheService service = CreateService(out FakeRedis fake);
+        await service.InvalidateScopeAsync("prefix");
+        await service.InvalidateScopeAsync("prefix");
+
+        await service.GetOrSetAsync("prefix", "one", async _ =>
+        {
+            string counter = fake.CounterKeys.Single();
+            fake.Strings.Remove(counter);
+            fake.Expiries.Remove(counter);
+            await service.InvalidateScopeAsync("prefix"); // re-created at 1
+            return "stale";
+        });
+        await service.InvalidateScopeAsync("prefix"); // back at 2, the generation the value was read under
+
+        Assert.Null(await service.GetAsync<string>("prefix", "one"));
     }
 
     [Fact]
@@ -437,6 +468,18 @@ public class RedisCacheServiceTests
 
         Assert.Equal("stale", value);
         Assert.Null(await service.GetAsync<string>("prefix", "one"));
+    }
+
+    // e.g. PermissionResolverSettings:CacheTtlSeconds=0 to turn caching off: Redis would reject the SET.
+    [Fact]
+    public async Task Expiration_ZeroOrNegative_IsNotCached()
+    {
+        RedisCacheService service = CreateService(out FakeRedis fake);
+
+        await service.SetAsync("prefix", "one", "1", TimeSpan.Zero);
+        await service.GetOrSetAsync("prefix", "two", _ => Task.FromResult("2"), TimeSpan.FromSeconds(-1));
+
+        Assert.Empty(fake.EntryKeys);
     }
 
     [Fact]

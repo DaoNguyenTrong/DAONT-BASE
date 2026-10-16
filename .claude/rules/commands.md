@@ -63,7 +63,9 @@ For fast local iteration on a single layer, run just that project (skips the oth
 dotnet test backend/tests/StarterKit.Domain.Tests --no-restore -m:1
 ```
 
-Test projects live under `backend/tests/` (`StarterKit.Domain.Tests`, `StarterKit.Application.Tests`, `StarterKit.Infrastructure.Tests`, `StarterKit.API.Tests`), mirroring the `backend/src/` layer split. `Infrastructure.Tests` and `API.Tests` each spin up their own `Testcontainers.PostgreSql` container and run EF migrations — this is why they dominate total runtime (~7s and ~12s respectively, measured 2026-10-16) while `Domain.Tests`/`Application.Tests` are near-instant.
+Test projects live under `backend/tests/` (`StarterKit.Domain.Tests`, `StarterKit.Application.Tests`, `StarterKit.Infrastructure.Tests`, `StarterKit.API.Tests`), mirroring the `backend/src/` layer split. `Infrastructure.Tests` and `API.Tests` each spin up their own `Testcontainers.PostgreSql` container — this is why they dominate total runtime (~8s and ~13s respectively, measured 2026-10-16, mostly container start-up) while `Domain.Tests`/`Application.Tests` are near-instant.
+
+`Infrastructure.Tests` starts **one** Postgres container per process and migrates a template database once (`PostgresContainerFixture`); each xUnit collection (`PostgresCollection`, `PostgresCollectionB`) clones its own database from it (`CREATE DATABASE … TEMPLATE`), so collections run in parallel without seeing each other's data. A new Postgres-backed class that rolls back every test (`BeginTransactionAsync` in `InitializeAsync`) goes in `PostgresCollectionB`; one that commits rows or changes the schema goes in `PostgresCollection`. When one collection grows slow, add another `ICollectionFixture<PostgresContainerFixture>` definition and move classes over by measured time. Cleanup relies on Testcontainers' Ryuk — don't set `TESTCONTAINERS_RYUK_DISABLED`. The template migration runs with `Pooling=false`: an idle pooled connection left on the template makes every clone fail with `55006`.
 
 ### Test-host conventions (keep the suite fast and isolated)
 
@@ -123,4 +125,6 @@ Glob gotcha if you edit `lefthook.yml`: Lefthook's glob matcher (`gobwas/glob`) 
 
 ## CI
 
-There is **no CI workflow that runs build/test on PR or push today** — `.github/workflows/` currently only has `release.yml` (fired on tag push by the `git-release` skill, from the `release-kit` plugin). Nothing blocks a merge on a failing build or test yet; run the commands above locally before asking for review.
+There is **no CI workflow that runs build/test on PR or push today** — nothing blocks a merge on a failing build or test yet; run the commands above locally before asking for review.
+
+The only pipeline is the release, fired by the `v*` tag the `git-release` skill (from the `release-kit` plugin) pushes: test → build and push both production images → create the release. `.github/workflows/release.yml` (images to GHCR) and `.gitlab-ci.yml` (images to the project's Container Registry) are the same pipeline for the two hosts; change both together. Images are built from the tag's pipeline, never from a push to `main`: `git-release` merges into `main` before it tags, so a `main` build can't see the tag and MinVer/`git describe` would report `X.Y.(Z+1)-preview`. Both need full history (`fetch-depth: 0` / `GIT_DEPTH: "0"`), and `v*` tags must be protected.

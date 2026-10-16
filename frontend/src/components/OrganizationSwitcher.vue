@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Building, Check, ChevronDown, Loader, Settings } from '@vicons/tabler'
+import { BELOW_LG_QUERY } from '@/lib/responsive'
 
 const props = defineProps<{
   minimal?: boolean
@@ -13,6 +14,11 @@ const sidebar = useSidebarStore()
 const { switchOrganization } = useOrganizationSwitch()
 
 const showMenu = ref(false)
+
+// Below `lg` the switcher only sits at the foot of the 280px mobile drawer, where a 240px menu opening to
+// the right runs off the screen — open it upward there; beside the desktop sidebar keep `right-start`.
+const belowLg = useMediaQuery(BELOW_LG_QUERY)
+const menuPlacement = computed(() => (belowLg.value ? 'top-start' : 'right-start'))
 const switchingTo = ref<string | null>(null)
 
 const currentLabel = computed(() => auth.organizationName ?? t('organizations.personalWorkspace'))
@@ -52,7 +58,7 @@ watch(showMenu, (open) => {
 </script>
 
 <template>
-  <n-popover v-model:show="showMenu" trigger="click" placement="right-start" :width="240">
+  <n-popover v-model:show="showMenu" trigger="click" :placement="menuPlacement" :width="240">
     <template #trigger>
       <!--
         The trigger slot needs a single, unconditional *element* root. Previously

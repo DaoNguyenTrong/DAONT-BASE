@@ -56,6 +56,8 @@ const vi: LocaleSchema = {
     usernameRequired: 'Vui lòng nhập tên đăng nhập.',
     passwordRequired: 'Vui lòng nhập mật khẩu.',
     invalidCredentials: 'Tên đăng nhập hoặc mật khẩu không đúng.',
+    accountTemporarilyLocked:
+      'Tài khoản tạm thời bị khoá do đăng nhập sai nhiều lần. Vui lòng thử lại sau ít phút.',
     loginFailed: 'Không thể đăng nhập lúc này. Vui lòng thử lại.',
     logoutConfirmMessage: 'Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc này không?',
     logoutFailed:
@@ -133,6 +135,8 @@ const vi: LocaleSchema = {
     currentPasswordRequired: 'Vui lòng nhập mật khẩu hiện tại.',
     newPasswordRequired: 'Vui lòng nhập mật khẩu mới.',
     newPasswordTooShort: 'Mật khẩu mới phải có ít nhất 8 ký tự.',
+    passwordChangeTemporarilyLocked:
+      'Đổi mật khẩu tạm thời bị khoá do nhập sai mật khẩu hiện tại nhiều lần. Vui lòng thử lại sau ít phút.',
     name: 'Họ tên',
     namePlaceholder: 'Nhập họ tên',
     nameRequired: 'Vui lòng nhập họ tên.',

@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using StarterKit.API.Tests.TestSupport;
 using StarterKit.Application.Services.Accounts;
+using StarterKit.Application.Services.Auth;
 using StarterKit.Domain.Entities;
 using StarterKit.Infrastructure.Persistence;
 
@@ -183,5 +185,45 @@ public sealed class ProfileControllerTests(ApiFactoryFixture fixture) : IAsyncLi
             "/api/profile/password", new ChangePasswordRequest("correct-current", "newpassword123"));
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    // End to end through the real Postgres statements: the current-password check locks after the allowed
+    // wrong guesses — even the right one is refused — while sign-in, counted apart, still works.
+    [Fact]
+    public async Task ChangePassword_AfterTooManyWrongCurrentPasswords_IsLockedButSignInStillWorks()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        Account account;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            account = Account.Create(new AccountParams("Lockout User", "password-lockout-user", "password-lockout@example.com"));
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-current", FastPasswordHasher.WorkFactor));
+            account.ConfirmEmail();
+            context.Accounts.Add(account);
+            await context.SaveChangesAsync();
+        }
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(account));
+
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            HttpResponseMessage wrong = await client.PutAsJsonAsync(
+                "/api/profile/password", new ChangePasswordRequest("totally-wrong", "newpassword123"));
+            Assert.Equal("InvalidCurrentPassword", await ErrorCodeAsync(wrong));
+        }
+
+        HttpResponseMessage locked = await client.PutAsJsonAsync(
+            "/api/profile/password", new ChangePasswordRequest("correct-current", "newpassword123"));
+        Assert.Equal(HttpStatusCode.Unauthorized, locked.StatusCode);
+        Assert.Equal("PasswordChangeTemporarilyLocked", await ErrorCodeAsync(locked));
+
+        HttpResponseMessage signIn = await fixture.CreateTestClient().PostAsJsonAsync(
+            "/api/auth/login", new LoginRequest("password-lockout-user", "correct-current"));
+        Assert.Equal(HttpStatusCode.OK, signIn.StatusCode);
+    }
+
+    private static async Task<string?> ErrorCodeAsync(HttpResponseMessage response)
+    {
+        using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return body.RootElement.TryGetProperty("code", out JsonElement code) ? code.GetString() : null;
     }
 }

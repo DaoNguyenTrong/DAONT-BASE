@@ -56,6 +56,24 @@ public sealed class Account : BaseEntity<Guid>
 
     public void ConfirmEmail() => EmailConfirmed = true;
 
+    /// <summary>Wrong-password attempts inside the current lockout window.</summary>
+    public int FailedLoginCount { get; private set; }
+
+    /// <summary>Start of the window <see cref="FailedLoginCount"/> is counted within.</summary>
+    public DateTime? FailedLoginWindowStartedAt { get; private set; }
+
+    /// <summary>End of the temporary sign-in lock, or <c>null</c> when sign-in is not locked.</summary>
+    public DateTime? LockedUntil { get; private set; }
+
+    /// <summary>Wrong current-password attempts on a password change — counted apart from sign-in.</summary>
+    public int FailedPasswordChangeCount { get; private set; }
+
+    /// <summary>Start of the window <see cref="FailedPasswordChangeCount"/> is counted within.</summary>
+    public DateTime? PasswordChangeWindowStartedAt { get; private set; }
+
+    /// <summary>End of the temporary password-change lock, or <c>null</c> when it is not locked.</summary>
+    public DateTime? PasswordChangeLockedUntil { get; private set; }
+
     /// <summary>
     /// The only way to change <see cref="Status"/> — deliberately not part of <see cref="AccountParams"/>,
     /// so an ordinary profile edit can never reactivate (or deactivate) an account by accident.

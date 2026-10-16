@@ -72,7 +72,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mx-auto container flex h-full flex-col space-y-5">
+  <div class="mx-auto container flex flex-col space-y-5 lg:h-full">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h1 class="text-lg font-semibold text-surface-800 dark:text-surface-100">
         {{ t('organizations.title') }}
@@ -85,7 +85,8 @@ onMounted(async () => {
       </NButton>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <!-- The list scrolls on its own only from `lg`; below, the page scrolls — no nested scroll area on touch. -->
+    <div class="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
       <div
         v-if="!loading && organizationsStore.myOrganizations.length === 0"
         class="flex flex-col items-center justify-center rounded-xl border border-surface-200 bg-surface-0 px-6 py-16 dark:border-surface-800 dark:bg-surface-900"
@@ -107,10 +108,10 @@ onMounted(async () => {
         <div
           v-for="organization in organizationsStore.myOrganizations"
           :key="organization.id"
-          class="flex items-center justify-between gap-3 rounded-xl border border-surface-200 bg-surface-0 p-4 dark:border-surface-800 dark:bg-surface-900"
+          class="flex flex-col items-stretch gap-3 rounded-xl border border-surface-200 bg-surface-0 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-surface-800 dark:bg-surface-900"
         >
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
               <p class="truncate text-sm font-medium text-surface-800 dark:text-surface-100">
                 {{ organization.name }}
               </p>
@@ -126,7 +127,7 @@ onMounted(async () => {
               {{ organization.myRoleNames.join(', ') }}
             </p>
           </div>
-          <div class="flex shrink-0 items-center gap-1">
+          <div class="flex shrink-0 items-center justify-end gap-1">
             <NButton
               v-if="auth.organizationId !== organization.id"
               secondary

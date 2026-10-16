@@ -31,10 +31,17 @@ function resetFontSize() {
 </script>
 
 <template>
+  <!-- Medium buttons (~34px) are small for a finger: 40px on touch screens. -->
   <n-button-group>
     <n-tooltip trigger="hover" placement="bottom">
       <template #trigger>
-        <n-button :aria-label="themeTitle" circle secondary @click="toggleTheme">
+        <n-button
+          :aria-label="themeTitle"
+          circle
+          secondary
+          class="pointer-coarse:size-10!"
+          @click="toggleTheme"
+        >
           <template #icon>
             <n-icon class="h-3 w-3"><component :is="isDark ? Moon : Sun" /></n-icon>
           </template>
@@ -49,6 +56,7 @@ function resetFontSize() {
           :aria-label="`${t('common.fontSize')}: ${fontSize}px`"
           aria-haspopup="menu"
           secondary
+          class="pointer-coarse:h-10! pointer-coarse:min-w-10!"
         >
           <span aria-hidden="true" class="text-sm! font-semibold">A</span>
         </n-button>
@@ -82,6 +90,7 @@ function resetFontSize() {
           :aria-label="`${t('common.language')}: ${currentLocale === 'en' ? 'VI' : 'EN'}`"
           circle
           secondary
+          class="pointer-coarse:size-10!"
           @click="localeStore.toggleLocale"
         >
           <template #icon>

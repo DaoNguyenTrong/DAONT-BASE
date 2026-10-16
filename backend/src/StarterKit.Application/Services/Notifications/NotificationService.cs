@@ -1,7 +1,6 @@
 using System.Linq.Expressions;
 using Microsoft.Extensions.Logging;
 using StarterKit.Application.Common.Interfaces;
-using StarterKit.Application.Common.Mappings;
 using StarterKit.Application.Common.Models;
 using StarterKit.Application.Resources;
 using StarterKit.Domain.Entities;
@@ -20,55 +19,79 @@ public sealed class NotificationService(
     private const int DefaultPageNumber = 1;
     private const int DefaultPageSize = 10;
 
-    public async Task NotifyAsync(NotificationParams request, CancellationToken cancellationToken)
+    // Hangfire stores job arguments in its database; a fan-out of thousands of ids in one job would sit in
+    // the queue as a JSON blob tens of KB long.
+    private const int DispatchChunkSize = 500;
+
+    public Task NotifyAsync(NotificationParams request, CancellationToken cancellationToken) =>
+        NotifyManyAsync(
+            [new NotificationBroadcast([request.AccountId], request.Type, request.Data, request.DedupeKey)],
+            cancellationToken);
+
+    public async Task<int> NotifyManyAsync(
+        IReadOnlyCollection<NotificationBroadcast> broadcasts, CancellationToken cancellationToken)
     {
-        Notification notification = Notification.Create(request);
-        await unitOfWork.Repository<Notification, Guid>().AddAsync(notification, cancellationToken);
+        // Built up front, so a broadcast that fails domain validation throws before anything is saved.
+        List<Notification> candidates = [.. broadcasts.SelectMany(broadcast => broadcast.AccountIds
+            .Distinct()
+            .Select(accountId => Notification.Create(
+                new NotificationParams(accountId, broadcast.Type, broadcast.Data, broadcast.DedupeKey))))];
+
+        if (candidates.Count == 0)
+        {
+            return 0;
+        }
+
+        IRepository<Notification, Guid> repository = unitOfWork.Repository<Notification, Guid>();
+        HashSet<(Guid, string)> sent = await LoadSentKeysAsync(repository, candidates, cancellationToken);
+
+        List<Notification> created = [];
+        foreach (Notification notification in candidates)
+        {
+            // Also catches a key repeated inside this batch: letting it through would fail the unique index at
+            // SaveChanges and take the whole batch down with it.
+            if (notification.DedupeKey is { } key && !sent.Add((notification.AccountId, key)))
+            {
+                continue;
+            }
+
+            await repository.AddAsync(notification, cancellationToken);
+            created.Add(notification);
+        }
+
+        if (created.Count == 0)
+        {
+            return 0;
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        try
-        {
-            await realtimeNotifier.NotifyAsync(
-                notification.AccountId, EntityMapper.ToDto(notification), cancellationToken);
-        }
-        catch (Exception exception)
-        {
-            // Bản ghi in-app đã commit — lỗi đẩy realtime không được biến 1 NotifyAsync
-            // thành công thành lỗi phía caller. Client vẫn thấy notification qua poll fallback.
-            logger.LogError(exception, "Failed to push realtime notification {NotificationId}", notification.Id);
-        }
+        await PushRealtimeAsync(created, cancellationToken);
+        EnqueueDispatch(created);
 
-        try
-        {
-            jobDispatcher.Enqueue<INotificationDispatcher>(
-                dispatcher => dispatcher.DispatchAsync(notification.Id, CancellationToken.None),
-                NotificationQueues.Default);
-        }
-        catch (Exception exception)
-        {
-            // In-app notification đã commit — lỗi enqueue không được biến 1 NotifyAsync
-            // thành công thành lỗi phía caller.
-            logger.LogError(exception, "Failed to enqueue dispatch for notification {NotificationId}", notification.Id);
-        }
+        return created.Count;
     }
 
     public async Task<PagedResult<NotificationDto>> GetMyNotificationsAsync(
-        PaginationRequest request, bool? unreadOnly, CancellationToken cancellationToken)
+        NotificationListQuery query, CancellationToken cancellationToken)
     {
         Guid accountId = GetCurrentAccountId();
-        int pageNumber = request.PageNumber < 1 ? DefaultPageNumber : request.PageNumber;
-        int pageSize = request.PageSize < 1 ? DefaultPageSize : request.PageSize;
+        int pageNumber = query.PageNumber < 1 ? DefaultPageNumber : query.PageNumber;
+        int pageSize = query.PageSize < 1 ? DefaultPageSize : query.PageSize;
 
-        Expression<Func<Notification, bool>> predicate = unreadOnly == true
-            ? n => n.AccountId == accountId && n.ReadAt == null
-            : n => n.AccountId == accountId;
+        Expression<Func<Notification, bool>> predicate = query.ReadState switch
+        {
+            NotificationReadState.Unread => n => n.AccountId == accountId && n.ReadAt == null,
+            NotificationReadState.Read => n => n.AccountId == accountId && n.ReadAt != null,
+            _ => n => n.AccountId == accountId
+        };
 
         (IReadOnlyList<Notification> items, int totalCount) = await unitOfWork
             .Repository<Notification, Guid>()
             .ListPagedAsync(predicate, pageNumber, pageSize, cancellationToken);
 
         return new PagedResult<NotificationDto>(
-            items.Select(n => EntityMapper.ToDto(n)).ToList(), totalCount, pageNumber, pageSize);
+            items.Select(NotificationMapper.ToDto).ToList(), totalCount, pageNumber, pageSize);
     }
 
     public async Task<int> GetUnreadCountAsync(CancellationToken cancellationToken)
@@ -114,6 +137,83 @@ public sealed class NotificationService(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    // The (recipient, key) pairs already stored — one read for the whole batch.
+    private static async Task<HashSet<(Guid, string)>> LoadSentKeysAsync(
+        IRepository<Notification, Guid> repository,
+        IReadOnlyList<Notification> candidates,
+        CancellationToken cancellationToken)
+    {
+        List<string> keys = [.. candidates.Select(n => n.DedupeKey).OfType<string>().Distinct()];
+        if (keys.Count == 0)
+        {
+            return [];
+        }
+
+        List<Guid> accountIds = [.. candidates.Where(n => n.DedupeKey is not null).Select(n => n.AccountId).Distinct()];
+        IReadOnlyList<Notification> existing = await repository.ListAsync(
+            n => n.DedupeKey != null && keys.Contains(n.DedupeKey) && accountIds.Contains(n.AccountId),
+            cancellationToken);
+
+        return [.. existing.Select(n => (n.AccountId, n.DedupeKey!))];
+    }
+
+    // The in-app rows are committed by now: neither a failed realtime push nor a failed enqueue may turn a
+    // successful notify into an error for the caller. Each recipient/chunk is tried on its own, so one failure
+    // doesn't cost the rest theirs; the batch logs once, since a broken hub or storage fails them all alike.
+    private async Task PushRealtimeAsync(IReadOnlyList<Notification> created, CancellationToken cancellationToken)
+    {
+        int failed = 0;
+        Exception? firstFailure = null;
+        foreach (Notification notification in created)
+        {
+            try
+            {
+                await realtimeNotifier.NotifyAsync(
+                    notification.AccountId, NotificationMapper.ToDto(notification), cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                failed++;
+                firstFailure ??= exception;
+            }
+        }
+
+        if (firstFailure is not null)
+        {
+            // Clients still see these through the poll fallback.
+            logger.LogError(firstFailure, "Failed to push {Failed} of {Count} realtime notifications",
+                failed, created.Count);
+        }
+    }
+
+    private void EnqueueDispatch(IReadOnlyList<Notification> created)
+    {
+        int failed = 0;
+        Exception? firstFailure = null;
+        foreach (Notification[] chunk in created.Chunk(DispatchChunkSize))
+        {
+            List<Guid> ids = [.. chunk.Select(notification => notification.Id)];
+            try
+            {
+                jobDispatcher.Enqueue<INotificationDispatcher>(
+                    dispatcher => dispatcher.DispatchManyAsync(ids, CancellationToken.None),
+                    NotificationQueues.Default);
+            }
+            catch (Exception exception)
+            {
+                failed += ids.Count;
+                firstFailure ??= exception;
+            }
+        }
+
+        if (firstFailure is not null)
+        {
+            // Not retried: a caller's retry would dedupe these rows away, so they get no email/push.
+            logger.LogError(firstFailure, "Failed to enqueue dispatch for {Failed} of {Count} notifications",
+                failed, created.Count);
+        }
     }
 
     private Guid GetCurrentAccountId()

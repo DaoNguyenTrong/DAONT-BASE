@@ -196,9 +196,10 @@ watch(visible, (open) => {
         <li
           v-for="member in members"
           :key="member.accountId"
-          class="flex items-center justify-between gap-3 rounded-xl border border-surface-200 p-3 dark:border-surface-800"
+          class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-surface-200 p-3 dark:border-surface-800"
         >
-          <div class="min-w-0 flex-1">
+          <!-- Below `sm` the name/email take their own line; the role picker and remove button wrap under it. -->
+          <div class="min-w-0 flex-1 basis-full sm:basis-0">
             <p class="truncate text-sm font-medium text-surface-800 dark:text-surface-100">
               {{ member.accountName }}
             </p>
@@ -212,7 +213,7 @@ watch(visible, (open) => {
             multiple
             :disabled="!canManage"
             :loading="updatingRolesId === member.accountId"
-            class="w-48! shrink-0"
+            class="min-w-0 flex-1 sm:w-48! sm:flex-none"
             @update:value="(roleIds) => changeRoles(member, roleIds)"
           />
           <n-button

@@ -51,6 +51,24 @@ describe('LoginView', () => {
     expect(wrapper.findComponent(ResendVerificationForm).exists()).toBe(false)
   })
 
+  it('tells a temporarily locked account to wait instead of blaming the password', async () => {
+    server.use(
+      http.post('*/api/auth/login', () =>
+        problemResponse(
+          { status: 401, title: 'Unauthorized', detail: '', code: 'AccountTemporarilyLocked' },
+          401,
+        ),
+      ),
+    )
+
+    const { wrapper } = await renderComponent(LoginView)
+    await submitLogin(wrapper)
+
+    expect(wrapper.text()).toContain('temporarily locked')
+    expect(wrapper.text()).not.toContain('Your username or password is incorrect.')
+    expect(wrapper.findComponent(ResendVerificationForm).exists()).toBe(false)
+  })
+
   it('shows the email-not-confirmed message and the resend form when code is EmailNotConfirmed', async () => {
     server.use(
       http.post('*/api/auth/login', () =>

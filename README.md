@@ -4,6 +4,8 @@ An app starter kit for new web applications: .NET 10 Clean Architecture on the b
 
 This is **not** a finished product — no business features are baked in. Remove/replace whatever you don't need and add your own domain on top of this foundation.
 
+Starting a project from it? Rename it first — `scripts/rename.sh NewName`, then the fork checklist in [`RENAMING.md`](RENAMING.md).
+
 ## Already Included
 
 - **Auth**: email + password register/login (JWT access + refresh token, refresh token stored as a SHA-256 hash), mandatory email verification via SMTP, Google + Microsoft login (credential flow / MSAL popup), session management (list/revoke by device).
@@ -128,7 +130,7 @@ bun run --cwd frontend codegen
 
 ### CI
 
-There is no CI workflow running build/test on PR/push yet (`.github/workflows/` only has `release.yml`, triggered on `v*` tags). Run the commands above locally before requesting a review.
+There is no CI workflow running build/test on PR/push yet — run the commands above locally before requesting a review. The only pipeline is the release: a `v*` tag runs the tests, builds and pushes the production images, then creates the release (`.github/workflows/release.yml`; `.gitlab-ci.yml` is the same pipeline for a fork on GitLab). Protect `v*` tags — whoever can push one publishes images.
 
 For full details, see `.claude/rules/commands.md`.
 
@@ -153,6 +155,8 @@ cp .env.prod.example .env.prod
 # 3. Build and start
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
+
+Each release tag also publishes both images, versioned from the tag: `ghcr.io/<owner>/<repo>/{backend,frontend}:X.Y.Z` (`:latest` follows the newest stable tag; on GitLab, `$CI_REGISTRY_IMAGE/...`). Build them yourself as above, or point the `api`/`web` services at those images to deploy without building on the server.
 
 Migrations apply automatically on startup. Uploaded files and API logs persist in named volumes
 (`starterkit-api-uploads`, `starterkit-api-logs`); Postgres data in `starterkit-postgres-data`.

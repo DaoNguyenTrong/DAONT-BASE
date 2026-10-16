@@ -14,12 +14,22 @@ internal interface IRedisStringStore
     /// <summary>MGET — several keys in one round trip; values come back in the order requested.</summary>
     Task<RedisValue[]> StringGetAsync(string[] keys);
 
-    Task StringSetAsync(string key, string value, TimeSpan expiry);
-
     Task KeyDeleteAsync(string key);
 
-    Task<long> StringIncrementAsync(string key);
+    /// <summary>INCR, then EXPIRE, as one transaction — the counter can't be left without a TTL.</summary>
+    Task IncrementAsync(string key, TimeSpan expiry);
 
-    /// <summary>EXPIRE — false when the key does not exist (nothing to expire).</summary>
-    Task<bool> KeyExpireAsync(string key, TimeSpan expiry);
+    /// <summary>
+    /// SET <paramref name="key"/> and EXPIRE every guard counter, as one transaction that only commits while
+    /// each guard still holds the generation it was read at (0 = the counter doesn't exist). Returns
+    /// whether it committed. All keys must share one Redis Cluster hash slot.
+    /// </summary>
+    Task<bool> SetIfGenerationsUnchangedAsync(
+        string key,
+        string value,
+        TimeSpan expiry,
+        IReadOnlyList<GenerationGuard> guards,
+        TimeSpan guardExpiry);
 }
+
+internal readonly record struct GenerationGuard(string Key, long Generation);

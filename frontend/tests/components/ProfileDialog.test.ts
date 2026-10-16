@@ -244,6 +244,33 @@ describe('ProfileDialog', () => {
     expect(errorSpy).not.toHaveBeenCalled()
   })
 
+  it('shows its own message when the password change is locked, not the backend text', async () => {
+    server.use(http.get('*/api/profile', () => HttpResponse.json(makeProfile())))
+    server.use(
+      http.put('*/api/profile/password', () =>
+        problemResponse(
+          {
+            status: 401,
+            title: 'Unauthorized',
+            code: 'PasswordChangeTemporarilyLocked',
+            detail: 'backend text',
+          },
+          401,
+        ),
+      ),
+    )
+
+    const { wrapper } = await openDialog()
+    await openChangePasswordTab(wrapper)
+    await placeholderInput(wrapper, 'Enter your current password').setValue('old-pass')
+    await placeholderInput(wrapper, 'Enter a new password').setValue('new-pass')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Changing the password is temporarily locked')
+    expect(wrapper.text()).not.toContain('backend text')
+  })
+
   it('maps other password-change validation errors the same way as the profile form', async () => {
     server.use(http.get('*/api/profile', () => HttpResponse.json(makeProfile())))
     server.use(
@@ -308,7 +335,8 @@ describe('ProfileDialog', () => {
       makeSession({
         id: 2,
         isCurrent: false,
-        deviceInfo: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:120.0) Gecko/20100101 Firefox/120.0',
+        deviceInfo:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:120.0) Gecko/20100101 Firefox/120.0',
       }),
     ])
 
@@ -347,7 +375,8 @@ describe('ProfileDialog', () => {
       makeSession({
         id: 2,
         isCurrent: false,
-        deviceInfo: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:120.0) Gecko/20100101 Firefox/120.0',
+        deviceInfo:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:120.0) Gecko/20100101 Firefox/120.0',
       }),
     ])
     let revokedId: string | undefined
@@ -394,7 +423,8 @@ describe('ProfileDialog', () => {
       makeSession({
         id: 2,
         isCurrent: false,
-        deviceInfo: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:120.0) Gecko/20100101 Firefox/120.0',
+        deviceInfo:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:120.0) Gecko/20100101 Firefox/120.0',
       }),
     ])
     let revokeOthersCalled = false
