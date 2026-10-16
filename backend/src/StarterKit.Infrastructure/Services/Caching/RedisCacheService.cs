@@ -41,10 +41,7 @@ internal sealed class RedisCacheService(
         CancellationToken cancellationToken = default)
     {
         string physicalKey = await PhysicalKeyAsync(scope, key);
-        TimeSpan cacheExpiration = expiration ?? TimeSpan.FromMinutes(settings.DefaultExpirationMinutes);
-        string payload = Serialize(value);
-
-        await redis.StringSetAsync(physicalKey, payload, cacheExpiration);
+        await WriteAsync(physicalKey, value, expiration);
     }
 
     public async Task<T> GetOrSetAsync<T>(
@@ -66,7 +63,11 @@ internal sealed class RedisCacheService(
         }
 
         T value = await factory(cancellationToken);
-        await SetAsync(scope, key, value, expiration, cancellationToken);
+
+        // Write under the generation read BEFORE the factory ran, not a freshly re-read one: if
+        // the scope was invalidated while the factory was computing, the value is already stale
+        // and must land in the abandoned generation, where nobody will read it again.
+        await WriteAsync(physicalKey, value, expiration);
 
         return value;
     }
@@ -82,6 +83,12 @@ internal sealed class RedisCacheService(
         // Atomic INCR makes the bump visible to every API instance sharing this Redis — the
         // distributed equivalent of MemoryCacheService's in-process ConcurrentDictionary counter.
         await redis.StringIncrementAsync(GenerationKey(scope));
+    }
+
+    private async Task WriteAsync<T>(string physicalKey, T value, TimeSpan? expiration)
+    {
+        TimeSpan cacheExpiration = expiration ?? TimeSpan.FromMinutes(settings.DefaultExpirationMinutes);
+        await redis.StringSetAsync(physicalKey, Serialize(value), cacheExpiration);
     }
 
     private async Task<string> PhysicalKeyAsync(string scope, string key)

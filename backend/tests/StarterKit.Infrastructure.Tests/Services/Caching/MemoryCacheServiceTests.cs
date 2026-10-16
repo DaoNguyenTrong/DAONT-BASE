@@ -135,4 +135,21 @@ public class MemoryCacheServiceTests
 
         Assert.Equal("1-new", await service.GetAsync<string>("prefix", "one"));
     }
+
+    [Fact]
+    public async Task GetOrSetAsync_InvalidatedWhileFactoryRuns_DoesNotServeStaleValueAfterwards()
+    {
+        MemoryCacheService service = CreateService(out _);
+
+        // The factory reads state that a concurrent writer changes and then invalidates the
+        // scope before the factory returns — the value it computed is already stale.
+        string value = await service.GetOrSetAsync("prefix", "one", async _ =>
+        {
+            await service.InvalidateScopeAsync("prefix");
+            return "stale";
+        });
+
+        Assert.Equal("stale", value);
+        Assert.Null(await service.GetAsync<string>("prefix", "one"));
+    }
 }

@@ -52,6 +52,25 @@ public sealed class AuditLogRepositoryTests(PostgresContainerFixture fixture) : 
         await context.SaveChangesAsync();
     }
 
+    [Fact]
+    public async Task ListPagedAsync_LogsShareTimestamp_PagesAreDisjointNewestIdFirst()
+    {
+        // The audit interceptor stamps one `now` on every row of a SaveChanges batch.
+        DateTime sameInstant = DateTime.UtcNow;
+        AuditLog[] logs = Enumerable.Range(1, 5).Select(_ => CreateAuditLog(timestamp: sameInstant)).ToArray();
+        await SeedAsync(logs);
+
+        List<long> paged = new();
+        for (int page = 1; page <= 3; page++)
+        {
+            (IReadOnlyList<AuditLogDto> items, _) = await repository.ListPagedAsync(
+                DefaultOrganizationId, page, 2, null, null, null);
+            paged.AddRange(items.Select(item => item.Id));
+        }
+
+        Assert.Equal(logs.Select(log => log.Id).OrderByDescending(id => id), paged);
+    }
+
     // ListPagedAsync — search (ILike)
 
     [Fact]

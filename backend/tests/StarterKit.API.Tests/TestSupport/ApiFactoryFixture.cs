@@ -57,6 +57,12 @@ public sealed class ApiFactoryFixture : WebApplicationFactory<Program>, IAsyncLi
         Environment.SetEnvironmentVariable("ExternalAuthSettings__Google__ClientId", "");
         Environment.SetEnvironmentVariable("ExternalAuthSettings__Microsoft__ClientId", "");
 
+        // Same reason: a developer running Redis locally (CacheSettings:Provider=Redis in their
+        // appsettings.json) would otherwise have tests write cache entries into that shared Redis
+        // and read stale ones back on the next run, since Respawn only resets Postgres.
+        Environment.SetEnvironmentVariable("CacheSettings__Provider", "Memory");
+        Environment.SetEnvironmentVariable("RealtimeSettings__Backplane", "None");
+
         // Force host creation now so the initial (seeded) state is captured before Respawn resets anything.
         _ = Server;
 
@@ -73,7 +79,11 @@ public sealed class ApiFactoryFixture : WebApplicationFactory<Program>, IAsyncLi
         respawner = await Respawner.CreateAsync(respawnConnection, new RespawnerOptions
         {
             DbAdapter = DbAdapter.Postgres,
-            TablesToIgnore = ["__EFMigrationsHistory", "system_settings", "DataProtectionKeys"]
+            TablesToIgnore = ["__EFMigrationsHistory", "system_settings", "DataProtectionKeys"],
+            // Hangfire owns its schema and only (re)creates it at storage startup. Wiping its
+            // tables (notably hangfire.schema/lock) makes every extra host built via
+            // WithWebHostBuilder re-run the schema install against a half-empty schema and hang.
+            SchemasToExclude = ["hangfire"]
         });
     }
 

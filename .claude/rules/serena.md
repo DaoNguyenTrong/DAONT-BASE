@@ -28,8 +28,10 @@ Root cause: Serena runs `typescript` and `vue` as separate language-server proce
 
 ## Language Scope
 
-`.serena/project.yml` starts language servers for `csharp`, `typescript`, and `vue`. `find_symbol`/`get_symbols_overview`/`find_declaration` work correctly on `frontend/` (`.ts`/`.vue`). `find_referencing_symbols`/`rename_symbol` do not — see Known Limitation above.
+`.serena/project.yml` (tracked in git; `cache/`, `memories/` and `project.local.yml` under `.serena/` stay ignored) starts language servers for `csharp`, `vue`, and `typescript`. `find_symbol`/`get_symbols_overview`/`find_declaration` work on `frontend/` (`.ts`/`.vue`). `find_referencing_symbols`/`rename_symbol` do not — see Known Limitation above. Put machine-specific overrides in `.serena/project.local.yml`, never in `project.yml`.
 
-### Gitignored files Serena must still read
+### Gitignored files are invisible to Serena's own search
 
-`ignore_all_files_in_gitignore` is set to `false` in `project.yml`, with `ignored_paths` manually replicating the repo's root `.gitignore` — required because two gitignored, generated directories must stay visible to the TS/Vue language servers: `frontend/src/typings/` (`auto-imports.d.ts`, `components.d.ts` — the actual bridge files auto-import relies on) and `frontend/src/api/generated/` (the orval-generated OpenAPI client). Whenever the root `.gitignore` changes, `ignored_paths` in `project.yml` must be updated by hand to match — it is no longer derived automatically via `ignore_all_files_in_gitignore`. The `appsettings*.json` entries in that list are security-load-bearing (contain real secrets, e.g. the DB connection string) — never remove them when syncing.
+`ignore_all_files_in_gitignore: true` with `ignored_paths: []` — Serena's file/symbol search skips everything the root `.gitignore` ignores. That is deliberate: it keeps `backend/src/StarterKit.API/appsettings*.json` (real secrets, e.g. the DB connection string) out of every Serena tool, with no hand-maintained list that can drift from `.gitignore`.
+
+Consequence: the generated frontend directories `frontend/src/typings/` (`auto-imports.d.ts`, `components.d.ts`) and `frontend/src/api/generated/` (the orval client) don't show up in `find_symbol`/`get_symbols_overview` results. Read them with `Read`, or query CodeGraph, when you need their content. If you ever flip `ignore_all_files_in_gitignore` to `false` to expose them, you must first add `ignored_paths` entries replicating the root `.gitignore` — at minimum every `appsettings*.json` pattern — or Serena will read the real secrets.

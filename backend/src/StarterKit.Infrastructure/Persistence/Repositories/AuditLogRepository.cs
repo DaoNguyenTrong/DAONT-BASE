@@ -45,7 +45,9 @@ public sealed class AuditLogRepository(AppDbContext dbContext) : IAuditLogReposi
             join account in dbContext.Accounts.AsNoTracking()
                 on log.UserId equals account.Id.ToString() into accountGroup
             from account in accountGroup.DefaultIfEmpty()
-            orderby log.Timestamp descending
+            // Id tie-breaks the many rows one SaveChanges batch stamps with the same Timestamp;
+            // without it, Postgres may order ties differently per page and rows repeat/vanish.
+            orderby log.Timestamp descending, log.Id descending
             select new AuditLogDto(
                 log.Id,
                 log.EntityName,

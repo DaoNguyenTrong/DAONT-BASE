@@ -27,9 +27,7 @@ internal sealed class MemoryCacheService(
         TimeSpan? expiration = null,
         CancellationToken cancellationToken = default)
     {
-        TimeSpan cacheExpiration = expiration ?? TimeSpan.FromMinutes(settings.DefaultExpirationMinutes);
-
-        memoryCache.Set(PhysicalKey(scope, key), value, cacheExpiration);
+        Write(PhysicalKey(scope, key), value, expiration);
 
         return Task.CompletedTask;
     }
@@ -53,9 +51,18 @@ internal sealed class MemoryCacheService(
         }
 
         T value = await factory(cancellationToken);
-        await SetAsync(scope, key, value, expiration, cancellationToken);
+
+        // Write under the generation captured BEFORE the factory ran (see RedisCacheService): an
+        // invalidation that lands mid-factory must strand this now-stale value, not publish it.
+        Write(physicalKey, value, expiration);
 
         return value;
+    }
+
+    private void Write<T>(string physicalKey, T value, TimeSpan? expiration)
+    {
+        TimeSpan cacheExpiration = expiration ?? TimeSpan.FromMinutes(settings.DefaultExpirationMinutes);
+        memoryCache.Set(physicalKey, value, cacheExpiration);
     }
 
     public Task RemoveAsync(string scope, string key, CancellationToken cancellationToken = default)
