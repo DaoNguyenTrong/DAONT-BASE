@@ -42,6 +42,20 @@ public class NotificationServiceTests
     private static Notification CreateNotification(Guid accountId, string type = "OrganizationMemberAdded") =>
         Notification.Create(new NotificationParams(accountId, type));
 
+    // Stands in for the database: the service's own predicate and projection run over these rows.
+    private static void StoreExisting(Fixture f, params Notification[] stored) =>
+        f.NotificationRepo
+            .ListAsync(
+                Arg.Any<Expression<Func<Notification, bool>>>(),
+                Arg.Any<Expression<Func<Notification, ValueTuple<Guid, string>>>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(call => (IReadOnlyList<ValueTuple<Guid, string>>)
+            [
+                .. stored
+                    .Where(call.ArgAt<Expression<Func<Notification, bool>>>(0).Compile())
+                    .Select(call.ArgAt<Expression<Func<Notification, ValueTuple<Guid, string>>>>(1).Compile())
+            ]);
+
     // NotifyAsync
 
     [Fact]
@@ -185,6 +199,64 @@ public class NotificationServiceTests
         await f.RealtimeNotifier.Received(1).NotifyAsync(accounts[2], Arg.Any<NotificationDto>(), Arg.Any<CancellationToken>());
     }
 
+    // One awaited send per recipient, one after another, made a large fan-out's request wait out every backplane
+    // round trip (measured over Redis: ~0.6s sequential vs ~50ms concurrent for 5000 recipients).
+    [Fact]
+    public async Task NotifyManyAsync_PushesToRecipientsConcurrently()
+    {
+        Fixture f = CreateFixture();
+        Guid[] accounts = [.. Enumerable.Range(0, 8).Select(_ => Guid.NewGuid())];
+        int inFlight = 0;
+        int maxInFlight = 0;
+        f.RealtimeNotifier
+            .NotifyAsync(Arg.Any<Guid>(), Arg.Any<NotificationDto>(), Arg.Any<CancellationToken>())
+            .Returns(async _ =>
+            {
+                int now = Interlocked.Increment(ref inFlight);
+                InterlockedMax(ref maxInFlight, now);
+                await Task.Delay(50);
+                Interlocked.Decrement(ref inFlight);
+            });
+
+        await f.Service.NotifyManyAsync(
+            [new NotificationBroadcast(accounts, NotificationTypes.OrganizationMemberAdded)], CancellationToken.None);
+
+        Assert.True(maxInFlight > 1, $"pushes ran one at a time (max in flight: {maxInFlight})");
+        await f.RealtimeNotifier.Received(8).NotifyAsync(
+            Arg.Any<Guid>(), Arg.Any<NotificationDto>(), Arg.Any<CancellationToken>());
+    }
+
+    // The rows are committed: a request aborted mid-fan-out loses the remaining pushes (clients poll), not
+    // the notify call itself.
+    [Fact]
+    public async Task NotifyManyAsync_AbortedDuringThePush_DoesNotThrow()
+    {
+        Fixture f = CreateFixture();
+        using CancellationTokenSource aborted = new();
+        f.RealtimeNotifier
+            .NotifyAsync(Arg.Any<Guid>(), Arg.Any<NotificationDto>(), Arg.Any<CancellationToken>())
+            .Returns(async call =>
+            {
+                await aborted.CancelAsync();
+                call.Arg<CancellationToken>().ThrowIfCancellationRequested();
+            });
+
+        int created = await f.Service.NotifyManyAsync(
+            [new NotificationBroadcast([Guid.NewGuid(), Guid.NewGuid()], NotificationTypes.OrganizationMemberAdded)],
+            aborted.Token);
+
+        Assert.Equal(2, created);
+    }
+
+    private static void InterlockedMax(ref int target, int value)
+    {
+        int current;
+        while (value > (current = Volatile.Read(ref target)) &&
+               Interlocked.CompareExchange(ref target, value, current) != current)
+        {
+        }
+    }
+
     // The rows are committed and a retry would dedupe them away, so a failed chunk must not take later ones down.
     [Fact]
     public async Task NotifyManyAsync_OneDispatchChunkFails_StillEnqueuesTheRest()
@@ -214,8 +286,7 @@ public class NotificationServiceTests
         Fixture f = CreateFixture();
         Guid alreadyNotified = Guid.NewGuid();
         Guid fresh = Guid.NewGuid();
-        f.NotificationRepo.ListAsync(Arg.Any<Expression<Func<Notification, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns([Notification.Create(new NotificationParams(alreadyNotified, "Type", DedupeKey: "event-1"))]);
+        StoreExisting(f, Notification.Create(new NotificationParams(alreadyNotified, "Type", DedupeKey: "event-1")));
 
         int created = await f.Service.NotifyManyAsync(
             [new NotificationBroadcast([alreadyNotified, fresh, fresh], "Type", DedupeKey: "event-1"),
@@ -225,6 +296,9 @@ public class NotificationServiceTests
         Assert.Equal(1, created);
         await f.NotificationRepo.Received(1).AddAsync(
             Arg.Is<Notification>(n => n != null && n.AccountId == fresh && n.DedupeKey == "event-1"), Arg.Any<CancellationToken>());
+        // Only the (recipient, key) pairs are read — not whole rows with their Data payload.
+        await f.NotificationRepo.DidNotReceive().ListAsync(
+            Arg.Any<Expression<Func<Notification, bool>>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -232,8 +306,7 @@ public class NotificationServiceTests
     {
         Fixture f = CreateFixture();
         Guid account = Guid.NewGuid();
-        f.NotificationRepo.ListAsync(Arg.Any<Expression<Func<Notification, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns([Notification.Create(new NotificationParams(account, "Type", DedupeKey: "event-1"))]);
+        StoreExisting(f, Notification.Create(new NotificationParams(account, "Type", DedupeKey: "event-1")));
 
         int created = await f.Service.NotifyManyAsync(
             [new NotificationBroadcast([account], "Type", DedupeKey: "event-1")], CancellationToken.None);
@@ -249,8 +322,7 @@ public class NotificationServiceTests
     {
         Fixture f = CreateFixture();
         Guid account = Guid.NewGuid();
-        f.NotificationRepo.ListAsync(Arg.Any<Expression<Func<Notification, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns([Notification.Create(new NotificationParams(account, "Type", DedupeKey: "event-1"))]);
+        StoreExisting(f, Notification.Create(new NotificationParams(account, "Type", DedupeKey: "event-1")));
 
         await f.Service.NotifyAsync(new NotificationParams(account, "Type", DedupeKey: "event-1"), CancellationToken.None);
 

@@ -21,32 +21,25 @@ describe('loadRuntimeConfig', () => {
     expect(config).toEqual({ apiBaseUrl: 'https://api.example.com' })
   })
 
-  it('returns an empty object when config.json is missing (404)', async () => {
-    server.use(http.get('*/config.json', () => new HttpResponse(null, { status: 404 })))
-
-    const config = await loadRuntimeConfig()
-
-    expect(config).toEqual({})
-  })
-
-  it('returns an empty object when apiBaseUrl is missing from the response', async () => {
-    server.use(http.get('*/config.json', () => HttpResponse.json({})))
-
-    const config = await loadRuntimeConfig()
-
-    expect(config).toEqual({})
-  })
-
-  it('returns an empty object when apiBaseUrl is blank', async () => {
-    server.use(http.get('*/config.json', () => HttpResponse.json({ apiBaseUrl: '   ' })))
-
-    const config = await loadRuntimeConfig()
-
-    expect(config).toEqual({})
-  })
-
-  it('returns an empty object when apiBaseUrl is not a string', async () => {
-    server.use(http.get('*/config.json', () => HttpResponse.json({ apiBaseUrl: 123 })))
+  it.each([
+    [
+      'returns an empty object when config.json is missing (404)',
+      () => new HttpResponse(null, { status: 404 }),
+    ],
+    [
+      'returns an empty object when apiBaseUrl is missing from the response',
+      () => HttpResponse.json({}),
+    ],
+    [
+      'returns an empty object when apiBaseUrl is blank',
+      () => HttpResponse.json({ apiBaseUrl: '   ' }),
+    ],
+    [
+      'returns an empty object when apiBaseUrl is not a string',
+      () => HttpResponse.json({ apiBaseUrl: 123 }),
+    ],
+  ])('%s', async (_title, respond) => {
+    server.use(http.get('*/config.json', respond))
 
     const config = await loadRuntimeConfig()
 

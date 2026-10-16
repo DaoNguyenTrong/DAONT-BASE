@@ -9,6 +9,10 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-10-16 — One-shot CLI commands run through the API host
+
+Seed/import/admin tasks need the API's configuration and DI but not the web server, and must work when HTTP doesn't, from scripts branching on exit codes. Commands implement `ICliCommand` and run right after `Build()`, before any startup step. Rejected: EF or Infrastructure inside commands/`Program.cs` — migrations go through the `IDatabaseMigrator` Application port, so commands keep the Infrastructure-only-in-composition-root rule.
+
 ### 2026-10-16 — Each password check has its own lockout counter
 
 The change-password current-password check had no limit, so a stolen session could brute-force it and then take the account over. It reuses the sign-in lockout on separate state. Rejected: sharing the sign-in counter — a session holder could then lock the owner out of signing in, and failed sign-ins would block the owner from changing a leaked password; a per-session rate limit alone — a fresh session resets it.

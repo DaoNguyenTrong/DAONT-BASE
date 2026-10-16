@@ -15,14 +15,15 @@ services:
       timeout: 5s
       retries: 10
 
+  # Every image is pinned: a :latest that moves under you changes the dev stack without a commit.
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:v1.30.5
     ports:
       - "1025:1025" # SMTP
       - "8025:8025" # Web UI
 
   seaweedfs:
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:4.39
     command: server -s3 -filer -dir=/data
     ports:
       - "8333:8333" # S3 gateway
@@ -31,7 +32,7 @@ services:
       - starterkit-seaweedfs-data:/data
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.13.2
     ports:
       - "9090:9090"
     volumes:
@@ -42,7 +43,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.1.1
     ports:
       - "3000:3000"
     environment:

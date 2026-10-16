@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import en from '@/locales/en'
 
 const mockCreate = vi.hoisted(() => vi.fn())
 
@@ -27,10 +28,11 @@ describe('useAppDialogNaive', () => {
     mockCreate.mockReturnValue(makeInstance())
     const { result } = await withSetup(() => useAppDialogNaive())
 
-    result.open(
-      { name: 'Content' } as never,
-      { header: 'Delete item', dialogClass: 'my-dialog', onConfirm: async () => {} },
-    )
+    result.open({ name: 'Content' } as never, {
+      header: 'Delete item',
+      dialogClass: 'my-dialog',
+      onConfirm: async () => {},
+    })
 
     expect(mockCreate).toHaveBeenCalledTimes(1)
     const options = mockCreate.mock.calls[0]![0]
@@ -45,18 +47,20 @@ describe('useAppDialogNaive', () => {
     result.open({} as never, { header: 'x', onConfirm: async () => {} })
 
     const options = mockCreate.mock.calls[0]![0]
-    expect(options.positiveText).toBe('Save')
-    expect(options.negativeText).toBe('Cancel')
+    expect(options.positiveText).toBe(en.common.save)
+    expect(options.negativeText).toBe(en.common.cancel)
   })
 
   it('uses confirmLabel/cancelLabel when provided', async () => {
     mockCreate.mockReturnValue(makeInstance())
     const { result } = await withSetup(() => useAppDialogNaive())
 
-    result.open(
-      {} as never,
-      { header: 'x', confirmLabel: 'Yes, delete', cancelLabel: 'Nope', onConfirm: async () => {} },
-    )
+    result.open({} as never, {
+      header: 'x',
+      confirmLabel: 'Yes, delete',
+      cancelLabel: 'Nope',
+      onConfirm: async () => {},
+    })
 
     const options = mockCreate.mock.calls[0]![0]
     expect(options.positiveText).toBe('Yes, delete')

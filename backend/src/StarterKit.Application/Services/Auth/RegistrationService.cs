@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -135,10 +136,13 @@ public sealed class RegistrationService(
         // requiresAuth guard and bouncing the (not-yet-authenticated) user to /login instead of
         // VerifyEmailView. The route must live after "#/" so vue-router picks it up.
         string verificationUrl = $"{emailSettings.FrontendBaseUrl.TrimEnd('/')}/#/verify-email?token={rawToken}";
+        // The name is whatever the registrant typed — and anyone can register with someone else's address —
+        // so it is encoded like every other value placed in mail HTML (see NotificationEmailTemplates).
+        string encodedUrl = WebUtility.HtmlEncode(verificationUrl);
         string body = $"""
-            <p>Xin chào {account.Name},</p>
+            <p>Xin chào {WebUtility.HtmlEncode(account.Name)},</p>
             <p>Nhấn vào liên kết bên dưới để xác thực địa chỉ email của bạn:</p>
-            <p><a href="{verificationUrl}">{verificationUrl}</a></p>
+            <p><a href="{encodedUrl}">{encodedUrl}</a></p>
             <p>Liên kết có hiệu lực trong {emailSettings.VerificationTokenExpiryHours} giờ.</p>
             """;
 

@@ -46,7 +46,15 @@ export default defineConfig(({ mode }) => {
       }),
       Components({
         types: [{ from: 'vue-router', names: ['RouterLink', 'RouterView'] }],
-        resolvers: [NaiveUiResolver()],
+        resolvers: [
+          // Every <n-select> is AppSelect: re-picking clears, filtering ignores accents.
+          (name) => {
+            if (name === 'NSelect') {
+              return { name: 'default', from: '@/components/AppSelect.vue' }
+            }
+          },
+          NaiveUiResolver(),
+        ],
         dts: 'src/typings/components.d.ts',
       }),
     ],

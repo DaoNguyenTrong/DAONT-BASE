@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import ResendVerificationForm from '@/components/ResendVerificationForm.vue'
 import { server } from '../helpers/msw/server'
 import { renderComponent } from '../helpers/render'
+import en from '@/locales/en'
 
 function problemResponse(body: Record<string, unknown>, status: number) {
   return HttpResponse.json(body, {
@@ -19,7 +20,7 @@ describe('ResendVerificationForm', () => {
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Email is required.')
+    expect(wrapper.text()).toContain(en.auth.emailRequired)
   })
 
   it('shows a success message after a successful resend', async () => {
@@ -37,9 +38,7 @@ describe('ResendVerificationForm', () => {
     await flushPromises()
 
     expect(requestBody?.email).toBe('user@example.com')
-    expect(wrapper.text()).toContain(
-      'If an account exists for this email, a verification link has been sent.',
-    )
+    expect(wrapper.text()).toContain(en.auth.resendVerificationSuccess)
     expect(wrapper.find('form').exists()).toBe(false)
   })
 
@@ -47,7 +46,12 @@ describe('ResendVerificationForm', () => {
     server.use(
       http.post('*/api/auth/resend-verification', () =>
         problemResponse(
-          { status: 429, title: 'Too Many Requests', detail: 'Slow down.', code: 'TooManyRequests' },
+          {
+            status: 429,
+            title: 'Too Many Requests',
+            detail: 'Slow down.',
+            code: 'TooManyRequests',
+          },
           429,
         ),
       ),

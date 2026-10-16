@@ -42,6 +42,14 @@ public class GenericRepository<T, TId>(AppDbContext dbContext) : IRepository<T, 
         return await dbSet.Where(predicate).ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<TResult>> ListAsync<TResult>(
+        Expression<Func<T, bool>> predicate,
+        Expression<Func<T, TResult>> selector,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbSet.Where(predicate).Select(selector).ToListAsync(cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<T> Items, int TotalCount)> ListPagedAsync(
         int pageNumber,
         int pageSize,

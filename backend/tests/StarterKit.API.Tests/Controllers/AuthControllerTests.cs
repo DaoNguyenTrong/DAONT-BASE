@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StarterKit.API.Tests.TestSupport;
@@ -16,6 +17,11 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
     public Task InitializeAsync() => Task.CompletedTask;
 
     public Task DisposeAsync() => fixture.ResetAsync();
+
+    private static string VerificationToken(SentEmail email) =>
+        Regex.Match(email.HtmlBody, "[?&]token=([A-Za-z0-9_-]+)") is { Success: true } match
+            ? match.Groups[1].Value
+            : throw new InvalidOperationException($"No verification token in the email to {email.ToEmail}.");
 
     private AppDbContext CreateDbContext() =>
         fixture.Services.CreateScope().ServiceProvider.GetRequiredService<AppDbContext>();
@@ -33,6 +39,39 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         RegisterResult? result = await response.Content.ReadJsonAsync<RegisterResult>();
         Assert.Equal("nva-register@example.com", result!.Email);
+    }
+
+    // The link in the email is the only place the raw token exists (the server keeps its hash), so this is the
+    // one test that proves what is mailed is what verify-email accepts.
+    [Fact]
+    public async Task Register_Valid_MailsAVerificationLinkWhoseTokenVerifiesTheAccount()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        RegisterRequest request = new("Nguyen Van B", "nvb-register", "nvb-register@example.com", "password123");
+
+        await client.PostAsJsonAsync("/api/auth/register", request);
+
+        SentEmail email = Assert.Single(fixture.Emails.Sent);
+        Assert.Equal("nvb-register@example.com", email.ToEmail);
+        HttpResponseMessage verify = await client.PostAsJsonAsync(
+            "/api/auth/verify-email", new VerifyEmailRequest(VerificationToken(email)));
+        Assert.Equal(HttpStatusCode.OK, verify.StatusCode);
+    }
+
+    // Anyone can register with someone else's address, so the name is attacker-controlled text inside a mail
+    // sent from our domain — it must arrive as text, never as markup (a phishing link, say).
+    [Fact]
+    public async Task Register_NameWithMarkup_IsMailedAsTextNotHtml()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        const string name = "<a href=\"https://evil.example\">Click</a>";
+
+        await client.PostAsJsonAsync(
+            "/api/auth/register", new RegisterRequest(name, "markup-name", "markup-name@example.com", "password123"));
+
+        SentEmail email = Assert.Single(fixture.Emails.Sent);
+        Assert.DoesNotContain("evil.example\">", email.HtmlBody);
+        Assert.Contains("&lt;a href=&quot;https://evil.example&quot;&gt;Click&lt;/a&gt;", email.HtmlBody);
     }
 
     [Fact]
@@ -147,6 +186,27 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         Assert.Equal("AccountTemporarilyLocked", await ErrorCodeAsync(locked));
     }
 
+    // Login only compares against the stored hash: an account whose password predates a stricter policy
+    // (here: shorter than today's minimum) must still be able to sign in, or a policy change locks it out.
+    [Fact]
+    public async Task Login_PasswordShorterThanTheCurrentPolicy_StillSignsIn()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        await using (AppDbContext context = CreateDbContext())
+        {
+            Account account = await AuthTestHelper.SeedConfirmedAccountAsync(
+                context, username: "legacy-password-user", email: "legacy-password@example.com", passwordHash: null);
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("short", FastPasswordHasher.WorkFactor));
+            context.Accounts.Update(account);
+            await context.SaveChangesAsync();
+        }
+
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/auth/login", new LoginRequest("legacy-password-user", "short"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     [Fact]
     public async Task Login_ValidCredentials_ReturnsTokensAndSetsCookies()
     {
@@ -243,6 +303,35 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
             "/api/auth/resend-verification", new ResendVerificationRequest("unknown-nobody@example.com"));
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    // Same 204 as a real pending account, and nothing mailed — the response must not reveal which emails exist.
+    [Fact]
+    public async Task ResendVerification_UnknownEmail_SendsNoEmail()
+    {
+        HttpClient client = fixture.CreateTestClient();
+
+        await client.PostAsJsonAsync(
+            "/api/auth/resend-verification", new ResendVerificationRequest("unknown-nobody@example.com"));
+
+        Assert.Empty(fixture.Emails.Sent);
+    }
+
+    [Fact]
+    public async Task ResendVerification_PendingAccount_MailsANewLinkThatVerifies()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        await client.PostAsJsonAsync(
+            "/api/auth/register", new RegisterRequest("Pending", "resend-pending", "resend-pending@example.com", "password123"));
+
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/auth/resend-verification", new ResendVerificationRequest("resend-pending@example.com"));
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(2, fixture.Emails.Sent.Count);
+        HttpResponseMessage verify = await client.PostAsJsonAsync(
+            "/api/auth/verify-email", new VerifyEmailRequest(VerificationToken(fixture.Emails.Sent[^1])));
+        Assert.Equal(HttpStatusCode.OK, verify.StatusCode);
     }
 
     [Fact]

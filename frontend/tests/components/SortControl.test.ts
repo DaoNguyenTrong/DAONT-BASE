@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import SortControl from '@/components/SortControl.vue'
 import { renderComponent } from '../helpers/render'
+import en from '@/locales/en'
 
 interface SortOption {
   label: string
@@ -34,7 +35,7 @@ describe('SortControl', () => {
     const select = wrapper.findComponent({ name: 'Select' })
     const options = select.props('options') as SortOption[]
 
-    expect(options[0]).toEqual({ label: 'Default', value: '__default__' })
+    expect(options[0]).toEqual({ label: en.common.sortDefault, value: '__default__' })
     expect(options.slice(1)).toEqual(makeOptions())
   })
 
@@ -68,6 +69,16 @@ describe('SortControl', () => {
     await select.vm.$emit('update:value', 'date')
 
     expect(wrapper.emitted('update:modelValue')).toEqual([['date']])
+  })
+
+  // SortControl's select is deselectable: re-picking its option clears it (AppSelect).
+  it('returns to the default sort when the active sort option is picked again', async () => {
+    const { wrapper } = await mountSortControl({ modelValue: 'name' })
+
+    const select = wrapper.findComponent({ name: 'Select' })
+    await select.vm.$emit('update:value', 'name')
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([['']])
   })
 
   it('hides the direction-toggle button when modelValue is empty', async () => {

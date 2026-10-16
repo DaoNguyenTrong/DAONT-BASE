@@ -128,15 +128,26 @@ public sealed class ProfileControllerTests(ApiFactoryFixture fixture) : IAsyncLi
         Assert.Equal("Updated Name", dto!.Name);
     }
 
-    [Fact]
-    public async Task ChangePassword_WrongCurrentPassword_ReturnsUnauthorized()
+    // The first argument keeps each case's former method name in the test report. The short-current case: the
+    // current password is only compared against the stored hash — a pre-policy short one must still let its owner
+    // move to a compliant password.
+    [Theory]
+    [InlineData("ChangePassword_WrongCurrentPassword_ReturnsUnauthorized", "correct-current", "totally-wrong", HttpStatusCode.Unauthorized)]
+    [InlineData("ChangePassword_Success_ReturnsNoContent", "correct-current", "correct-current", HttpStatusCode.NoContent)]
+    [InlineData("ChangePassword_CurrentPasswordShorterThanThePolicy_IsAccepted", "short", "short", HttpStatusCode.NoContent)]
+    public async Task ChangePassword_AnswersWithTheStatusOfTheCase(
+        string caseName,
+        string storedPassword,
+        string currentPassword,
+        HttpStatusCode expectedStatus)
     {
+        _ = caseName;
         HttpClient client = fixture.CreateTestClient();
         Account account;
         await using (AppDbContext context = CreateDbContext())
         {
             account = Account.Create(new AccountParams("Password User", "password-change-user", "password-change@example.com"));
-            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-current", FastPasswordHasher.WorkFactor));
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword(storedPassword, FastPasswordHasher.WorkFactor));
             account.ConfirmEmail();
             context.Accounts.Add(account);
             await context.SaveChangesAsync();
@@ -144,9 +155,9 @@ public sealed class ProfileControllerTests(ApiFactoryFixture fixture) : IAsyncLi
         client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(account));
 
         HttpResponseMessage response = await client.PutAsJsonAsync(
-            "/api/profile/password", new ChangePasswordRequest("totally-wrong", "newpassword123"));
+            "/api/profile/password", new ChangePasswordRequest(currentPassword, "newpassword123"));
 
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(expectedStatus, response.StatusCode);
     }
 
     [Fact]
@@ -166,26 +177,7 @@ public sealed class ProfileControllerTests(ApiFactoryFixture fixture) : IAsyncLi
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
-    public async Task ChangePassword_Success_ReturnsNoContent()
-    {
-        HttpClient client = fixture.CreateTestClient();
-        Account account;
-        await using (AppDbContext context = CreateDbContext())
-        {
-            account = Account.Create(new AccountParams("Password User 2", "password-success-user", "password-success@example.com"));
-            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-current", FastPasswordHasher.WorkFactor));
-            account.ConfirmEmail();
-            context.Accounts.Add(account);
-            await context.SaveChangesAsync();
-        }
-        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(account));
 
-        HttpResponseMessage response = await client.PutAsJsonAsync(
-            "/api/profile/password", new ChangePasswordRequest("correct-current", "newpassword123"));
-
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-    }
 
     // End to end through the real Postgres statements: the current-password check locks after the allowed
     // wrong guesses — even the right one is refused — while sign-in, counted apart, still works.

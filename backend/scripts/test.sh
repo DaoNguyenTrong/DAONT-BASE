@@ -7,6 +7,10 @@
 #
 # Measured effect (479 tests, 2026-08-09): 55.8s serial (`dotnet test
 # backend/StarterKit.sln --no-restore -m:1`) -> 29.7s with this script.
+#
+# Tests tagged [Trait("Category", "RealData")] read gitignored real source data (an import file,
+# a large reference data set) and are skipped by default — they only change outcome when that data
+# changes. Set STARTERKIT_TEST_REAL_DATA=1 to include them.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -21,9 +25,15 @@ projects=(
   backend/tests/StarterKit.API.Tests/StarterKit.API.Tests.csproj
 )
 
+filter_args=()
+if [[ "${STARTERKIT_TEST_REAL_DATA:-0}" != "1" ]]; then
+  filter_args=(--filter "Category!=RealData")
+fi
+
 pids=()
 for project in "${projects[@]}"; do
-  dotnet test "$project" --no-build --no-restore -m:1 &
+  # ${a[@]+...}: under set -u, bash before 4.4 (macOS ships 3.2) calls an empty array unbound.
+  dotnet test "$project" --no-build --no-restore -m:1 ${filter_args[@]+"${filter_args[@]}"} &
   pids+=("$!")
 done
 

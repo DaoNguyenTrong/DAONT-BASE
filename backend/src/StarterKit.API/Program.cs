@@ -10,18 +10,18 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using StarterKit.API.Authorization;
+using StarterKit.API.Commands;
 using StarterKit.API.Common;
 using StarterKit.API.Extensions;
 using StarterKit.API.Middleware;
 using StarterKit.API.Json;
 using StarterKit.Application;
+using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Resources;
 using StarterKit.Infrastructure;
-using StarterKit.Infrastructure.Persistence;
 using StarterKit.Infrastructure.Services.Notifications;
 using Prometheus;
 using Serilog;
@@ -156,6 +156,15 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
+// One-shot commands (`-- migrate`, see Commands/ICliCommand.cs) need only configuration and DI: run them right
+// after Build(), before any startup step below touches Postgres, Hangfire or storage, and exit with their code.
+if (await CliCommands.TryRunAsync(app.Services, args, CancellationToken.None) is int commandExitCode)
+{
+    // The web host never runs, so nothing else disposes it: flush the logger and dispose singletons here.
+    await app.DisposeAsync();
+    return commandExitCode;
+}
+
 // The build-time OpenAPI export (-p:OpenApiGenerateDocumentsOnBuild=true) runs this file inside the
 // GetDocument.Insider tool to build the host, then reads the document without starting the server.
 // Every startup step that reaches Postgres or S3 is skipped there, so the export needs no running
@@ -165,11 +174,12 @@ bool isOpenApiExport = Assembly.GetEntryAssembly()?.GetName().Name == "GetDocume
 
 if (!isOpenApiExport)
 {
-    if (!app.Environment.IsDevelopment())
+    DatabaseSettings databaseSettings =
+        app.Configuration.GetSection(nameof(DatabaseSettings)).Get<DatabaseSettings>() ?? new DatabaseSettings();
+    if (!app.Environment.IsDevelopment() && databaseSettings.MigrateOnStartup)
     {
         using IServiceScope scope = app.Services.CreateScope();
-        AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await dbContext.Database.MigrateAsync();
+        await scope.ServiceProvider.GetRequiredService<IDatabaseMigrator>().MigrateAsync(CancellationToken.None);
     }
 
     app.UseBackgroundJobs();
@@ -237,3 +247,5 @@ app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapMetrics();
 
 app.Run();
+
+return 0;

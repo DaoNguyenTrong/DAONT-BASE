@@ -31,7 +31,11 @@ const rules = computed<FormRules>(() => ({
   ],
   password: [
     { required: true, message: t('auth.passwordRequired'), trigger: ['input', 'blur'] },
-    { min: 8, message: t('auth.passwordTooShort'), trigger: ['input', 'blur'] },
+    {
+      min: PASSWORD_MIN_LENGTH,
+      message: t('auth.passwordTooShort', { min: PASSWORD_MIN_LENGTH }),
+      trigger: ['input', 'blur'],
+    },
   ],
 }))
 

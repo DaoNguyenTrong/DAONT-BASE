@@ -27,6 +27,18 @@ public sealed class ExceptionHandlingMiddleware(
 
             (int statusCode, string title) = AppExceptionHttpMapper.Map(exception);
 
+            // A 4xx is the caller's mistake and not worth a log line. A 503 is a dependency being down — a warning.
+            // A 500 here is an AppException subtype nobody mapped, our own bug: Error, like every other 500, so
+            // it trips the same alerts.
+            if (statusCode == StatusCodes.Status500InternalServerError)
+            {
+                logger.LogError(exception, "Request failed with {StatusCode}: {Key}", statusCode, exception.Message);
+            }
+            else if (statusCode > StatusCodes.Status500InternalServerError)
+            {
+                logger.LogWarning(exception, "Request failed with {StatusCode}: {Key}", statusCode, exception.Message);
+            }
+
             CodedProblemDetails problemDetails = ApiProblemDetailsFactory.Create(
                 localizer,
                 statusCode,

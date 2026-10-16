@@ -7,6 +7,7 @@ import LoginView from '@/views/LoginView.vue'
 import { server } from '../helpers/msw/server'
 import { makeAuthResponse } from '../helpers/msw/fixtures'
 import { renderComponent } from '../helpers/render'
+import en from '@/locales/en'
 
 function problemResponse(body: Record<string, unknown>, status: number) {
   return HttpResponse.json(body, {
@@ -47,7 +48,7 @@ describe('LoginView', () => {
     const { wrapper } = await renderComponent(LoginView)
     await submitLogin(wrapper)
 
-    expect(wrapper.text()).toContain('Your username or password is incorrect.')
+    expect(wrapper.text()).toContain(en.auth.invalidCredentials)
     expect(wrapper.findComponent(ResendVerificationForm).exists()).toBe(false)
   })
 
@@ -64,8 +65,8 @@ describe('LoginView', () => {
     const { wrapper } = await renderComponent(LoginView)
     await submitLogin(wrapper)
 
-    expect(wrapper.text()).toContain('temporarily locked')
-    expect(wrapper.text()).not.toContain('Your username or password is incorrect.')
+    expect(wrapper.text()).toContain(en.auth.accountTemporarilyLocked)
+    expect(wrapper.text()).not.toContain(en.auth.invalidCredentials)
     expect(wrapper.findComponent(ResendVerificationForm).exists()).toBe(false)
   })
 
@@ -87,7 +88,7 @@ describe('LoginView', () => {
     const { wrapper } = await renderComponent(LoginView)
     await submitLogin(wrapper)
 
-    expect(wrapper.text()).toContain('Please verify your email address before signing in.')
+    expect(wrapper.text()).toContain(en.auth.emailNotConfirmed)
     expect(wrapper.findComponent(ResendVerificationForm).exists()).toBe(true)
   })
 

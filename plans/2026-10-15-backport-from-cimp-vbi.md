@@ -305,6 +305,38 @@ Tiêu chí: công sức S, không đổi interface hay hợp đồng API, không
 
 Các mục P3 còn lại; module B19–B21, F17, D8, A18–A20 (chỉ khi có dự án thứ hai cần).
 
+**Đã làm (2026-10-16, nhánh `feature/backport-cimp-vbi`):**
+
+- Nhóm 1:
+  - B17 `f06de9c`, D12 `9c45281`, D11 `5d0a536`, T14 + T20 `a7059bd`, B22 `b068610`, B11 `e8c8402`, B15 `1b2152b`, F11–F14 `522d0d6`.
+  - Thêm ngoài danh sách: fan-out realtime chạy song song `dd8bafa`, dedupe đọc projection `09cbb18`.
+  - B13 vốn đã có sẵn trong base: `AccountParams` không chứa `Status`.
+- Nhóm 2:
+  - B14 `a544040`: `ExecuteInTransactionAsync`.
+  - B16 `3a708a1`: `ICliCommand` + lệnh `migrate`. Migration đi qua port `IDatabaseMigrator` để giữ luật Infrastructure-chỉ-trong-`Program.cs`.
+  - F15 `12f482e`: `AppSelect` + bộ lọc không dấu theo từ.
+  - F15 (bổ sung): fuse.js chỉ là phương án dự phòng khi **không** option nào khớp theo từ, một index cho cả danh sách, từ dưới 4 ký tự phải khớp nguyên văn, ngưỡng 0.35. Bản CIMP (fuse cho mọi phím gõ, mỗi option một index) kéo về gần nửa danh sách với các âm tiết ngắn như `hai`/`hoa`; ngưỡng 0.4 cũng vậy.
+  - T13 `f034c8c`: host test ghim toàn bộ `appsettings.Example.json` bằng env, kèm override cách ly và test canh.
+  - T16 `8f49b08`: `SentEmailCollector`, test trọn chuỗi register → link trong email → verify.
+  - T17 `b4e1297`: 48 assert dùng khoá locale.
+  - T18 `c39ed9b` (frontend) và `c8d8458` (backend).
+  - T19 `0e1ac68`.
+- Không làm:
+  - **T15**: base không có interceptor EF. Đã dựng thử 25 host phụ, không có lỗi "service provider thứ 21", nên helper sẽ không có ai gọi.
+  - **B18**: không đưa vào base (user chọn, 2026-10-16). Base tìm kiếm phân trang dưới SQL (`ILIKE`), còn CIMP so trong bộ nhớ. Base mới có một ô tìm kiếm phía server là audit log, nơi người ta thường tìm theo username/email. Recipe cho fork cần tìm không dấu ở SQL (đã chạy thử trên Postgres 18):
+
+    ```sql
+    -- Trusted extension từ PG13: user sở hữu DB tạo được, không cần superuser. đ/Đ ra d/D.
+    CREATE EXTENSION IF NOT EXISTS unaccent;
+    -- Index không nhận unaccent() trực tiếp ("must be marked IMMUTABLE"), nên cần hàm bọc.
+    CREATE FUNCTION immutable_unaccent(text) RETURNS text
+      LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT
+      RETURN public.unaccent('public.unaccent'::regdictionary, $1);
+    CREATE INDEX ... ON <bảng> (lower(immutable_unaccent(<cột>)));
+    ```
+
+    Viết lệnh này trong migration bằng `migrationBuilder.Sql`, map hàm vào EF bằng `DbFunction`, rồi so `lower(immutable_unaccent(cột)) LIKE lower(immutable_unaccent(@term))`. Lưu ý cách này vẫn so một chuỗi con liền mạch, nên khác quy tắc "mọi từ, thứ tự bất kỳ" của `AppSelect`. Muốn khớp giống hệt frontend thì thêm cột tìm kiếm do app chuẩn hoá lúc lưu.
+
 ---
 
 ## Workflow triển khai

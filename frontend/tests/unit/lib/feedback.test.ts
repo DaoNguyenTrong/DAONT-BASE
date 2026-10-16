@@ -72,18 +72,12 @@ describe('requestConfirmation', () => {
 })
 
 describe('message forwarders', () => {
-  it('forwards showSuccessMessage args', () => {
-    showSuccessMessage('a', 'b', 3)
-    expect(feedbackNaive.showSuccessMessageNaive).toHaveBeenCalledWith('a', 'b', 3)
-  })
-
-  it('forwards showErrorMessage args', () => {
-    showErrorMessage('a', 'b', 3)
-    expect(feedbackNaive.showErrorMessageNaive).toHaveBeenCalledWith('a', 'b', 3)
-  })
-
-  it('forwards showInfoMessage args', () => {
-    showInfoMessage('a', 'b', 3)
-    expect(feedbackNaive.showInfoMessageNaive).toHaveBeenCalledWith('a', 'b', 3)
+  it.each([
+    ['forwards showSuccessMessage args', showSuccessMessage, 'showSuccessMessageNaive'],
+    ['forwards showErrorMessage args', showErrorMessage, 'showErrorMessageNaive'],
+    ['forwards showInfoMessage args', showInfoMessage, 'showInfoMessageNaive'],
+  ] as const)('%s', (_title, forward, naive) => {
+    forward('a', 'b', 3)
+    expect(feedbackNaive[naive]).toHaveBeenCalledWith('a', 'b', 3)
   })
 })

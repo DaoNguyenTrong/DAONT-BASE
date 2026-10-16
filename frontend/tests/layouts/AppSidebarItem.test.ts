@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import AppSidebarItem from '@/layouts/AppSidebarItem.vue'
 import type { SidebarMenuItem } from '@/layouts/sidebar-menu'
 import { useSidebarStore } from '@/stores/sidebar-store'
+import en from '@/locales/en'
 
 const stub = { template: '<div />' }
 const iconStub = { template: '<svg />' }
@@ -37,11 +38,15 @@ async function mountItem(item: SidebarMenuItem, props: Record<string, unknown> =
 
 describe('AppSidebarItem', () => {
   it('renders a leaf item as a router link and highlights it when active', async () => {
-    const item: SidebarMenuItem = { labelKey: 'nav.organizations', icon: iconStub, routeName: 'organizations' }
+    const item: SidebarMenuItem = {
+      labelKey: 'nav.organizations',
+      icon: iconStub,
+      routeName: 'organizations',
+    }
     const { wrapper } = await mountItem(item)
 
     const link = wrapper.get('a')
-    expect(link.text()).toContain('Organizations')
+    expect(link.text()).toContain(en.nav.organizations)
     expect(link.classes()).toContain('bg-white/15')
   })
 
@@ -81,11 +86,15 @@ describe('AppSidebarItem', () => {
   })
 
   it('renders a minimal-mode leaf item as an icon-only tooltip link', async () => {
-    const item: SidebarMenuItem = { labelKey: 'nav.organizations', icon: iconStub, routeName: 'organizations' }
+    const item: SidebarMenuItem = {
+      labelKey: 'nav.organizations',
+      icon: iconStub,
+      routeName: 'organizations',
+    }
     const { wrapper } = await mountItem(item, { minimal: true })
 
     expect(wrapper.find('a').exists()).toBe(true)
-    expect(wrapper.text()).not.toContain('Organizations')
+    expect(wrapper.text()).not.toContain(en.nav.organizations)
   })
 
   it('renders a minimal-mode parent item as a dropdown trigger button', async () => {
@@ -97,6 +106,6 @@ describe('AppSidebarItem', () => {
     const { wrapper } = await mountItem(item, { minimal: true })
 
     expect(wrapper.find('a').exists()).toBe(false)
-    expect(wrapper.get('button').attributes('aria-label')).toBe('Profile')
+    expect(wrapper.get('button').attributes('aria-label')).toBe(en.nav.profile)
   })
 })

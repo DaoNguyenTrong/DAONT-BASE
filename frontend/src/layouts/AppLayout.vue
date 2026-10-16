@@ -36,7 +36,10 @@ onUnmounted(() => {
     <AppSidebar />
     <div class="flex flex-1 flex-col overflow-hidden">
       <AppHeader />
-      <main ref="mainEl" class="relative flex-1 overflow-y-auto p-4 lg:p-6">
+      <main
+        ref="mainEl"
+        class="relative flex-1 overflow-y-auto p-4 [scrollbar-gutter:stable] lg:p-6"
+      >
         <RouterView />
       </main>
       <AppFooter />

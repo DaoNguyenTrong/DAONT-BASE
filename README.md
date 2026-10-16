@@ -79,7 +79,7 @@ dotnet run --project backend/src/StarterKit.API
 backend/scripts/test.sh
 ```
 
-Production: migrations are applied automatically on startup via `Database.MigrateAsync`.
+Production: migrations are applied automatically on startup via `Database.MigrateAsync`. Running several API instances? Set `DatabaseSettings__MigrateOnStartup=false` on them and run `dotnet StarterKit.API.dll migrate` once before starting them, so they don't race on the same migration.
 
 ### 3. Frontend (`frontend/`)
 
@@ -158,7 +158,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
 Each release tag also publishes both images, versioned from the tag: `ghcr.io/<owner>/<repo>/{backend,frontend}:X.Y.Z` (`:latest` follows the newest stable tag; on GitLab, `$CI_REGISTRY_IMAGE/...`). Build them yourself as above, or point the `api`/`web` services at those images to deploy without building on the server.
 
-Migrations apply automatically on startup. Uploaded files and API logs persist in named volumes
+Migrations apply automatically on startup (see `DatabaseSettings:MigrateOnStartup` above for several instances). Uploaded files and API logs persist in named volumes
 (`starterkit-api-uploads`, `starterkit-api-logs`); Postgres data in `starterkit-postgres-data`.
 
 Deploy notes:
@@ -191,8 +191,8 @@ Deploy notes:
 - **Secrets stay out of images.** `appsettings*.json` and `.env*` are excluded from the Docker build
   context (`.dockerignore`); only the bind-mounted copy is read at runtime.
 
-Not included yet (fine for a first deploy, revisit before scaling): TLS termination at nginx, and
-container healthchecks in `docker-compose.prod.yml` (the API already exposes `/api/health`).
+Not included yet (fine for a first deploy, revisit before scaling): TLS termination at nginx. `api` and
+`web` have healthchecks (`/api/health` and the SPA root); `web` starts once `api` is healthy.
 
 ## Documentation
 

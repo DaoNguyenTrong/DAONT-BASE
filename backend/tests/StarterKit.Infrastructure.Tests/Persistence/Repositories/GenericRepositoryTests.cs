@@ -105,6 +105,20 @@ public sealed class GenericRepositoryTests(PostgresContainerFixture fixture) : I
         Assert.Equal(2, result.Count);
     }
 
+    // Projected in SQL: only the selected columns come back, not whole entities.
+    [Fact]
+    public async Task ListAsync_WithSelector_ReturnsOnlyTheProjectionOfMatchingRows()
+    {
+        await SeedAsync(CreateApiKey("Active-1"), CreateApiKey("Active-2"));
+        ApiKey inactive = CreateApiKey("Inactive-1");
+        inactive.Deactivate();
+        await SeedAsync(inactive);
+
+        IReadOnlyList<string> names = await repository.ListAsync(k => k.IsActive, k => k.Name);
+
+        Assert.Equal(["Active-1", "Active-2"], names.Order());
+    }
+
     // ListPagedAsync (page, size)
 
     [Fact]

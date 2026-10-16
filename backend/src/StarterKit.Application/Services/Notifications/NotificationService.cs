@@ -23,6 +23,10 @@ public sealed class NotificationService(
     // the queue as a JSON blob tens of KB long.
     private const int DispatchChunkSize = 500;
 
+    // Each push is a backplane round trip: one at a time, a 5000-recipient fan-out waited ~0.6s even on a local
+    // Redis (~50ms concurrently). Bounded, so a huge fan-out doesn't start every send at once.
+    private const int RealtimePushConcurrency = 32;
+
     public Task NotifyAsync(NotificationParams request, CancellationToken cancellationToken) =>
         NotifyManyAsync(
             [new NotificationBroadcast([request.AccountId], request.Type, request.Data, request.DedupeKey)],
@@ -139,7 +143,7 @@ public sealed class NotificationService(
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    // The (recipient, key) pairs already stored — one read for the whole batch.
+    // The (recipient, key) pairs already stored — one read for the batch, only those two columns.
     private static async Task<HashSet<(Guid, string)>> LoadSentKeysAsync(
         IRepository<Notification, Guid> repository,
         IReadOnlyList<Notification> candidates,
@@ -152,11 +156,15 @@ public sealed class NotificationService(
         }
 
         List<Guid> accountIds = [.. candidates.Where(n => n.DedupeKey is not null).Select(n => n.AccountId).Distinct()];
-        IReadOnlyList<Notification> existing = await repository.ListAsync(
+        // The constructor, not a (a, b) literal: expression trees can't contain tuple literals. A public type keeps
+        // repository stubs in tests working without an InternalsVisibleTo grant to the mocking library.
+        IReadOnlyList<ValueTuple<Guid, string>> existing = await repository.ListAsync(
             n => n.DedupeKey != null && keys.Contains(n.DedupeKey) && accountIds.Contains(n.AccountId),
+            // The predicate already excludes null; ?? keeps the projection free of the ! operator.
+            n => new ValueTuple<Guid, string>(n.AccountId, n.DedupeKey ?? string.Empty),
             cancellationToken);
 
-        return [.. existing.Select(n => (n.AccountId, n.DedupeKey!))];
+        return [.. existing];
     }
 
     // The in-app rows are committed by now: neither a failed realtime push nor a failed enqueue may turn a
@@ -166,18 +174,32 @@ public sealed class NotificationService(
     {
         int failed = 0;
         Exception? firstFailure = null;
-        foreach (Notification notification in created)
+        ParallelOptions options = new()
         {
-            try
+            MaxDegreeOfParallelism = RealtimePushConcurrency,
+            CancellationToken = cancellationToken
+        };
+
+        try
+        {
+            await Parallel.ForEachAsync(created, options, async (notification, token) =>
             {
-                await realtimeNotifier.NotifyAsync(
-                    notification.AccountId, NotificationMapper.ToDto(notification), cancellationToken);
-            }
-            catch (Exception exception)
-            {
-                failed++;
-                firstFailure ??= exception;
-            }
+                try
+                {
+                    await realtimeNotifier.NotifyAsync(
+                        notification.AccountId, NotificationMapper.ToDto(notification), token);
+                }
+                catch (Exception exception)
+                {
+                    Interlocked.Increment(ref failed);
+                    Interlocked.CompareExchange(ref firstFailure, exception, null);
+                }
+            });
+        }
+        catch (OperationCanceledException exception)
+        {
+            // The request was aborted mid-fan-out: the pushes not yet sent are lost, the committed rows aren't.
+            firstFailure ??= exception;
         }
 
         if (firstFailure is not null)

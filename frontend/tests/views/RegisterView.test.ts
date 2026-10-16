@@ -6,6 +6,7 @@ import ResendVerificationForm from '@/components/ResendVerificationForm.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import { server } from '../helpers/msw/server'
 import { renderComponent } from '../helpers/render'
+import en from '@/locales/en'
 
 function problemResponse(body: Record<string, unknown>, status: number) {
   return HttpResponse.json(body, {
@@ -45,10 +46,10 @@ describe('RegisterView', () => {
     const { wrapper } = await renderComponent(RegisterView)
     await submitRegister(wrapper)
 
-    expect(wrapper.text()).toContain('Name is required.')
-    expect(wrapper.text()).toContain('Username is required.')
-    expect(wrapper.text()).toContain('Email is required.')
-    expect(wrapper.text()).toContain('Password is required.')
+    expect(wrapper.text()).toContain(en.auth.nameRequired)
+    expect(wrapper.text()).toContain(en.auth.usernameRequired)
+    expect(wrapper.text()).toContain(en.auth.emailRequired)
+    expect(wrapper.text()).toContain(en.auth.passwordRequired)
     expect(called).toBe(false)
   })
 
@@ -91,7 +92,12 @@ describe('RegisterView', () => {
     server.use(
       http.post('*/api/auth/register', () =>
         problemResponse(
-          { status: 400, title: 'Bad Request', code: 'ValidationFailed', errors: { email: ['Bad email'] } },
+          {
+            status: 400,
+            title: 'Bad Request',
+            code: 'ValidationFailed',
+            errors: { email: ['Bad email'] },
+          },
           400,
         ),
       ),
@@ -109,7 +115,12 @@ describe('RegisterView', () => {
     server.use(
       http.post('*/api/auth/register', () =>
         problemResponse(
-          { status: 409, title: 'Conflict', code: 'AccountUsernameAlreadyExists', detail: 'Taken.' },
+          {
+            status: 409,
+            title: 'Conflict',
+            code: 'AccountUsernameAlreadyExists',
+            detail: 'Taken.',
+          },
           409,
         ),
       ),
@@ -127,7 +138,12 @@ describe('RegisterView', () => {
     server.use(
       http.post('*/api/auth/register', () =>
         problemResponse(
-          { status: 409, title: 'Conflict', code: 'AccountEmailAlreadyExists', detail: 'Email taken.' },
+          {
+            status: 409,
+            title: 'Conflict',
+            code: 'AccountEmailAlreadyExists',
+            detail: 'Email taken.',
+          },
           409,
         ),
       ),
@@ -144,7 +160,12 @@ describe('RegisterView', () => {
     server.use(
       http.post('*/api/auth/register', () =>
         problemResponse(
-          { status: 409, title: 'Conflict', code: 'AccountUsernameAlreadyExists', detail: 'Taken.' },
+          {
+            status: 409,
+            title: 'Conflict',
+            code: 'AccountUsernameAlreadyExists',
+            detail: 'Taken.',
+          },
           409,
         ),
       ),
@@ -167,11 +188,19 @@ describe('RegisterView', () => {
         attempt += 1
         if (attempt === 1) {
           return problemResponse(
-            { status: 409, title: 'Conflict', code: 'AccountUsernameAlreadyExists', detail: 'Taken.' },
+            {
+              status: 409,
+              title: 'Conflict',
+              code: 'AccountUsernameAlreadyExists',
+              detail: 'Taken.',
+            },
             409,
           )
         }
-        return HttpResponse.json({ accountId: 'a1', email: 'nguyenvana@example.com' }, { status: 202 })
+        return HttpResponse.json(
+          { accountId: 'a1', email: 'nguyenvana@example.com' },
+          { status: 202 },
+        )
       }),
     )
 

@@ -11,6 +11,7 @@ internal static class AppExceptionHttpMapper
         ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden"),
         UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
         DomainException or FormattedDomainException => (StatusCodes.Status400BadRequest, "Bad Request"),
+        ServiceUnavailableException => (StatusCodes.Status503ServiceUnavailable, "Service Unavailable"),
         _ => (StatusCodes.Status500InternalServerError, "Internal Server Error")
     };
 }

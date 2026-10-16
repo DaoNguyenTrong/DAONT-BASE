@@ -30,7 +30,18 @@ dotnet ef database update --project backend/src/StarterKit.Infrastructure --star
 dotnet ef migrations add <MigrationName> --project backend/src/StarterKit.Infrastructure --startup-project backend/src/StarterKit.API
 ```
 
-In production, migrations are applied automatically on startup via `Database.MigrateAsync`.
+In production, migrations are applied automatically on startup via `Database.MigrateAsync` unless `DatabaseSettings:MigrateOnStartup` is `false` — set it on every instance of a multi-instance deploy, and run the `migrate` command below once first, so instances starting together don't each run the same migration.
+
+### One-shot CLI commands
+
+```bash
+# Apply pending migrations and exit (0 = done) — the deploy step when MigrateOnStartup=false
+dotnet run --project backend/src/StarterKit.API -- migrate
+# In the production image
+dotnet StarterKit.API.dll migrate
+```
+
+`Program.cs` hands the arguments to `CliCommands.TryRunAsync` right after `Build()`: a first argument naming a registered `ICliCommand` (`backend/src/StarterKit.API/Commands/`) runs that command with the API's configuration and DI, in a scope of its own, and the process exits with its code — the web host, Hangfire and storage never start. Anything else (no arguments, host switches like `--urls`) starts the API as usual. New seed/import/admin commands implement `ICliCommand`, call Application services (the Infrastructure-only-in-`Program.cs` architecture rule applies to them too), and are added to `CliCommands.All`; exit code 1 means bad usage and prints the usage line.
 
 ### OpenAPI Spec Export
 
@@ -50,6 +61,8 @@ backend/scripts/test.sh
 ```
 
 Builds the solution once (serialized, `-m:1` — see Build above), then runs the 4 test projects as independent parallel processes (each still `-m:1` internally, so no process attempts the broken parallel-build path — only the OS scheduler runs them concurrently). Measured 2026-08-09: 479 tests, ~35s, vs. ~56s for `dotnet test backend/StarterKit.sln --no-restore -m:1` run serially. See `.claude/decisions.md` (2026-08-09) for why.
+
+Tests tagged `[Trait("Category", "RealData")]` read gitignored real source data and are **skipped by default** (none exist in the template yet — the tag is for a fork's import/reference-data checks, which only change outcome when that data does). Include them with `STARTERKIT_TEST_REAL_DATA=1 backend/scripts/test.sh` whenever that data changes; a plain `dotnet test` runs them, so they must skip themselves when the data file is absent.
 
 The plain solution-level command still works and is equivalent for correctness — use it if you need a single combined log/trx or are debugging the script itself:
 
@@ -71,7 +84,7 @@ Test projects live under `backend/tests/` (`StarterKit.Domain.Tests`, `StarterKi
 
 - **Password hashing**: `ApiFactoryFixture` registers the real `PasswordHasher` at BCrypt cost 4 (`FastPasswordHasher.Create()`); production stays at 12, pinned by `PasswordHasherTests`. Seed hashes with `FastPasswordHasher.WorkFactor`, not a literal 12 — a cost-12 seed still verifies, it's just ~0.3s slower each time.
 - **DB reset**: Respawn runs `DELETE`, not `TRUNCATE` (~60ms saved per reset). `DELETE` doesn't reset sequences — never assert a specific auto-increment id. The `hangfire` schema is excluded (wiping it makes every `WithWebHostBuilder` host reinstall the schema and hang).
-- **No dev services**: the test host pins `CacheSettings__Provider=Memory` and `RealtimeSettings__Backplane=None` — Respawn only resets Postgres, so a Redis on the dev machine would carry state between runs.
+- **No local config, no outbound calls**: the API test host reads the developer's gitignored `appsettings.json`, so `ApiFactoryFixture` pins every key of the committed `appsettings.Example.json` as an environment variable first (the same configuration CI runs with), then its own overrides — `CacheSettings:Provider=Memory` and `RealtimeSettings:Backplane=None` (Respawn only resets Postgres, so a dev Redis would carry state between runs), `StorageSettings:Provider=Local`, empty OAuth client ids and FCM credentials. `TestHostConfigurationTests` fails if the host resolves any pinned key differently. A new setting goes into the example file and is covered automatically; a new external service (HTTP API, SMTP, queue) gets an isolation override here or a stub registered once in `ConfigureTestServices` at its HTTP edge — never a test that passes because the real service happened to be reachable, or unreachable. A required base URL with no stub points at an `https://<name>.invalid` host, which can never resolve. Keys absent from the example still come from the local file — add them to the example rather than relying on that.
 
 ## Frontend (`frontend/`)
 
@@ -105,6 +118,7 @@ bun run --cwd frontend format
 - `tests/setup.ts` unmounts every wrapper after each test (`enableAutoUnmount`) so component timers can't fire into the next test. Keep it free of heavy imports — it runs once per test file; that's why the confirmation override lives in `lib/confirmation-override.ts`, not in naive-ui-backed `lib/feedback-naive.ts`.
 - Read a store after `renderComponent` with `storeIn(pinia, useXxxStore)` (`tests/helpers/pinia.ts`), using the `pinia` it returns — a testing pinia ignores `useXxxStore(pinia)`'s argument and returns the *active* pinia's store, which a leftover timer from an earlier test may have switched.
 - Tests that drive the real router (guards, route table) stub the lazy views they navigate to with `vi.mock('@/views/XxxView.vue', () => stubView())` (`tests/helpers/router-view-stubs.ts`) instead of loading real view chunks.
+- **Time zones**: CI runs in UTC, developers usually don't. A fixture timestamp that the code parses in the machine's zone must be built from a UTC instant (`new Date('2026-09-15T12:00:00Z')`, then formatted the way the backend emits it), never hard-coded as local wall-clock text — that silently assumes the author's zone and fails on the runner. Check with `TZ=UTC bun run --cwd frontend test:run` (and `TZ=UTC backend/scripts/test.sh`) when a test touches dates.
 - `type-check` runs `src` under both `tsconfig.app.json` and `tsconfig.vitest.json` on purpose: the vitest config adds `node`/`vitest/globals` types, so only the app pass catches app code that leans on them.
 
 ## Git Hooks

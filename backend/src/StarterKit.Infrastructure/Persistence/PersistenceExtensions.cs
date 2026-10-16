@@ -34,6 +34,7 @@ internal static class PersistenceExtensions
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IPasswordAttemptStore, PasswordAttemptStore>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IDatabaseMigrator, DatabaseMigrator>();
 
         return services;
     }

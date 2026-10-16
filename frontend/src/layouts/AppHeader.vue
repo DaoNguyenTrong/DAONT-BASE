@@ -51,7 +51,7 @@ function navigateTo(routeName: string, event: MouseEvent) {
       ></template>
     </n-button>
 
-    <n-breadcrumb class="hidden! lg:flex! breadcrumb-align-fix">
+    <n-breadcrumb class="hidden! min-w-0 lg:flex! breadcrumb-align-fix">
       <n-breadcrumb-item
         v-for="item in breadcrumbItems"
         :key="item.routeName"
@@ -59,7 +59,8 @@ function navigateTo(routeName: string, event: MouseEvent) {
         @click="navigateTo(item.routeName, $event)"
       >
         <n-icon v-if="item.home"><Home /></n-icon>
-        <template v-else>{{ item.label }}</template>
+        <!-- A long label is cut with "…" so the trail stays on one line; `title` keeps the full text. -->
+        <span v-else data-testid="app-header-crumb-text" :title="item.label">{{ item.label }}</span>
       </n-breadcrumb-item>
     </n-breadcrumb>
 
@@ -75,8 +76,40 @@ function navigateTo(routeName: string, event: MouseEvent) {
 </template>
 
 <style scoped>
+/*
+ * The trail stays on one line instead of pushing the header out of shape when a crumb carries a long name
+ * (an entity title in a fork). Every crumb has a width cap, even with room to spare, so one long name can't
+ * take the whole row; narrower still, the last crumb (the current page) gives way first. Separators don't shrink.
+ */
 .breadcrumb-align-fix :deep(> ul) {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.breadcrumb-align-fix :deep(.n-breadcrumb-item) {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 12rem;
+  flex-shrink: 1;
+}
+
+.breadcrumb-align-fix :deep(.n-breadcrumb-item:last-child) {
+  max-width: 18rem;
+  flex-shrink: 1000;
+}
+
+.breadcrumb-align-fix :deep(.n-breadcrumb-item__link) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumb-align-fix :deep(.n-breadcrumb-item__separator) {
+  flex-shrink: 0;
 }
 </style>

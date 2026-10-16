@@ -72,7 +72,7 @@ const vi: LocaleSchema = {
     resendVerificationFailed: 'Không thể gửi lại email xác thực lúc này. Vui lòng thử lại.',
     nameRequired: 'Vui lòng nhập họ tên.',
     emailInvalid: 'Địa chỉ email không hợp lệ.',
-    passwordTooShort: 'Mật khẩu phải có ít nhất 8 ký tự.',
+    passwordTooShort: 'Mật khẩu phải có ít nhất {min} ký tự.',
     usernameAlreadyExists: 'Tên đăng nhập này đã được sử dụng.',
     emailAlreadyExists: 'Đã có tài khoản sử dụng email này.',
     registerFailed: 'Không thể tạo tài khoản lúc này. Vui lòng thử lại.',
@@ -134,7 +134,7 @@ const vi: LocaleSchema = {
     newPasswordPlaceholder: 'Nhập mật khẩu mới',
     currentPasswordRequired: 'Vui lòng nhập mật khẩu hiện tại.',
     newPasswordRequired: 'Vui lòng nhập mật khẩu mới.',
-    newPasswordTooShort: 'Mật khẩu mới phải có ít nhất 8 ký tự.',
+    newPasswordTooShort: 'Mật khẩu mới phải có ít nhất {min} ký tự.',
     passwordChangeTemporarilyLocked:
       'Đổi mật khẩu tạm thời bị khoá do nhập sai mật khẩu hiện tại nhiều lần. Vui lòng thử lại sau ít phút.',
     name: 'Họ tên',

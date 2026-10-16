@@ -301,7 +301,7 @@ const en: LocaleSchema = {
       'Unable to resend the verification email right now. Please try again.',
     nameRequired: 'Name is required.',
     emailInvalid: 'Enter a valid email address.',
-    passwordTooShort: 'Password must be at least 8 characters.',
+    passwordTooShort: 'Password must be at least {min} characters.',
     usernameAlreadyExists: 'This username is already taken.',
     emailAlreadyExists: 'An account with this email already exists.',
     registerFailed: 'Unable to create your account right now. Please try again.',
@@ -363,7 +363,7 @@ const en: LocaleSchema = {
     newPasswordPlaceholder: 'Enter a new password',
     currentPasswordRequired: 'Current password is required.',
     newPasswordRequired: 'New password is required.',
-    newPasswordTooShort: 'New password must be at least 8 characters.',
+    newPasswordTooShort: 'New password must be at least {min} characters.',
     passwordChangeTemporarilyLocked:
       'Changing the password is temporarily locked after too many wrong current passwords. Please try again in a few minutes.',
     name: 'Name',

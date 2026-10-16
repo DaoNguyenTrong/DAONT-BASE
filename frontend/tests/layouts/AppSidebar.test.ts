@@ -7,6 +7,7 @@ import AppSidebar from '@/layouts/AppSidebar.vue'
 import ProfileDialog from '@/components/ProfileDialog.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSidebarStore } from '@/stores/sidebar-store'
+import en from '@/locales/en'
 
 const stub = { template: '<div />' }
 
@@ -60,7 +61,7 @@ describe('AppSidebar', () => {
     const { wrapper } = await mountSidebar()
 
     const links = wrapper.findAll('nav a')
-    expect(links.map((l) => l.text())).toEqual(['Home', 'Organizations'])
+    expect(links.map((l) => l.text())).toEqual([en.nav.home, en.nav.organizations])
   })
 
   it('shows the logged-in account name', async () => {

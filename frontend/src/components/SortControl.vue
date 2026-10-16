@@ -28,8 +28,9 @@ const selectOptions = computed(() => [
 
 const selectValue = computed(() => props.modelValue || DEFAULT_VALUE)
 
-function onSelectChange(value: string) {
-  emit('update:modelValue', value === DEFAULT_VALUE ? '' : value)
+// null: the active option was picked again (`deselectable`), which clears back to the default sort.
+function onSelectChange(value: string | null) {
+  emit('update:modelValue', value === null || value === DEFAULT_VALUE ? '' : value)
 }
 
 function toggleDirection() {
@@ -40,6 +41,7 @@ function toggleDirection() {
 <template>
   <div class="flex shrink-0 items-center gap-1">
     <n-select
+      deselectable
       :value="selectValue"
       :options="selectOptions.map((o) => ({ label: o.label, value: o.value }))"
       :consistent-menu-width="false"
