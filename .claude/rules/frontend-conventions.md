@@ -52,6 +52,14 @@ const example = await client.examplesGetById(id)
 - Types for requests/responses live in `frontend/src/api/types.ts`, re-exported from the generated model types under stable names (e.g. `export type { AccountDto as Account } from './generated/model/accountDto'`) — never hand-declared. A few generated-type quirks (int64 fields widened to `number | string`) are normalized back to plain shapes at the point of use — see `api-contract.md`.
 - In components, catch errors with `error instanceof ApiError` and prefer `error.problem.detail ?? error.problem.title`, falling back to a localized generic string (`t('errors.requestFailed')`) — see `ProfileDialog.vue` for the pattern.
 
+## Runtime Configuration
+
+Never read `import.meta.env.VITE_*` directly — call `getRuntimeConfig()` (`lib/runtime-config.ts`), which overlays the deploy-time `/config.json` over the build-time value key by key. Call it inside a function body or `<script setup>`, never at a `.ts` module's top level (that would freeze the value before `main.ts` has loaded `config.json`). The one deliberate exception is the axios instances in `api/client.ts`, whose `baseURL` `main.ts` re-applies right after loading `config.json` and before the first request. A new `VITE_*` value needs: the key in `RuntimeConfig`/`RUNTIME_CONFIG_KEYS`/`readBuildTimeDefaults`, `env.d.ts`, `public/config.example.json`, `docker/40-write-runtime-config.sh`, and the `web` service's `environment` in `docker-compose.prod.yml` + `.env.prod.example`.
+
+## Session and Organization Exits
+
+Logout, session lapse and organization switch end with a **full page reload** (`lib/session-exit.ts` — `reloadToLogin()`/`reloadTo()`; `useOrganizationSwitch()`), never `router.replace`: Pinia stores live for the whole page, so in-SPA navigation would hand the previous account's/organization's state to whoever comes next. Don't add per-store reset logic — the reload covers stores added later too. Only the first exit per page takes effect, which is why the auth store's `logout()` reloads synchronously right after `clearAuth()` (before `App.vue`'s session-lapse watcher can redirect into the old page). A success toast before one of these exits won't survive it.
+
 ## Localization
 
 vue-i18n, `useI18n()` in components, keys in `frontend/src/locales/{vi,en}.ts`. Locale switching goes through `useLocaleStore` (`frontend/src/stores/locale-store.ts`), not `i18n.global.locale` directly. See `localization.md` for the cross-cutting rule with backend messages.

@@ -41,6 +41,8 @@ dotnet build backend/src/StarterKit.API/StarterKit.API.csproj --no-restore -m:1 
 
 Off by default on plain `dotnet build` (costs ~5-9s via a design-time host). Run after any controller/DTO change, then regenerate the frontend client (see below). See `.claude/rules/api-contract.md` for the full contract-sync workflow.
 
+The export builds the real host from `Program.cs` inside the `GetDocument.Insider` tool. `Program.cs` detects that (`isOpenApiExport`) and skips every startup step that reaches Postgres or S3 (migrations, Hangfire recurring-job registration, bucket creation) — any new startup step that touches an external service must go behind the same flag, or the export fails with connection errors that read like contract errors. With no database running, one `[ERR] ... connection to database` line from DataProtection's background key-ring load is still logged; it is harmless, the build succeeds.
+
 ### Tests
 
 ```bash
@@ -61,7 +63,13 @@ For fast local iteration on a single layer, run just that project (skips the oth
 dotnet test backend/tests/StarterKit.Domain.Tests --no-restore -m:1
 ```
 
-Test projects live under `backend/tests/` (`StarterKit.Domain.Tests`, `StarterKit.Application.Tests`, `StarterKit.Infrastructure.Tests`, `StarterKit.API.Tests`), mirroring the `backend/src/` layer split. `Infrastructure.Tests` and `API.Tests` each spin up their own `Testcontainers.PostgreSql` container and run EF migrations — this is why they dominate total runtime (~8s and ~18s respectively) while `Domain.Tests`/`Application.Tests` are near-instant.
+Test projects live under `backend/tests/` (`StarterKit.Domain.Tests`, `StarterKit.Application.Tests`, `StarterKit.Infrastructure.Tests`, `StarterKit.API.Tests`), mirroring the `backend/src/` layer split. `Infrastructure.Tests` and `API.Tests` each spin up their own `Testcontainers.PostgreSql` container and run EF migrations — this is why they dominate total runtime (~7s and ~12s respectively, measured 2026-10-16) while `Domain.Tests`/`Application.Tests` are near-instant.
+
+### Test-host conventions (keep the suite fast and isolated)
+
+- **Password hashing**: `ApiFactoryFixture` registers the real `PasswordHasher` at BCrypt cost 4 (`FastPasswordHasher.Create()`); production stays at 12, pinned by `PasswordHasherTests`. Seed hashes with `FastPasswordHasher.WorkFactor`, not a literal 12 — a cost-12 seed still verifies, it's just ~0.3s slower each time.
+- **DB reset**: Respawn runs `DELETE`, not `TRUNCATE` (~60ms saved per reset). `DELETE` doesn't reset sequences — never assert a specific auto-increment id. The `hangfire` schema is excluded (wiping it makes every `WithWebHostBuilder` host reinstall the schema and hang).
+- **No dev services**: the test host pins `CacheSettings__Provider=Memory` and `RealtimeSettings__Backplane=None` — Respawn only resets Postgres, so a Redis on the dev machine would carry state between runs.
 
 ## Frontend (`frontend/`)
 
@@ -89,6 +97,13 @@ bun run --cwd frontend test:e2e
 # Format (prettier — there is no ESLint config in this project; do not add one without confirming with the user)
 bun run --cwd frontend format
 ```
+
+### Frontend test conventions
+
+- `tests/setup.ts` unmounts every wrapper after each test (`enableAutoUnmount`) so component timers can't fire into the next test. Keep it free of heavy imports — it runs once per test file; that's why the confirmation override lives in `lib/confirmation-override.ts`, not in naive-ui-backed `lib/feedback-naive.ts`.
+- Read a store after `renderComponent` with `storeIn(pinia, useXxxStore)` (`tests/helpers/pinia.ts`), using the `pinia` it returns — a testing pinia ignores `useXxxStore(pinia)`'s argument and returns the *active* pinia's store, which a leftover timer from an earlier test may have switched.
+- Tests that drive the real router (guards, route table) stub the lazy views they navigate to with `vi.mock('@/views/XxxView.vue', () => stubView())` (`tests/helpers/router-view-stubs.ts`) instead of loading real view chunks.
+- `type-check` runs `src` under both `tsconfig.app.json` and `tsconfig.vitest.json` on purpose: the vitest config adds `node`/`vitest/globals` types, so only the app pass catches app code that leans on them.
 
 ## Git Hooks
 

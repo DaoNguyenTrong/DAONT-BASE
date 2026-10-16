@@ -72,10 +72,10 @@ function handleLogout() {
     rejectLabel: t('common.cancel'),
     accept: async () => {
       try {
+        // Ends in a full page reload to login (see the auth store's logout).
         await useAuthStore().logout()
       } finally {
         sidebar.closeMobile()
-        await router.replace({ name: 'login' })
       }
     },
   })

@@ -18,8 +18,9 @@ public sealed class OrganizationMembershipService(
     {
         IReadOnlyList<Guid> roleIds = await ValidateRoleIdsAsync(organizationId, request.RoleIds, cancellationToken);
 
+        string email = Account.NormalizeEmail(request.Email);
         Account account = await unitOfWork.Repository<Account, Guid>()
-            .FirstOrDefaultAsync(a => a.Email == request.Email, cancellationToken)
+            .FirstOrDefaultAsync(a => a.Email == email, cancellationToken)
             ?? throw new NotFoundException(ApplicationMessages.AccountNotFound);
 
         IRepository<OrganizationMember, Guid> memberRepository = unitOfWork.Repository<OrganizationMember, Guid>();

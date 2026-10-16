@@ -2,8 +2,7 @@
 import { PublicClientApplication } from '@azure/msal-browser'
 
 const { t } = useI18n()
-const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID
-const tenantId = import.meta.env.VITE_MICROSOFT_TENANT_ID || 'common'
+const { microsoftClientId: clientId, microsoftTenantId: tenantId } = getRuntimeConfig()
 const ready = ref(false)
 const { error, showResendVerification, handleCredential } = useMicrosoftAuth()
 

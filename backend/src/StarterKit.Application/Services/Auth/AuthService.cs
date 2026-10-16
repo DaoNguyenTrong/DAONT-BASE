@@ -25,8 +25,9 @@ public sealed class AuthService(
         string? ipAddress,
         CancellationToken cancellationToken)
     {
+        string username = Account.NormalizeUsername(request.Username);
         Account account = await unitOfWork.Repository<Account, Guid>()
-            .FirstOrDefaultAsync(account => account.Username == request.Username, cancellationToken)
+            .FirstOrDefaultAsync(account => account.Username == username, cancellationToken)
             ?? throw new UnauthorizedException(ApplicationMessages.InvalidUsernameOrPassword);
 
         if (!account.Status ||
@@ -195,8 +196,9 @@ public sealed class AuthService(
         }
         else
         {
+            string email = Account.NormalizeEmail(userInfo.Email);
             Account? matchedAccount = await accountRepository.FirstOrDefaultAsync(
-                a => a.Email == userInfo.Email, cancellationToken);
+                a => a.Email == email, cancellationToken);
 
             if (matchedAccount is not null)
             {
@@ -215,8 +217,7 @@ public sealed class AuthService(
                 account = Account.Create(new AccountParams(
                     Name: string.IsNullOrWhiteSpace(userInfo.Name) ? username : userInfo.Name,
                     Username: username,
-                    Email: userInfo.Email,
-                    Status: true));
+                    Email: email));
                 account.ConfirmEmail();
 
                 await accountRepository.AddAsync(account, cancellationToken);
@@ -301,7 +302,7 @@ public sealed class AuthService(
         string email,
         CancellationToken cancellationToken)
     {
-        string baseUsername = email.Split('@')[0];
+        string baseUsername = Account.NormalizeUsername(email.Split('@')[0]);
         string candidate = baseUsername;
         int suffix = 0;
 

@@ -117,8 +117,12 @@ public class AuthServiceTests
         Account account = Account.Create(new AccountParams(
             Name: "Nguyen Van A",
             Username: username,
-            Email: email,
-            Status: status));
+            Email: email));
+
+        if (!status)
+        {
+            account.Deactivate();
+        }
 
         if (passwordHash is not null)
         {

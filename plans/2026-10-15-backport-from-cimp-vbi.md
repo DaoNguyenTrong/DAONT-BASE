@@ -252,17 +252,31 @@ Tiêu chí: công sức S, không đổi interface hay hợp đồng API, không
 
 ### v1.6.0 Hardening (khoảng 5–7 ngày)
 
-1. [ ] **B3** cookie + **D9** README chạy HTTP.
-2. [ ] Phần còn lại của **B1**: (b), (c), `InvalidateMemberAsync`. Cần xem blast-radius của `ICacheService` trước.
+1. [x] **B3** cookie + **D9** README chạy HTTP. `ParseSameSite` chặn thêm giá trị dạng số mà `Enum.TryParse` vẫn nhận, CIMP chưa chặn trường hợp này.
+2. [x] Phần còn lại của **B1**: (b), (c), `InvalidateMemberAsync`.
+   - Kết quả: `RemoveAsync` dùng generation theo từng key, sửa được race cho mọi nơi gọi.
+   - Redis lỗi thì ghi log rồi chạy thẳng factory; không làm circuit breaker.
+   - (b): ban đầu **không** thêm TTL cho generation key, vì counter bị mất sẽ đếm lại từ 0 và làm sống lại dữ liệu cũ. Sau review (phát hiện #3: mỗi `RemoveAsync` để lại một counter vĩnh viễn), user chốt **thêm TTL** (2026-10-16):
+     - TTL của counter = `CacheSettings:MaxExpirationMinutes` (mặc định 1440) + 1 phút, đặt sau mỗi INCR. Mỗi lần ghi entry đều gia hạn **cả hai** counter, kể cả counter đọc ra là 0.
+     - TTL entry vượt Max thì bị kẹp (clamp), không ném lỗi. Khởi động sẽ fail nếu không thoả 0 < Default ≤ Max.
+     - Nếu counter đọc ra > 0 mà tới lúc ghi đã biến mất, bỏ qua lần ghi.
+     - Redis **bắt buộc** `maxmemory-policy noeviction`; `volatile-*` không còn an toàn.
+   - Phát hiện #2 (invalidate nuốt lỗi Redis): giữ nguyên theo B1, user đồng ý.
    - Code review ngày 2026-10-16 xác nhận: `RemoveAsync` chạy trong lúc factory đang tính vẫn bị ghi đè bằng giá trị cũ, vì nó xoá key rồi factory ghi lại vào đúng key đó. Lỗi này ảnh hưởng PermissionResolver, TenantAccessService và SystemSettings.
    - Cách sửa: dùng version theo từng key, hoặc chuyển các chỗ invalidate một phần tử sang cơ chế generation. Kèm test cho trường hợp `RemoveAsync`.
-3. [ ] **F1** reload khi phiên kết thúc, kèm reload khi đổi tổ chức. Tái hiện lỗi trên base trước.
-4. [ ] **F4 + D4 + D6**: runtime config cho toàn bộ frontend.
-5. [ ] **B2 + B6 + B13**: một migration chuẩn hóa email và username, dừng khi gặp dòng trùng.
-6. [ ] **B5**, **F5–F7**, **F9**.
-7. [ ] **T5, T7–T12** + **A14**. Thêm: `tsconfig.vitest.json` include cả `src/**`, nên `type-check` kiểm `src` hai lần. Cân nhắc thu gọn nếu build chậm.
-8. [ ] **D3** theo quyết định ở Bước 0, **D5**.
-9. [ ] **A4** (chạy thử trước), **A13**.
+3. [x] **F1** reload khi phiên kết thúc, kèm reload khi đổi tổ chức. Đổi mật khẩu không cần reload, vì base không thu hồi phiên khi đổi mật khẩu. Đã phát hiện và sửa race: logout có thể thua watcher phiên hết hạn, dẫn tới redirect vào trang của tài khoản trước.
+4. [x] **F4 + D4 + D6**: runtime config cho toàn bộ frontend. Container sinh `config.json` từ biến môi trường; nginx trả 404 và `no-store` cho file này; footer hiện version git.
+5. [x] **B2 + B6 + B13**: một migration chuẩn hóa email và username, dừng khi gặp dòng trùng (user đã duyệt SQL ngày 2026-10-16). Chỉ trim + lower, không cấm khoảng trắng bên trong username. `Status` chỉ đổi qua `Deactivate()`/`Activate()`.
+6. [x] **B5**, **F5–F7**, **F9**. Request bị client huỷ: log Debug, trả 499. Thêm `relative` + `h-dvh` cho layout. Chỉ cuộn `main` về đầu khi `path` đổi. CSS chống iOS tự zoom, chừa lề cho modal, cho phân trang xuống dòng. Chưa port `MobileFilterCollapse`/`responsive.ts`, để dành cho F10.
+7. [x] **T5** (đã xong, làm cùng W4), **T7–T9**, **T11–T12** + **A14**.
+   - API.Tests giảm 21s → 12s; suite FE giảm 12,2s → 9,8s.
+   - **T10 hoãn, chuyển vào Backlog**: Infrastructure.Tests của base chỉ có 6 class dùng Postgres, chạy 7s và phần lớn là thời gian khởi động container. Template DB chỉ có lợi khi đã tách thành nhiều collection chạy song song. Nên làm khi một fork có Infra tests vượt khoảng 30s.
+   - `type-check` kiểm `src` hai lần là **cố ý**, giữ nguyên: pass vitest có thêm type `node`/`vitest/globals` nên che mất lỗi; chỉ pass app mới bắt được code app dựa vào các type đó. Hai pass tốn khoảng 13s.
+8. [x] **D3** (đã làm ở Bước 0), **D5**. Đã build image và kiểm bằng curl: `/` và route fallback trả `no-cache`; `/assets/*` trả immutable và gzip, kể cả khi request có header `Via`; asset không tồn tại trả 404; redirect thư mục dùng Location tương đối.
+9. [x] **A4** (chạy thử trước), **A13**.
+   - Chạy thử cho thấy base **nặng hơn CIMP**: kể cả khi có `Development`, export vẫn fail khi không có DB, vì `UseBackgroundJobs` đăng ký recurring job Hangfire. CIMP chỉ sửa tài liệu thành "cần DB".
+   - Base sửa bằng code: thêm cờ `isOpenApiExport` (entry assembly là `GetDocument.Insider`) để bỏ qua migrate, Hangfire và bucket. Câu "no DB required" giờ đúng thật.
+   - Kèm theo: phát hiện `openapi.json` đã trôi từ `ee452ba` (Files chuyển sang scope theo tổ chức); đã regen. Frontend không dùng các field bị bỏ.
 
 ### v1.7.0 Architecture & DX (khoảng 1,5–2 tuần)
 
@@ -272,6 +286,7 @@ Tiêu chí: công sức S, không đổi interface hay hợp đồng API, không
 - [ ] **F8** cổng phân quyền, **F10** mobile.
 - [ ] **D2** `rename.sh` + fork checklist, **D7** CI không phụ thuộc nhà cung cấp + build từ tag.
 - [ ] **A7–A11**: tùy chọn quy trình.
+- [ ] **T10**: một container Postgres, mỗi collection clone DB từ template đã migrate. Hoãn từ W7, xem lý do ở mục 7 của v1.6.0.
 
 ### Backlog / recipes
 

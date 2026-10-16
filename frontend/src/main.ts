@@ -34,15 +34,13 @@ async function bootstrap() {
   initializeThemePreference()
   initializeFontSize()
 
-  // Must run before any API call (including restoreSession below): a deploy-time
-  // public/config.json overrides the build-time VITE_API_BASE_URL, letting one
-  // build target different backends per environment without a rebuild. Falls
-  // back to the axios defaults already set from VITE_API_BASE_URL when absent.
-  const runtimeConfig = await loadRuntimeConfig()
-  if (runtimeConfig.apiBaseUrl) {
-    apiClient.defaults.baseURL = runtimeConfig.apiBaseUrl
-    refreshClient.defaults.baseURL = runtimeConfig.apiBaseUrl
-  }
+  // Must run before any API call (including restoreSession below) and before any
+  // getRuntimeConfig() read: a deploy-time public/config.json overrides the build-time
+  // VITE_* values key by key, letting one build serve every environment without a rebuild.
+  await loadRuntimeConfig()
+  const { apiBaseUrl } = getRuntimeConfig()
+  apiClient.defaults.baseURL = apiBaseUrl
+  refreshClient.defaults.baseURL = apiBaseUrl
 
   const { default: router } = await import('./router')
 

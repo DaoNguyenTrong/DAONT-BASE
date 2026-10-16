@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Reflection;
 using System.Threading.RateLimiting;
 using Hangfire;
 using Hangfire.Dashboard;
@@ -88,6 +89,10 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowCredentials());
 });
+AuthCookieSettings authCookieSettings = builder.Configuration
+    .GetSection(nameof(AuthCookieSettings)).Get<AuthCookieSettings>() ?? new AuthCookieSettings();
+AuthCookies.Validate(authCookieSettings);
+builder.Services.Configure<AuthCookieSettings>(builder.Configuration.GetSection(nameof(AuthCookieSettings)));
 ForwardedHeadersSettings forwardedHeadersSettings = builder.Configuration
     .GetSection(nameof(ForwardedHeadersSettings)).Get<ForwardedHeadersSettings>() ?? new ForwardedHeadersSettings();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -151,15 +156,25 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-if (!app.Environment.IsDevelopment())
-{
-    using IServiceScope scope = app.Services.CreateScope();
-    AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await dbContext.Database.MigrateAsync();
-}
+// The build-time OpenAPI export (-p:OpenApiGenerateDocumentsOnBuild=true) runs this file inside the
+// GetDocument.Insider tool to build the host, then reads the document without starting the server.
+// Every startup step that reaches Postgres or S3 is skipped there, so the export needs no running
+// services and doesn't fail with connection errors that look like contract errors. New startup work
+// that touches an external service belongs behind this flag too.
+bool isOpenApiExport = Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider";
 
-app.UseBackgroundJobs();
-await app.UseStorageAsync();
+if (!isOpenApiExport)
+{
+    if (!app.Environment.IsDevelopment())
+    {
+        using IServiceScope scope = app.Services.CreateScope();
+        AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await dbContext.Database.MigrateAsync();
+    }
+
+    app.UseBackgroundJobs();
+    await app.UseStorageAsync();
+}
 
 app.UseForwardedHeaders();
 // No UseHttpsRedirection(): no layer in this stack terminates TLS today (nginx in

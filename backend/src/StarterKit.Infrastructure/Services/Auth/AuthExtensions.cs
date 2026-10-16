@@ -64,7 +64,7 @@ internal static class AuthExtensions
                     OnMessageReceived = context =>
                     {
                         if (string.IsNullOrEmpty(context.Token) &&
-                            context.Request.Cookies.TryGetValue("access_token", out string? token))
+                            context.Request.Cookies.TryGetValue(AuthCookieSettings.AccessTokenCookieName, out string? token))
                         {
                             context.Token = token;
                         }

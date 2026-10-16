@@ -24,6 +24,8 @@ internal static class CachingExtensions
             .GetSection(nameof(CacheSettings))
             .Get<CacheSettings>() ?? new CacheSettings();
 
+        CacheExpiration.Validate(cacheSettings);
+
         string providerKey = ResolveProviderKey(cacheSettings.Provider);
 
         services.AddKeyedSingleton<ICacheService, MemoryCacheService>(MemoryProvider);

@@ -1,7 +1,7 @@
 import { config, enableAutoUnmount } from '@vue/test-utils'
 import { beforeAll, afterAll, afterEach, beforeEach } from 'vitest'
 import i18n from '@/plugins/i18n'
-import { setConfirmationOverrideNaive } from '@/lib/feedback-naive'
+import { setConfirmationOverrideNaive } from '@/lib/confirmation-override'
 import { server } from './helpers/msw/server'
 
 beforeAll(() => {

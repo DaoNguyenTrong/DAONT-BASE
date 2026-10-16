@@ -10,6 +10,7 @@ const { t } = useI18n()
 const { open } = useAppDialogNaive()
 const organizationsStore = useOrganizationsStore()
 const auth = useAuthStore()
+const { switchOrganization } = useOrganizationSwitch()
 
 const loading = ref(true)
 const membersDialogVisible = ref(false)
@@ -49,8 +50,8 @@ function openRoles(organization: OrganizationDto) {
 
 async function switchToOrganization(organization: OrganizationDto) {
   try {
-    await auth.switchOrganization({ organizationId: organization.id })
-    showSuccessMessage(t('organizations.switchedTo', { name: organization.name }))
+    // Ends in a full page reload on success (see useOrganizationSwitch).
+    await switchOrganization(organization.id)
   } catch (error) {
     if (error instanceof ApiError) {
       showErrorMessage(error.problem.title, error.problem.detail ?? t('errors.requestFailed'))

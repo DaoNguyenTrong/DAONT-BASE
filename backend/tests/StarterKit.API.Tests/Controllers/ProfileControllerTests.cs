@@ -134,7 +134,7 @@ public sealed class ProfileControllerTests(ApiFactoryFixture fixture) : IAsyncLi
         await using (AppDbContext context = CreateDbContext())
         {
             account = Account.Create(new AccountParams("Password User", "password-change-user", "password-change@example.com"));
-            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-current", 12));
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-current", FastPasswordHasher.WorkFactor));
             account.ConfirmEmail();
             context.Accounts.Add(account);
             await context.SaveChangesAsync();
@@ -172,7 +172,7 @@ public sealed class ProfileControllerTests(ApiFactoryFixture fixture) : IAsyncLi
         await using (AppDbContext context = CreateDbContext())
         {
             account = Account.Create(new AccountParams("Password User 2", "password-success-user", "password-success@example.com"));
-            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-current", 12));
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-current", FastPasswordHasher.WorkFactor));
             account.ConfirmEmail();
             context.Accounts.Add(account);
             await context.SaveChangesAsync();

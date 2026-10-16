@@ -190,4 +190,31 @@ public class ExceptionHandlingMiddlewareTests
 
         Assert.StartsWith("application/problem+json", f.Context.Response.ContentType);
     }
+
+    [Fact]
+    public async Task InvokeAsync_ClientAbortedRequest_Returns499WithoutBody()
+    {
+        using CancellationTokenSource aborted = new();
+        Fixture f = CreateFixture(_ => throw new OperationCanceledException(aborted.Token));
+        aborted.Cancel();
+        f.Context.RequestAborted = aborted.Token;
+
+        await f.Middleware.InvokeAsync(f.Context);
+
+        // F5 / changing a filter mid-request is not a server error: no 500, no Error-level log.
+        Assert.Equal(StatusCodes.Status499ClientClosedRequest, f.Context.Response.StatusCode);
+        Assert.Equal(0, f.Context.Response.Body.Length);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_CancellationNotCausedByTheClient_StillReturns500()
+    {
+        // e.g. an internal timeout's CancellationTokenSource — RequestAborted is NOT cancelled.
+        Fixture f = CreateFixture(_ => throw new TaskCanceledException("internal timeout"));
+
+        CodedProblemDetails body = await InvokeAndReadBodyAsync(f);
+
+        Assert.Equal(StatusCodes.Status500InternalServerError, f.Context.Response.StatusCode);
+        Assert.Equal(StatusCodes.Status500InternalServerError, body.Status);
+    }
 }

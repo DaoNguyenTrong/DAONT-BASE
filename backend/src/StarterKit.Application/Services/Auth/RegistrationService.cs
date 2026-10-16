@@ -27,7 +27,11 @@ public sealed class RegistrationService(
     {
         IRepository<Account, Guid> accountRepository = unitOfWork.Repository<Account, Guid>();
 
-        await EnsureUniqueAccountAsync(accountRepository, request.Username, request.Email, cancellationToken);
+        await EnsureUniqueAccountAsync(
+            accountRepository,
+            Account.NormalizeUsername(request.Username),
+            Account.NormalizeEmail(request.Email),
+            cancellationToken);
 
         Account account = Account.Create(request.ToParams());
         account.SetPasswordHash(passwordHasher.Hash(request.Password));
@@ -77,8 +81,9 @@ public sealed class RegistrationService(
         ResendVerificationRequest request,
         CancellationToken cancellationToken)
     {
+        string email = Account.NormalizeEmail(request.Email);
         Account? account = await unitOfWork.Repository<Account, Guid>()
-            .FirstOrDefaultAsync(a => a.Email == request.Email, cancellationToken);
+            .FirstOrDefaultAsync(a => a.Email == email, cancellationToken);
 
         if (account is null)
         {

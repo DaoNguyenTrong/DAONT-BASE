@@ -157,8 +157,38 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 Migrations apply automatically on startup. Uploaded files and API logs persist in named volumes
 (`starterkit-api-uploads`, `starterkit-api-logs`); Postgres data in `starterkit-postgres-data`.
 
+Deploy notes:
+
+- **Keep `VITE_API_BASE_URL` empty** for this setup — nginx serves the SPA and the API from one
+  origin, so the frontend calls relative `/api/...` paths.
+- **Frontend config is runtime, not build-time.** The Google/Microsoft client ids and Firebase
+  values in `.env.prod` are passed to the `web` container, which writes them into `/config.json` at
+  startup (`frontend/docker/40-write-runtime-config.sh`). One image serves every environment;
+  changing a value needs `docker compose ... up -d`, not `--build`. Any key left empty falls back to
+  the value baked in at build time (none, by default).
+- **Serving over plain http (no TLS in front of nginx)?** The auth cookies default to
+  `Secure` + `SameSite=None`, which a browser silently drops on a non-`localhost` http origin —
+  login returns 200 and every later request is 401. Set this in the bind-mounted `appsettings.json`:
+
+  ```json
+  "AuthCookieSettings": { "Secure": false, "SameSite": "Lax" }
+  ```
+
+  Tokens then travel in cleartext — acceptable for an internal demo, not for real data. The API
+  refuses to start with `Secure: false` + `SameSite: None` (browsers reject that pair). Put TLS in
+  front and restore the defaults before real use.
+- **Using Redis for the cache?** Set its `maxmemory-policy` to `noeviction` — no `volatile-*` or
+  `allkeys-*` policy. Every key the cache writes has a TTL, the invalidation counters included
+  (`CacheSettings:MaxExpirationMinutes`, default 1440, plus a minute; longer entry TTLs are clamped
+  to it); evicting a counter before that would resurrect stale entries (e.g. revoked permissions).
+  Size Redis so it doesn't fill up: at `maxmemory` it rejects writes, so invalidations fail (logged)
+  and stale entries live until their TTL. A Redis outage only slows requests down — the cache falls
+  back to the database and logs it.
+- **Secrets stay out of images.** `appsettings*.json` and `.env*` are excluded from the Docker build
+  context (`.dockerignore`); only the bind-mounted copy is read at runtime.
+
 Not included yet (fine for a first deploy, revisit before scaling): TLS termination at nginx, and
-an `/health` endpoint for container healthchecks.
+container healthchecks in `docker-compose.prod.yml` (the API already exposes `/api/health`).
 
 ## Documentation
 

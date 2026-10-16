@@ -32,6 +32,9 @@ monitoring/
 .vs/
 *.user
 
+# Deploy-time frontend config (gitignored too) — must come from the container env or a mount.
+**/public/config.json
+
 **/.env
 **/.env.*
 !**/.env.example

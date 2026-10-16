@@ -50,6 +50,24 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
     }
 
     [Fact]
+    public async Task Register_SameUsernameAndEmailInDifferentCase_ReturnsConflict()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        await using (AppDbContext context = CreateDbContext())
+        {
+            await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "case-user", email: "case-user@example.com");
+        }
+
+        HttpResponseMessage byUsername = await client.PostAsJsonAsync(
+            "/api/auth/register", new RegisterRequest("New Name", "CASE-User", "other@example.com", "password123"));
+        HttpResponseMessage byEmail = await client.PostAsJsonAsync(
+            "/api/auth/register", new RegisterRequest("New Name", "other-user", "Case-User@Example.COM", "password123"));
+
+        Assert.Equal(HttpStatusCode.Conflict, byUsername.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, byEmail.StatusCode);
+    }
+
+    [Fact]
     public async Task Register_ShortPassword_ReturnsBadRequest()
     {
         HttpClient client = fixture.CreateTestClient();
@@ -69,7 +87,7 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         await using (AppDbContext context = CreateDbContext())
         {
             Account account = Account.Create(new AccountParams("Unconfirmed", "unconfirmed-user", "unconfirmed@example.com"));
-            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", 12));
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", FastPasswordHasher.WorkFactor));
             context.Accounts.Add(account);
             await context.SaveChangesAsync();
         }
@@ -88,7 +106,7 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         {
             Account account = await AuthTestHelper.SeedConfirmedAccountAsync(
                 context, username: "wrong-password-user", email: "wrong-password@example.com", passwordHash: null);
-            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", 12));
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", FastPasswordHasher.WorkFactor));
             context.Accounts.Update(account);
             await context.SaveChangesAsync();
         }
@@ -107,7 +125,7 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         {
             Account account = await AuthTestHelper.SeedConfirmedAccountAsync(
                 context, username: "login-success-user", email: "login-success@example.com", passwordHash: null);
-            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", 12));
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", FastPasswordHasher.WorkFactor));
             context.Accounts.Update(account);
             await context.SaveChangesAsync();
         }
@@ -130,6 +148,25 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
     }
 
     // VerifyEmail
+
+    [Fact]
+    public async Task Login_UsernameInDifferentCaseAndPadded_Succeeds()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        await using (AppDbContext context = CreateDbContext())
+        {
+            Account account = await AuthTestHelper.SeedConfirmedAccountAsync(
+                context, username: "mixed-case-user", email: "mixed-case@example.com", passwordHash: null);
+            account.SetPasswordHash(BCrypt.Net.BCrypt.HashPassword("correct-password", FastPasswordHasher.WorkFactor));
+            context.Accounts.Update(account);
+            await context.SaveChangesAsync();
+        }
+
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/auth/login", new LoginRequest(" Mixed-Case-USER ", "correct-password"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
 
     [Fact]
     public async Task VerifyEmail_ValidToken_ReturnsOkWithTokens()

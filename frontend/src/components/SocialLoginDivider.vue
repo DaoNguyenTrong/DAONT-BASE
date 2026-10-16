@@ -1,8 +1,7 @@
 <script setup lang="ts">
 const { t } = useI18n()
-const hasSocialLogin = Boolean(
-  import.meta.env.VITE_GOOGLE_CLIENT_ID || import.meta.env.VITE_MICROSOFT_CLIENT_ID,
-)
+const runtimeConfig = getRuntimeConfig()
+const hasSocialLogin = Boolean(runtimeConfig.googleClientId || runtimeConfig.microsoftClientId)
 </script>
 
 <template>

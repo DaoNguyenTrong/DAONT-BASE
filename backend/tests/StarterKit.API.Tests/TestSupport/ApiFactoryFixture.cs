@@ -83,7 +83,13 @@ public sealed class ApiFactoryFixture : WebApplicationFactory<Program>, IAsyncLi
             // Hangfire owns its schema and only (re)creates it at storage startup. Wiping its
             // tables (notably hangfire.schema/lock) makes every extra host built via
             // WithWebHostBuilder re-run the schema install against a half-empty schema and hang.
-            SchemasToExclude = ["hangfire"]
+            SchemasToExclude = ["hangfire"],
+            // Respawn's default is one TRUNCATE over every table: ~60ms per reset, since TRUNCATE
+            // allocates a new file per table even when it is nearly empty. DELETE on a handful of rows
+            // is near-instant, and Respawn still orders child tables before parents. Trade-off: DELETE
+            // does NOT reset sequences — never assert a specific auto-increment id ("first session has
+            // id 1").
+            FormatDeleteStatement = table => $"DELETE FROM {table.GetFullName('"')};"
         });
     }
 
@@ -91,6 +97,9 @@ public sealed class ApiFactoryFixture : WebApplicationFactory<Program>, IAsyncLi
     {
         builder.ConfigureTestServices(services =>
         {
+            services.RemoveAll<IPasswordHasher>();
+            services.AddSingleton(FastPasswordHasher.Create());
+
             services.RemoveAll<IEmailSender>();
             services.AddScoped<IEmailSender, NoOpEmailSender>();
 

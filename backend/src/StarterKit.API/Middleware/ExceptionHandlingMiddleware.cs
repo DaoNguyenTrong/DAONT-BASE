@@ -36,6 +36,18 @@ public sealed class ExceptionHandlingMiddleware(
 
             await ApiProblemDetailsFactory.WriteAsync(context, problemDetails);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // The client went away (reload, navigation, a superseded filter request): nobody reads
+            // this response, and it's not a server fault — no 500, no Error-level log noise. 499 is
+            // nginx's "client closed request" so access logs still tell it apart.
+            logger.LogDebug("Request aborted by the client: {Method} {Path}", context.Request.Method, context.Request.Path);
+
+            if (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
+            }
+        }
         catch (Exception exception)
         {
             logger.LogError(exception, "Unhandled exception");

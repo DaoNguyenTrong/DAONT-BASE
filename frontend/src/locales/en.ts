@@ -172,8 +172,6 @@ export interface LocaleSchema {
     empty: string
     emptyHint: string
     created: string
-    switchedTo: string
-    switchedToPersonal: string
     members: string
     membersTitle: string
     membersEmpty: string
@@ -411,8 +409,6 @@ const en: LocaleSchema = {
     empty: 'No organizations yet',
     emptyHint: 'Create an organization to get started.',
     created: 'Organization created',
-    switchedTo: 'Switched to {name}',
-    switchedToPersonal: 'Switched to your personal workspace',
     members: 'Members',
     membersTitle: 'Members of {name}',
     membersEmpty: 'No members yet.',

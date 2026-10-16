@@ -152,4 +152,35 @@ public class MemoryCacheServiceTests
         Assert.Equal("stale", value);
         Assert.Null(await service.GetAsync<string>("prefix", "one"));
     }
+
+    [Fact]
+    public async Task GetOrSetAsync_RemovedWhileFactoryRuns_DoesNotServeStaleValueAfterwards()
+    {
+        MemoryCacheService service = CreateService(out _);
+
+        // e.g. a member's role is revoked (RemoveAsync on that member's key) while another request
+        // is still loading the pre-revocation permission set for the same key.
+        string value = await service.GetOrSetAsync("prefix", "one", async _ =>
+        {
+            await service.RemoveAsync("prefix", "one");
+            return "stale";
+        });
+
+        Assert.Equal("stale", value);
+        Assert.Null(await service.GetAsync<string>("prefix", "one"));
+    }
+
+    [Fact]
+    public async Task RemoveAsync_ThenSetAsync_NewEntryIsVisibleAndSiblingsUntouched()
+    {
+        MemoryCacheService service = CreateService(out _);
+        await service.SetAsync("prefix", "one", "1");
+        await service.SetAsync("prefix", "two", "2");
+
+        await service.RemoveAsync("prefix", "one");
+        await service.SetAsync("prefix", "one", "1-new");
+
+        Assert.Equal("1-new", await service.GetAsync<string>("prefix", "one"));
+        Assert.Equal("2", await service.GetAsync<string>("prefix", "two"));
+    }
 }

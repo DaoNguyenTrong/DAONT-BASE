@@ -43,6 +43,21 @@ describe('apiClient interceptors', () => {
     expect(response.data).toEqual({ ok: true })
   })
 
+  it('sends array query params as repeated keys, which ASP.NET binds', async () => {
+    let search = ''
+    server.use(
+      http.get('*/api/test-array', ({ request }) => {
+        search = new URL(request.url).search
+        return HttpResponse.json({ ok: true })
+      }),
+    )
+
+    const apiClient = await loadApiClient()
+    await apiClient.get('/api/test-array', { params: { ids: [3, 4] } })
+
+    expect(search).toBe('?ids=3&ids=4')
+  })
+
   it('refreshes on 401 then retries the original request', async () => {
     let protectedCalls = 0
 

@@ -182,8 +182,6 @@ const vi: LocaleSchema = {
     empty: 'Chưa có tổ chức nào',
     emptyHint: 'Tạo một tổ chức để bắt đầu.',
     created: 'Đã tạo tổ chức',
-    switchedTo: 'Đã chuyển sang {name}',
-    switchedToPersonal: 'Đã chuyển về không gian cá nhân',
     members: 'Thành viên',
     membersTitle: 'Thành viên của {name}',
     membersEmpty: 'Chưa có thành viên nào.',

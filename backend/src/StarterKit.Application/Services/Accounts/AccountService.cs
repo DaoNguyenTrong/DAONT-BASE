@@ -26,8 +26,9 @@ public sealed class AccountService(
         IRepository<Account, Guid> repository = unitOfWork.Repository<Account, Guid>();
         Account account = await GetCurrentAccountAsync(cancellationToken);
 
+        string email = Account.NormalizeEmail(request.Email);
         if (await repository.FirstOrDefaultAsync(
-                candidate => candidate.Email == request.Email && candidate.Id != account.Id,
+                candidate => candidate.Email == email && candidate.Id != account.Id,
                 cancellationToken) is not null)
         {
             throw new ConflictException(ApplicationMessages.AccountEmailAlreadyExists);
@@ -39,8 +40,7 @@ public sealed class AccountService(
             request.Email,
             request.Phone,
             request.Position,
-            request.Address,
-            account.Status));
+            request.Address));
 
         repository.Update(account);
         await unitOfWork.SaveChangesAsync(cancellationToken);

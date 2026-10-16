@@ -13,5 +13,5 @@ public sealed record RegisterRequest(
     [MaxLength(500, ErrorMessage = "FieldMaxLength")] string? Address = null)
 {
     public AccountParams ToParams() =>
-        new(Name, Username, Email, Phone, Position, Address, true);
+        new(Name, Username, Email, Phone, Position, Address);
 }

@@ -9,15 +9,23 @@ import {
 import { initializeApp, type FirebaseApp } from 'firebase/app'
 import { getPushSubscriptions } from '@/api/generated/push-subscriptions/push-subscriptions'
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? '',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ?? '',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID ?? '',
+// Read lazily, not snapshotted into module-level consts — this module can be imported before
+// main.ts's bootstrap() has loaded the deploy-time config.json (see lib/runtime-config.ts).
+function getFirebaseConfig() {
+  const config = getRuntimeConfig()
+  return {
+    apiKey: config.firebaseApiKey,
+    authDomain: config.firebaseAuthDomain,
+    projectId: config.firebaseProjectId,
+    messagingSenderId: config.firebaseMessagingSenderId,
+    appId: config.firebaseAppId,
+  }
 }
-const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY
-const isConfigured = Boolean(vapidKey && firebaseConfig.apiKey)
+
+function isPushConfigured(): boolean {
+  const config = getRuntimeConfig()
+  return Boolean(config.firebaseVapidKey && config.firebaseApiKey)
+}
 
 // Module-level singletons — the SDK/service-worker registration only needs to happen once per
 // page load, regardless of how many components use this composable.
@@ -30,6 +38,7 @@ async function ensureMessaging(): Promise<Messaging> {
     return messaging
   }
 
+  const firebaseConfig = getFirebaseConfig()
   swRegistration = await navigator.serviceWorker.register(
     `/firebase-messaging-sw.js?${new URLSearchParams(firebaseConfig).toString()}`,
   )
@@ -55,7 +64,7 @@ export function usePushNotifications() {
   const { run, isLoading } = useApiAction()
 
   async function subscribe() {
-    if (!isConfigured || !isSupported.value) {
+    if (!isPushConfigured() || !isSupported.value) {
       return
     }
 
@@ -66,7 +75,7 @@ export function usePushNotifications() {
 
     const messagingInstance = await ensureMessaging()
     const token = await getToken(messagingInstance, {
-      vapidKey,
+      vapidKey: getRuntimeConfig().firebaseVapidKey,
       serviceWorkerRegistration: swRegistration!,
     })
     if (!token) {
@@ -93,7 +102,7 @@ export function usePushNotifications() {
   }
 
   onMounted(async () => {
-    if (!isConfigured || typeof Notification === 'undefined') {
+    if (!isPushConfigured() || typeof Notification === 'undefined') {
       return
     }
 
@@ -109,7 +118,7 @@ export function usePushNotifications() {
     if (isSubscribed.value && permission.value === 'granted') {
       const messagingInstance = await ensureMessaging()
       currentToken.value = await getToken(messagingInstance, {
-        vapidKey,
+        vapidKey: getRuntimeConfig().firebaseVapidKey,
         serviceWorkerRegistration: swRegistration!,
       }).catch(() => null)
     }

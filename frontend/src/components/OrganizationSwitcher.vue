@@ -10,23 +10,22 @@ const router = useRouter()
 const auth = useAuthStore()
 const organizationsStore = useOrganizationsStore()
 const sidebar = useSidebarStore()
+const { switchOrganization } = useOrganizationSwitch()
 
 const showMenu = ref(false)
 const switchingTo = ref<string | null>(null)
 
 const currentLabel = computed(() => auth.organizationName ?? t('organizations.personalWorkspace'))
 
-async function switchTo(organizationId: string | null, name: string | null) {
+async function switchTo(organizationId: string | null) {
   if (switchingTo.value !== null || organizationId === auth.organizationId) {
     showMenu.value = false
     return
   }
   switchingTo.value = organizationId ?? 'personal'
   try {
-    await auth.switchOrganization({ organizationId })
-    showSuccessMessage(
-      name ? t('organizations.switchedTo', { name }) : t('organizations.switchedToPersonal'),
-    )
+    // Ends in a full page reload on success — no success toast, it wouldn't survive the reload.
+    await switchOrganization(organizationId)
   } catch (error) {
     if (error instanceof ApiError) {
       showErrorMessage(error.problem.title, error.problem.detail ?? t('errors.requestFailed'))
@@ -99,7 +98,7 @@ watch(showMenu, (open) => {
       <button
         type="button"
         class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-100 dark:hover:bg-surface-800"
-        @click="switchTo(null, null)"
+        @click="switchTo(null)"
       >
         <n-icon class="shrink-0"
           ><Loader v-if="switchingTo === 'personal'" class="animate-spin" /><Check
@@ -113,7 +112,7 @@ watch(showMenu, (open) => {
         :key="organization.id"
         type="button"
         class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-100 dark:hover:bg-surface-800"
-        @click="switchTo(organization.id, organization.name)"
+        @click="switchTo(organization.id)"
       >
         <n-icon class="shrink-0">
           <Loader v-if="switchingTo === organization.id" class="animate-spin" />

@@ -37,6 +37,10 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>StarterKit.Infrastructure.Tests</_Parameter1>
     </AssemblyAttribute>
+    <!-- API.Tests builds the real PasswordHasher at a test work factor (internal ctor). -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>StarterKit.API.Tests</_Parameter1>
+    </AssemblyAttribute>
     <!-- NSubstitute mocks internal interfaces via Castle DynamicProxy, which emits its own
          dynamic assembly and needs its own InternalsVisibleTo grant to see internal types. -->
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">

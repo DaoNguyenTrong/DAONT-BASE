@@ -17,6 +17,10 @@ declare module 'vue-router' {
 
 const router = createRouter({
   history: createWebHashHistory(),
+  // Only reaches pages that scroll the window (login, register…), where back/forward restores the
+  // saved position. Inside the app shell the page scrolls `main` instead, which AppLayout resets to
+  // the top on every path change — back/forward included; no position is saved for it.
+  scrollBehavior: (_to, _from, savedPosition) => savedPosition ?? { top: 0 },
   routes: [
     {
       path: '/',

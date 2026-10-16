@@ -10,6 +10,9 @@ internal sealed class StackExchangeRedisStringStore(IConnectionMultiplexer conne
     public Task<RedisValue> StringGetAsync(string key) =>
         database.StringGetAsync(key);
 
+    public Task<RedisValue[]> StringGetAsync(string[] keys) =>
+        database.StringGetAsync(Array.ConvertAll(keys, key => (RedisKey)key));
+
     public async Task StringSetAsync(string key, string value, TimeSpan expiry) =>
         await database.StringSetAsync(key, value, expiry);
 
@@ -18,4 +21,7 @@ internal sealed class StackExchangeRedisStringStore(IConnectionMultiplexer conne
 
     public Task<long> StringIncrementAsync(string key) =>
         database.StringIncrementAsync(key);
+
+    public Task<bool> KeyExpireAsync(string key, TimeSpan expiry) =>
+        database.KeyExpireAsync(key, expiry);
 }

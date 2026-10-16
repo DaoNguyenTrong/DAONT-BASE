@@ -1465,14 +1465,6 @@
         "operationId": "Files_Upload",
         "parameters": [
           {
-            "name": "ownerId",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
             "name": "description",
             "in": "query",
             "schema": {
@@ -1579,7 +1571,7 @@
         "tags": [
           "Files"
         ],
-        "summary": "Returns a paginated list of files, with optional filtering by owner and category.",
+        "summary": "Returns a paginated list of files for the caller's active organization.",
         "operationId": "Files_GetAll",
         "parameters": [
           {
@@ -1785,6 +1777,26 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "text/plain": {
                 "schema": {
@@ -4481,7 +4493,7 @@
           "size",
           "storagePath",
           "publicUrl",
-          "ownerId",
+          "organizationId",
           "description",
           "category",
           "createdAt",
@@ -4513,11 +4525,8 @@
           "publicUrl": {
             "type": "string"
           },
-          "ownerId": {
-            "type": [
-              "null",
-              "string"
-            ],
+          "organizationId": {
+            "type": "string",
             "format": "uuid"
           },
           "description": {
