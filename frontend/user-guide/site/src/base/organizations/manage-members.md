@@ -29,7 +29,7 @@ Mở danh sách thành viên: bấm **Tổ chức** ở thanh bên, rồi bấm 
 1. Bấm vào ô vai trò của thành viên.
 2. Chọn thêm vai trò, hoặc bấm dấu **×** trên một vai trò để bỏ nó.
 
-Thay đổi được lưu ngay, ứng dụng báo **Đã cập nhật vai trò**. Mỗi thành viên luôn giữ ít nhất một vai trò.
+Thay đổi được lưu ngay, ứng dụng báo **Đã cập nhật vai trò**. Khi đổi vai trò, thành viên phải giữ lại ít nhất một vai trò.
 
 ## Xoá thành viên
 

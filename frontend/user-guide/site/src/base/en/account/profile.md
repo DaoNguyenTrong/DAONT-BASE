@@ -28,7 +28,7 @@ Your profile holds what others see about you, such as your name and email. Updat
 
 ## Result
 
-The app shows **Profile updated**. Your new name appears at the bottom of the sidebar right away. If you changed your email, you can sign in with the new one next time.
+The app shows **Profile updated**. The name at the bottom of the sidebar changes once you reload the page. You still sign in with your username, even after changing your email.
 
 ## Troubleshooting
 

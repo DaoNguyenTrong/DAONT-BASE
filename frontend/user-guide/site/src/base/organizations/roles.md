@@ -26,6 +26,10 @@ Mỗi tổ chức có sẵn ba vai trò có nhãn **Hệ thống**. Không sửa
 | **Quản lý thành viên** | [Thêm](./add-member), đổi vai trò và [xoá thành viên](./manage-members) |
 | **Quản lý vai trò**    | Tạo, sửa và xoá vai trò (trang này)                                     |
 
+::: warning
+Quyền **Quản lý tổ chức** cho phép ngưng hoạt động tổ chức, việc không thể hoàn tác. Chỉ giao nó cho người thật sự cần.
+:::
+
 Các quyền **Quản lý tệp**, **Quản lý khoá API**, **Xem nhật ký hoạt động** và **Quản lý cài đặt** chỉ có tác dụng khi hệ thống của bạn có các chức năng tương ứng.
 
 ## Xem vai trò
@@ -72,7 +76,7 @@ Các quyền **Quản lý tệp**, **Quản lý khoá API**, **Xem nhật ký ho
 ## Sửa hoặc xoá vai trò
 
 - **Sửa**: bấm nút **Sửa vai trò** (biểu tượng cây bút) ở dòng của vai trò, đổi tên hoặc quyền, rồi bấm **Lưu**.
-- **Xoá**: bấm nút thùng rác ở dòng của vai trò, rồi bấm **Xác nhận**. Thành viên chỉ giữ vai trò này sẽ mất các quyền tương ứng.
+- **Xoá**: bấm nút thùng rác ở dòng của vai trò, rồi bấm **Xác nhận**. Thành viên chỉ giữ vai trò này sẽ không còn vai trò nào; hãy [giao lại vai trò](./manage-members) cho họ.
 
 ## Sự cố thường gặp
 

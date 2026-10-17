@@ -28,7 +28,7 @@ Hồ sơ cá nhân chứa thông tin người khác nhìn thấy về bạn, nh�
 
 ## Kết quả
 
-Ứng dụng báo **Đã cập nhật hồ sơ**. Tên mới hiện ngay ở chân thanh bên. Nếu bạn đổi email, lần đăng nhập sau có thể dùng email mới.
+Ứng dụng báo **Đã cập nhật hồ sơ**. Tên ở chân thanh bên đổi theo sau khi bạn tải lại trang. Bạn vẫn đăng nhập bằng tên đăng nhập như cũ, kể cả khi đã đổi email.
 
 ## Sự cố thường gặp
 

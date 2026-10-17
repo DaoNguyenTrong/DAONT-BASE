@@ -6,7 +6,7 @@ permission: organizations.manage
 
 # Ngưng hoạt động tổ chức
 
-Ngưng hoạt động một tổ chức khi nó không còn được dùng nữa, ví dụ dự án đã kết thúc. Chỉ chủ tổ chức làm được việc này.
+Ngưng hoạt động một tổ chức khi nó không còn được dùng nữa, ví dụ dự án đã kết thúc. Cần quyền **Quản lý tổ chức**: vai trò **Owner** luôn có quyền này, và vai trò khác chỉ có khi được giao.
 
 ::: danger Không thể hoàn tác
 Khi ngưng hoạt động, mọi thành viên mất quyền truy cập tổ chức ngay lập tức và bạn không thể bật lại.
@@ -36,4 +36,4 @@ Khi ngưng hoạt động, mọi thành viên mất quyền truy cập tổ ch�
 
 ## Sự cố thường gặp
 
-- **Không thấy nút Ngưng hoạt động tổ chức**: bạn không phải chủ tổ chức. Nhờ chủ tổ chức làm việc này.
+- **Không thấy nút Ngưng hoạt động tổ chức**: bạn không có quyền **Quản lý tổ chức**. Nhờ chủ tổ chức làm việc này.

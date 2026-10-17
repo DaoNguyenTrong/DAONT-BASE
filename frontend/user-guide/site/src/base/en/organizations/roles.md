@@ -26,6 +26,10 @@ Every organization comes with three roles tagged **System**. They cannot be edit
 | **Manage members**      | [Adding](./add-member), changing the roles of and [removing members](./manage-members) |
 | **Manage roles**        | Creating, editing and deleting roles (this page)                                       |
 
+::: warning
+**Manage organization** allows deactivating the organization, which cannot be undone. Give it only to people who really need it.
+:::
+
 **Manage files**, **Manage API keys**, **View audit logs** and **Manage settings** only take effect when your system has the matching features.
 
 ## View roles
@@ -72,7 +76,7 @@ The app shows **Role created**. The new role can be chosen right away when addin
 ## Edit or delete a role
 
 - **Edit**: click the **Edit role** button (the pencil icon) on the role's row, change its name or permissions, then click **Save**.
-- **Delete**: click the trash button on the role's row, then click **Confirm**. Members holding only this role lose its permissions.
+- **Delete**: click the trash button on the role's row, then click **Confirm**. Members holding only this role are left with no role; [give them a role again](./manage-members).
 
 ## Troubleshooting
 

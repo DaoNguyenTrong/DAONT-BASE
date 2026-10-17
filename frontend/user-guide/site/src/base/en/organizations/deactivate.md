@@ -6,7 +6,7 @@ permission: organizations.manage
 
 # Deactivate an organization
 
-Deactivate an organization when it is no longer used, for example when a project has ended. Only the organization's owner can do this.
+Deactivate an organization when it is no longer used, for example when a project has ended. It needs the **Manage organization** permission: the **Owner** role always has it, and other roles only when given it.
 
 ::: danger This cannot be undone
 Once deactivated, every member loses access to the organization immediately, and you cannot turn it back on.
@@ -36,4 +36,4 @@ The app shows **Organization deactivated** and closes the dialog.
 
 ## Troubleshooting
 
-- **No Deactivate organization button**: you are not the organization's owner. Ask the owner to do it.
+- **No Deactivate organization button**: you don't have the **Manage organization** permission. Ask the organization's owner to do it.

@@ -29,7 +29,7 @@ Open the member list: click **Organizations** in the sidebar, then click the **M
 1. Click the member's role box.
 2. Choose another role, or click the **×** on a role to drop it.
 
-The change is saved right away and the app shows **Roles updated**. Every member always keeps at least one role.
+The change is saved right away and the app shows **Roles updated**. When changing roles, a member must keep at least one.
 
 ## Remove a member
 
