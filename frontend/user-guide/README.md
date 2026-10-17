@@ -115,7 +115,7 @@ for (const locale of locales) {
       { selector: 'aside nav', n: 1, at: 'top-right' },
       { selector: 'header .n-breadcrumb', n: 2, at: 'after' },
     ])
-    await capture.blur(['[data-testid="app-sidebar-account"]'])
+    await capture.blur(['[data-testid="app-header-user-menu"]'])
     await capture.shot({ locale, chapter: 'getting-started', name: 'overview' })
   })
 }
