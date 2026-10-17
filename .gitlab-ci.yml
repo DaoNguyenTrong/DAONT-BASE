@@ -56,6 +56,10 @@ test:
     - bun run --cwd frontend build-only # writes src/typings/, which vue-tsc needs
     - bun run --cwd frontend type-check # vitest doesn't type-check
     - bun run --cwd frontend test:coverage
+    - bun install --cwd frontend/user-guide/site --frozen-lockfile
+    - bun run --cwd frontend/user-guide/site format:check
+    - bun run --cwd frontend/user-guide/site test # includes the content integrity check
+    - bun run --cwd frontend/user-guide/site build # fails on dead links
   artifacts:
     when: always
     reports:

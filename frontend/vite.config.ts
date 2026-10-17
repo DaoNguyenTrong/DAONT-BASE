@@ -70,6 +70,8 @@ export default defineConfig(({ mode }) => {
           '**/docs/.vitepress/cache/**',
           '**/documents/**',
           '**/plans/**',
+          // The user guide is its own VitePress package with its own dev server.
+          '**/user-guide/**',
           '**/.claude/**',
           '**/.git/**',
           '**/node_modules/**',

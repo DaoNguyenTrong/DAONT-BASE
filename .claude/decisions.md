@@ -9,6 +9,14 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-10-17 — User guide is gated at the nginx edge against a session-only check, fail-closed
+
+The guide stays a static site (keeps SSG and search, and in public mode survives app outages), so access control lives at the edge rather than in the SPA. The check accepts only the user-session scheme: the default policy also admits API keys, which would let a service credential read the guide. An API failure denies access instead of serving content. Rejected: guide as SPA routes; always public; fail-open on 5xx.
+
+### 2026-10-17 — Guide content splits into base-owned and fork-owned trees
+
+Forks must pull base guide updates without merge conflicts, so base and fork pages live in separate source trees merged into one URL space, with the table of contents composed from two files. Brand colours are generated from the app's Tailwind tokens rather than copied, so forks never edit them. Rejected: forks editing base pages directly (conflict on every upstream pull); duplicated colour values guarded by a drift test.
+
 ### 2026-10-16 — One-shot CLI commands run through the API host
 
 Seed/import/admin tasks need the API's configuration and DI but not the web server, and must work when HTTP doesn't, from scripts branching on exit codes. Commands implement `ICliCommand` and run right after `Build()`, before any startup step. Rejected: EF or Infrastructure inside commands/`Program.cs` — migrations go through the `IDatabaseMigrator` Application port, so commands keep the Infrastructure-only-in-composition-root rule.

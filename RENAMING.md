@@ -56,7 +56,13 @@ becomes the lowercase new form (`newname`, also for package names).
    `appsettings*.json` / `.env*` and moves them into the renamed project folder. Then delete the
    leftover `backend/src/StarterKit.*` / `backend/tests/StarterKit.*` folders (only `bin/`/`obj/`
    remain).
-4. CodeGraph re-indexes on its own (file watcher); restart Serena so its language servers load the
+4. The user guide: the script already renames `name` in
+   `frontend/user-guide/site/.vitepress/product.ts`; set `publisher` and the logo file names
+   (`brand`, files in `frontend/public/`) there by hand, and rewrite the home pages
+   `frontend/user-guide/site/src/index.md` and `src/en/index.md`. Those are the guide's fork-owned
+   files — base-owned files (`src/base/**`, `theme/**`, `sidebar.base.ts`) stay as they are so later
+   guide updates from the base merge cleanly (see `frontend/user-guide/README.md`).
+5. CodeGraph re-indexes on its own (file watcher); restart Serena so its language servers load the
    new project paths.
 5. Smoke test: register → verification email in Mailpit (`localhost:8025`) → verify → log in.
 

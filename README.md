@@ -201,6 +201,7 @@ Not included yet (fine for a first deploy, revisit before scaling): TLS terminat
 - Security policy / reporting a vulnerability: [SECURITY.md](SECURITY.md)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
 - Key architecture decisions: [.claude/decisions.md](.claude/decisions.md)
+- End-user guide (Hướng dẫn sử dụng, VitePress, served at `/guide/`): [frontend/user-guide/README.md](frontend/user-guide/README.md)
 
 ## License
 

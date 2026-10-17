@@ -57,6 +57,10 @@ coverage
 *.tsbuildinfo
 .eslintcache
 frontend/src/typings/
+# user guide (frontend/user-guide/site): VitePress cache and files scripts/sync-brand.ts writes
+frontend/user-guide/site/.vitepress/cache/
+frontend/user-guide/site/src/public/brand/
+**/brand-tokens.generated.css
 
 # orval — regenerated from shared/openapi/openapi.json via `postinstall` / `bun run codegen`
 frontend/src/api/generated/

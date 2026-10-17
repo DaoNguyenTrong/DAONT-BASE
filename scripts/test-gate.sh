@@ -28,3 +28,9 @@ bun run --cwd frontend prettier --check --experimental-cli src/ e2e/
 bun run --cwd frontend build-only
 bun run --cwd frontend type-check
 bun run --cwd frontend test:run
+
+# The user guide: formatting, unit + content integrity tests, and a build that fails on dead links.
+bun install --cwd frontend/user-guide/site --frozen-lockfile
+bun run --cwd frontend/user-guide/site format:check
+bun run --cwd frontend/user-guide/site test
+bun run --cwd frontend/user-guide/site build
