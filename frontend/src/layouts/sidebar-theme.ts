@@ -3,7 +3,7 @@ import type { MenuTheme } from '@/lib/layout-preferences'
 export interface SidebarThemeClasses {
   /** Background of the sidebar (and of the horizontal bar). */
   surface: string
-  /** Strong text on the surface: a parent that holds the current page. */
+  /** Strong text on the surface: a parent that holds the current page. Must differ from the idle color. */
   text: string
   /** Small uppercase group titles. */
   groupTitle: string
@@ -39,7 +39,7 @@ const THEMES: Record<MenuTheme, Record<'light' | 'dark', SidebarThemeClasses>> =
   transparent: {
     light: {
       surface: 'bg-surface-100',
-      text: 'text-surface-600',
+      text: 'text-primary-600',
       groupTitle: 'text-surface-400',
       itemIdle: 'text-surface-600 hover:bg-surface-200 hover:text-surface-900',
       itemActive: 'bg-white font-medium text-primary-600 shadow-sm',
@@ -47,7 +47,7 @@ const THEMES: Record<MenuTheme, Record<'light' | 'dark', SidebarThemeClasses>> =
     },
     dark: {
       surface: 'bg-surface-950',
-      text: 'text-surface-300',
+      text: 'text-primary-200',
       groupTitle: 'text-surface-500',
       itemIdle: 'text-surface-300 hover:bg-surface-900 hover:text-surface-100',
       itemActive: 'bg-surface-800 font-medium text-primary-200',
