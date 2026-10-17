@@ -26,6 +26,7 @@ const vi: LocaleSchema = {
     user: 'Người dùng',
   },
   layout: {
+    openSettings: 'Cài đặt giao diện',
     userMenu: {
       open: 'Tài khoản',
       vietnamese: 'Tiếng Việt',

@@ -1,76 +1,78 @@
 <script setup lang="ts">
-import { Help, Home, Menu2 } from '@vicons/tabler'
+import { Help, Menu2, Search, Settings } from '@vicons/tabler'
+import { BELOW_LG_QUERY } from '@/lib/responsive'
+import PageTitle from '@/layouts/PageTitle.vue'
+import UserMenu from '@/layouts/UserMenu.vue'
+
+// 'bar' is the full header; 'actions' is only the right-hand cluster, for the horizontal menu's bar.
+withDefaults(defineProps<{ variant?: 'bar' | 'actions' }>(), { variant: 'bar' })
 
 const { t } = useI18n()
-const route = useRoute()
-const router = useRouter()
-const sidebar = useSidebarStore()
+const layout = useLayoutStore()
 const localeStore = useLocaleStore()
+const belowLg = useMediaQuery(BELOW_LG_QUERY)
 
 // Served by nginx next to the app (frontend/user-guide); Vietnamese is the guide's root locale.
 const userGuideHref = computed(() =>
   localeStore.currentLocale === 'en' ? '/guide/en/' : '/guide/',
 )
 
+// Below lg the toggle opens the mobile drawer in every mode; from lg up only the static sidebar can be hidden.
+const showToggle = computed(() => belowLg.value || layout.menuMode === 'static')
+
 function handleToggle() {
-  if (window.innerWidth >= 1024) {
-    sidebar.toggleMode()
+  if (belowLg.value) {
+    layout.openMobile()
   } else {
-    sidebar.openMobile()
+    layout.toggleStaticSidebar()
   }
 }
 
-type BreadcrumbEntry = { routeName: string; label?: string; home?: boolean }
+const isMac = computed(() => {
+  const nav = navigator as Navigator & { userAgentData?: { platform?: string } }
+  return /mac/i.test(nav.userAgentData?.platform ?? nav.platform ?? '')
+})
 
-const breadcrumbItems = computed<BreadcrumbEntry[]>(() => [
-  { routeName: 'home', home: true },
-  ...route.matched
-    .filter((r) => r.meta.breadcrumbKey)
-    .map((r) => ({
-      routeName: r.name as string,
-      label: t(r.meta.breadcrumbKey as string),
-    })),
-])
-
-function breadcrumbHref(routeName: string) {
-  return router.resolve({ name: routeName, params: route.params }).href
-}
-
-function navigateTo(routeName: string, event: MouseEvent) {
-  event.preventDefault()
-  router.push({ name: routeName, params: route.params })
-}
+const iconButtonClass = 'h-9 w-9 shrink-0 max-lg:h-11! max-lg:w-11! lg:h-8 lg:w-8'
 </script>
 
 <template>
   <header
-    class="sticky top-0 z-10 flex h-16 items-center gap-3 border-b border-surface-200 bg-surface-0/80 px-4 backdrop-blur-sm dark:border-surface-800 dark:bg-surface-900/80"
+    class="flex items-center gap-3"
+    :class="variant === 'bar' && 'sticky top-0 z-10 h-16 px-4 backdrop-blur-sm'"
   >
-    <n-button
-      :aria-label="t('nav.toggleSidebar')"
-      text
-      class="h-9 w-9 shrink-0 max-lg:h-11! max-lg:w-11! lg:h-8 lg:w-8"
-      @click="handleToggle"
-    >
-      <template #icon
-        ><n-icon><Menu2 /></n-icon
-      ></template>
-    </n-button>
-
-    <n-breadcrumb class="hidden! min-w-0 lg:flex! breadcrumb-align-fix">
-      <n-breadcrumb-item
-        v-for="item in breadcrumbItems"
-        :key="item.routeName"
-        :href="breadcrumbHref(item.routeName)"
-        @click="navigateTo(item.routeName, $event)"
+    <template v-if="variant === 'bar'">
+      <n-button
+        v-if="showToggle"
+        :aria-label="t('nav.toggleSidebar')"
+        data-testid="app-header-toggle"
+        text
+        :class="iconButtonClass"
+        @click="handleToggle"
       >
-        <n-icon v-if="item.home"><Home /></n-icon>
-        <!-- A long label is cut with "…" so the trail stays on one line; `title` keeps the full text. -->
-        <span v-else data-testid="app-header-crumb-text" :title="item.label">{{ item.label }}</span>
-      </n-breadcrumb-item>
-    </n-breadcrumb>
+        <template #icon
+          ><n-icon><Menu2 /></n-icon
+        ></template>
+      </n-button>
 
-    <div class="flex-1" />
+      <PageTitle class="min-w-0 flex-1" />
+    </template>
+    <div v-else class="flex-1" />
+
+    <button
+      type="button"
+      :aria-label="t('layout.palette.trigger')"
+      data-testid="app-header-palette"
+      class="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-surface-200 bg-surface-0/60 text-sm text-surface-500 transition-colors hover:bg-surface-100 max-md:h-11 max-md:w-11 max-md:justify-center md:h-9 md:px-3 dark:border-surface-700 dark:bg-surface-900/60 dark:hover:bg-surface-800"
+      @click="layout.openPalette()"
+    >
+      <n-icon size="16"><Search /></n-icon>
+      <span class="hidden md:inline">{{ t('layout.palette.trigger') }}</span>
+      <kbd
+        class="hidden rounded border border-surface-200 px-1.5 text-xs md:inline dark:border-surface-700"
+        >{{ isMac ? '⌘ K' : 'Ctrl K' }}</kbd
+      >
+    </button>
 
     <n-tooltip trigger="hover" placement="bottom">
       <template #trigger>
@@ -82,7 +84,7 @@ function navigateTo(routeName: string, event: MouseEvent) {
           :aria-label="t('nav.userGuide')"
           data-testid="app-header-user-guide"
           text
-          class="h-9 w-9 shrink-0 max-lg:h-11! max-lg:w-11! lg:h-8 lg:w-8"
+          :class="iconButtonClass"
         >
           <template #icon
             ><n-icon><Help /></n-icon
@@ -97,45 +99,21 @@ function navigateTo(routeName: string, event: MouseEvent) {
     <div class="flex max-sm:order-2">
       <NotificationBell />
     </div>
-    <AppControls class="max-sm:order-1" />
+
+    <n-button
+      :aria-label="t('layout.openSettings')"
+      data-testid="app-header-settings"
+      text
+      :class="[iconButtonClass, 'max-sm:order-1']"
+      @click="layout.openSettings()"
+    >
+      <template #icon
+        ><n-icon><Settings /></n-icon
+      ></template>
+    </n-button>
+
+    <div class="flex max-sm:order-1">
+      <UserMenu />
+    </div>
   </header>
 </template>
-
-<style scoped>
-/*
- * The trail stays on one line instead of pushing the header out of shape when a crumb carries a long name
- * (an entity title in a fork). Every crumb has a width cap, even with room to spare, so one long name can't
- * take the whole row; narrower still, the last crumb (the current page) gives way first. Separators don't shrink.
- */
-.breadcrumb-align-fix :deep(> ul) {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.breadcrumb-align-fix :deep(.n-breadcrumb-item) {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  max-width: 12rem;
-  flex-shrink: 1;
-}
-
-.breadcrumb-align-fix :deep(.n-breadcrumb-item:last-child) {
-  max-width: 18rem;
-  flex-shrink: 1000;
-}
-
-.breadcrumb-align-fix :deep(.n-breadcrumb-item__link) {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.breadcrumb-align-fix :deep(.n-breadcrumb-item__separator) {
-  flex-shrink: 0;
-}
-</style>

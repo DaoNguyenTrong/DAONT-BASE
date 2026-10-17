@@ -24,6 +24,7 @@ export interface LocaleSchema {
     user: string
   }
   layout: {
+    openSettings: string
     userMenu: {
       open: string
       vietnamese: string
@@ -307,6 +308,7 @@ const en: LocaleSchema = {
     user: 'User',
   },
   layout: {
+    openSettings: 'Appearance settings',
     userMenu: {
       open: 'Account',
       vietnamese: 'Tiếng Việt',

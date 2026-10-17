@@ -1,15 +1,27 @@
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { createTestingPinia } from '@pinia/testing'
-import { flushPromises, mount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppHeader from '@/layouts/AppHeader.vue'
-import { useSidebarStore } from '@/stores/sidebar-store'
+import type { MenuMode } from '@/lib/layout-preferences'
 import en from '@/locales/en'
 import i18n from '@/plugins/i18n'
+import { storeIn } from '../helpers/pinia'
 
 const stub = { template: '<div />' }
+const t = i18n.global.t
 
-function buildRouter(initialPath = '/') {
+function stubBelowLg(matches: boolean) {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => ({ matches, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+  )
+}
+
+async function mountHeader(
+  options: { path?: string; variant?: 'bar' | 'actions'; menuMode?: MenuMode } = {},
+) {
+  const { path = '/', variant, menuMode } = options
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -18,12 +30,7 @@ function buildRouter(initialPath = '/') {
         name: 'layout',
         component: stub,
         children: [
-          {
-            path: '',
-            name: 'home',
-            component: stub,
-            meta: { breadcrumbKey: 'nav.home' },
-          },
+          { path: '', name: 'home', component: stub, meta: { breadcrumbKey: 'nav.home' } },
           {
             path: 'organizations',
             name: 'organizations',
@@ -34,76 +41,85 @@ function buildRouter(initialPath = '/') {
       },
     ],
   })
-  return router
-    .push(initialPath)
-    .then(() => router.isReady())
-    .then(() => router)
-}
-
-async function mountHeader(initialPath = '/') {
-  const router = await buildRouter(initialPath)
-  const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
-
-  const wrapper = mount(AppHeader, {
-    global: { plugins: [pinia, router], stubs: { AppControls: true } },
+  await router.push(path)
+  await router.isReady()
+  const pinia = createTestingPinia({
+    createSpy: vi.fn,
+    stubActions: false,
+    initialState: menuMode ? { layout: { menuMode } } : {},
   })
 
-  return { wrapper, router }
+  const wrapper = mount(AppHeader, {
+    props: variant ? { variant } : {},
+    global: { plugins: [pinia, router], stubs: { UserMenu: true, NotificationBell: true } },
+  })
+
+  return { wrapper, layout: storeIn(pinia, useLayoutStore) }
 }
 
 describe('AppHeader', () => {
-  const originalWidth = window.innerWidth
-
   afterEach(() => {
-    Object.defineProperty(window, 'innerWidth', { value: originalWidth, configurable: true })
+    vi.unstubAllGlobals()
+    localStorage.clear()
   })
 
-  it('opens the mobile drawer when toggled below the desktop breakpoint', async () => {
-    Object.defineProperty(window, 'innerWidth', { value: 800, configurable: true })
-    const { wrapper } = await mountHeader()
-    const sidebar = useSidebarStore()
+  it('shows the page title and its crumbs', async () => {
+    const { wrapper } = await mountHeader({ path: '/organizations' })
 
-    await wrapper.find('button').trigger('click')
-
-    expect(sidebar.mobileOpen).toBe(true)
-    expect(sidebar.mode).toBe('full')
+    expect(wrapper.get('[data-testid="app-header-title"]').text()).toBe(en.nav.organizations)
+    expect(wrapper.findAll('.n-breadcrumb-item')).toHaveLength(1)
   })
 
-  it('toggles the sidebar mode when toggled at or above the desktop breakpoint', async () => {
-    Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true })
-    const { wrapper } = await mountHeader()
-    const sidebar = useSidebarStore()
+  it.each(['slim', 'slim-plus', 'drawer', 'horizontal'] as const)(
+    'hides the menu toggle on desktop except in static mode (%s)',
+    async (menuMode) => {
+      const { wrapper } = await mountHeader({ menuMode })
 
-    await wrapper.find('button').trigger('click')
+      expect(wrapper.find('[data-testid="app-header-toggle"]').exists()).toBe(false)
+    },
+  )
 
-    expect(sidebar.mode).toBe('minimal')
-    expect(sidebar.mobileOpen).toBe(false)
+  it('toggles the static sidebar on desktop', async () => {
+    const { wrapper, layout } = await mountHeader()
+
+    await wrapper.get('[data-testid="app-header-toggle"]').trigger('click')
+    expect(layout.staticInactive).toBe(true)
+    await wrapper.get('[data-testid="app-header-toggle"]').trigger('click')
+    expect(layout.staticInactive).toBe(false)
+    expect(layout.mobileOpen).toBe(false)
   })
 
-  it('shows a home breadcrumb plus one entry per matched route with a breadcrumbKey', async () => {
-    const { wrapper } = await mountHeader('/organizations')
+  it('opens the mobile drawer below lg in any mode', async () => {
+    stubBelowLg(true)
+    const { wrapper, layout } = await mountHeader({ menuMode: 'slim' })
 
-    const items = wrapper.findAll('.n-breadcrumb-item')
-    expect(items).toHaveLength(2)
-    expect(items[1]!.text()).toContain(en.nav.organizations)
+    await wrapper.get('[data-testid="app-header-toggle"]').trigger('click')
+
+    expect(layout.mobileOpen).toBe(true)
+    expect(layout.staticInactive).toBe(false)
   })
 
-  // The crumb is cut with an ellipsis when it is long, so its full text must stay reachable on hover.
-  it('keeps the full crumb label in a title, for when a long one is truncated', async () => {
-    const { wrapper } = await mountHeader('/organizations')
+  it('opens the palette and the settings panel', async () => {
+    const { wrapper, layout } = await mountHeader()
 
-    const crumb = wrapper.get('[data-testid="app-header-crumb-text"]')
-    expect(crumb.attributes('title')).toBe(en.nav.organizations)
+    await wrapper.get('[data-testid="app-header-palette"]').trigger('click')
+    await wrapper.get('[data-testid="app-header-settings"]').trigger('click')
+
+    expect(layout.paletteOpen).toBe(true)
+    expect(layout.settingsOpen).toBe(true)
+    expect(wrapper.get('[data-testid="app-header-settings"]').attributes('aria-label')).toBe(
+      t('layout.openSettings'),
+    )
   })
 
-  it('navigates to the clicked breadcrumb without a full page reload', async () => {
-    const { wrapper, router } = await mountHeader('/organizations')
+  it('renders only the action cluster in the actions variant', async () => {
+    const { wrapper } = await mountHeader({ variant: 'actions' })
 
-    const homeCrumb = wrapper.findAll('.n-breadcrumb-item')[0]!
-    await homeCrumb.find('a').trigger('click')
-    await flushPromises()
-
-    expect(router.currentRoute.value.name).toBe('home')
+    expect(wrapper.find('[data-testid="app-header-toggle"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="app-header-title"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="app-header-palette"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="app-header-settings"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="app-header-user-guide"]').exists()).toBe(true)
   })
 
   it('links to the user guide in a new tab', async () => {
