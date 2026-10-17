@@ -4,6 +4,7 @@ import NotificationBell from '@/components/NotificationBell.vue'
 import { renderComponent } from '../helpers/render'
 import { server } from '../../tests/helpers/msw/server'
 import en from '@/locales/en'
+import i18n from '@/plugins/i18n'
 
 function emptyList() {
   return HttpResponse.json({
@@ -74,7 +75,9 @@ describe('NotificationBell', () => {
     await wrapper.find('button').trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('You were added to organization Acme')
+    expect(wrapper.text()).toContain(
+      i18n.global.t('notifications.OrganizationMemberAdded', { organizationName: 'Acme' }),
+    )
   })
 
   it('marks all as read and calls the endpoint', async () => {
