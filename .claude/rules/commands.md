@@ -113,6 +113,19 @@ bun run --cwd frontend test:e2e
 bun run --cwd frontend format
 ```
 
+### User guide (`frontend/user-guide/site/`)
+
+A separate VitePress package with its own `bun.lock` — see `frontend/user-guide/README.md` for authoring rules.
+
+```bash
+bun install --cwd frontend/user-guide/site
+bun run --cwd frontend/user-guide/site dev        # http://localhost:5174/guide/
+bun run --cwd frontend/user-guide/site test       # unit tests + content integrity (both languages, sidebar, images)
+bun run --cwd frontend/user-guide/site build      # fails on dead links
+bun run --cwd frontend/user-guide/site format     # prettier, using frontend/.prettierrc.json
+bun run --cwd frontend/user-guide/site new-page <chapter>/<page> [--app]   # both language stubs from src/_template.md
+```
+
 ### Frontend test conventions
 
 - `tests/setup.ts` unmounts every wrapper after each test (`enableAutoUnmount`) so component timers can't fire into the next test. Keep it free of heavy imports — it runs once per test file; that's why the confirmation override lives in `lib/confirmation-override.ts`, not in naive-ui-backed `lib/feedback-naive.ts`.
@@ -130,7 +143,7 @@ Managed by [Lefthook](https://lefthook.dev) — config in root `lefthook.yml`, n
 bun install
 ```
 
-- **pre-commit**: `piped: true` — stops at the first failing command instead of running the rest. Blocks direct commits to `main` (bypass: `git commit --no-verify` — needed by nothing in the documented workflow except tooling that intentionally commits there); blocks staged merge-conflict markers; runs `secretlint` on all staged files (known secret *formats* only — private keys, GitHub/Slack/npm tokens; does not catch arbitrary custom secrets); runs `prettier --write` on staged `frontend/src/**` and `frontend/e2e/**` files (mirrors `bun run --cwd frontend format`'s scope). No backend formatting hook yet (no `.editorconfig` to pin `dotnet format` behavior).
+- **pre-commit**: `piped: true` — stops at the first failing command instead of running the rest. Blocks direct commits to `main` (bypass: `git commit --no-verify` — needed by nothing in the documented workflow except tooling that intentionally commits there); blocks staged merge-conflict markers; runs `secretlint` on all staged files (known secret *formats* only — private keys, GitHub/Slack/npm tokens; does not catch arbitrary custom secrets); runs `prettier --write` on staged `frontend/src/**` and `frontend/e2e/**` files (mirrors `bun run --cwd frontend format`'s scope); `prettier-guide` does the same for staged `frontend/user-guide/site/**` files, run from that folder (`root:`) so `bunx` uses the guide's pinned prettier. No backend formatting hook yet (no `.editorconfig` to pin `dotnet format` behavior).
 - **commit-msg**: commitlint, Conventional Commits (`@commitlint/config-conventional`).
 
 Note: `dev` and `release/*` are intentionally **not** blocked by the branch guard — the `git-release` skill (from the `release-kit` plugin; bindings in `.claude/release-kit.json`) commits the CHANGELOG bump directly to `dev` before cutting a `release/vX.Y.Z` branch (Phase 1), then opens the release PR from `release/vX.Y.Z` to `main` once QA stabilization is done (Phase 2). See `CONTRIBUTING.md` § Release Process.
@@ -144,7 +157,7 @@ The test gate lives in one reusable workflow, `.github/workflows/test.yml`, run 
 - **`ci.yml`** — every PR into `dev`, `main` or `release/**`, and every push to `dev` (which covers `git-release`'s CHANGELOG commit and the `main` → `dev` reconcile merge, neither of which goes through a PR).
 - **`release.yml`** — the `v*` tag, before any image is built.
 
-Two parallel jobs. `backend`: `test.sh`, then the OpenAPI export followed by `git diff --exit-code shared/openapi/openapi.json` — a controller/DTO change committed without a re-export fails here. `frontend`: `bun install --frozen-lockfile`, `prettier --check` (catches commits that skipped Lefthook), `build-only` (writes the gitignored `src/typings/` — `bun install` doesn't, and a test run writes only the components it touched), `type-check` (vitest doesn't type-check), `test:coverage`. Both jobs write a coverage table to the run summary — reported, not gated (`testing.md` § Coverage). Run them locally before pushing with `scripts/test-gate.sh` — the same checks minus coverage, and the gate `git-release` runs (`release-kit.json`); change it together with `test.yml`; a red check on `main` blocks the merge once `test / backend` and `test / frontend` are required status checks (see `CONTRIBUTING.md`). E2E (Playwright) is not in CI — it needs a running backend with seeded accounts.
+Three parallel jobs. `guide`: the user guide's `format:check`, `test` and `build`. `backend`: `test.sh`, then the OpenAPI export followed by `git diff --exit-code shared/openapi/openapi.json` — a controller/DTO change committed without a re-export fails here. `frontend`: `bun install --frozen-lockfile`, `prettier --check` (catches commits that skipped Lefthook), `build-only` (writes the gitignored `src/typings/` — `bun install` doesn't, and a test run writes only the components it touched), `type-check` (vitest doesn't type-check), `test:coverage`. Both jobs write a coverage table to the run summary — reported, not gated (`testing.md` § Coverage). Run them locally before pushing with `scripts/test-gate.sh` — the same checks minus coverage, and the gate `git-release` runs (`release-kit.json`); change it together with `test.yml`; a red check on `main` blocks the merge once `test / backend`, `test / frontend` and `test / guide` are required status checks (see `CONTRIBUTING.md`). E2E (Playwright) is not in CI — it needs a running backend with seeded accounts.
 
 `.gitlab-ci.yml` mirrors this: the `test` job runs on merge requests, pushes to `dev` and `v*` tags; `images`/`release` only on tags. Change the GitHub and GitLab files together.
 

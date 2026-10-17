@@ -1,6 +1,6 @@
 # Runs the test gate (test.yml) on every PR and on every push to dev — the push covers what reaches dev
 # without a PR: /git-release's CHANGELOG commit and the main → dev reconcile merge.
-# Make `test / backend` and `test / frontend` required status checks on main (see CONTRIBUTING.md).
+# Make `test / backend`, `test / frontend` and `test / guide` required status checks on main (see CONTRIBUTING.md).
 name: CI
 
 on:

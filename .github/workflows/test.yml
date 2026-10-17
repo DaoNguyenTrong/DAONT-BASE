@@ -119,3 +119,36 @@ jobs:
           console.log(['## Frontend coverage', '', '| Metric | % | Covered |', '|---|---|---|',
             ...['lines', 'branches', 'functions', 'statements'].map(row)].join('\n'))
           JS
+
+  # The user guide (frontend/user-guide/site): its own VitePress package and lockfile.
+  guide:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The guide shows the same `git describe --tags` version as the app footer.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+
+      - name: Install deps
+        run: bun install --cwd frontend/user-guide/site --frozen-lockfile
+
+      - name: Check formatting
+        run: bun run --cwd frontend/user-guide/site format:check
+
+      # Unit tests plus the content integrity check (both languages, sidebar, images, permissions).
+      - name: Test
+        run: bun run --cwd frontend/user-guide/site test
+
+      # Fails on dead links in either language.
+      - name: Build
+        run: bun run --cwd frontend/user-guide/site build
