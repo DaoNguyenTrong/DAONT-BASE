@@ -51,7 +51,8 @@ onUnmounted(() => {
   >
     <AppSidebar />
     <AppTopMenu v-if="topMenu" />
-    <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <!-- `isolate`: a z-index inside the page stays below the drawer's overlay panel (z-20). -->
+    <div class="isolate flex min-h-0 flex-1 flex-col overflow-hidden">
       <AppHeader v-if="!topMenu" />
       <main
         ref="mainEl"
