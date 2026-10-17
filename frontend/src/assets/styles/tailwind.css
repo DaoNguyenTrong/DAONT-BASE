@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+/* The user guide (frontend/user-guide/) is a separate VitePress site with its own styles. */
+@source not "../../../user-guide";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
