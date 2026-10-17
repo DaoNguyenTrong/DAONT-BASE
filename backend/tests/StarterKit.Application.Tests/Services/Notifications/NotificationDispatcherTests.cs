@@ -1,4 +1,5 @@
-using Microsoft.Extensions.Logging.Abstractions;
+using System.Linq.Expressions;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Services.Notifications;
@@ -12,7 +13,8 @@ public class NotificationDispatcherTests
     private sealed record Fixture(
         NotificationDispatcher Dispatcher,
         IRepository<Notification, Guid> NotificationRepo,
-        List<INotificationChannel> Channels);
+        List<INotificationChannel> Channels,
+        ILogger<NotificationDispatcher> Logger);
 
     private static Fixture CreateFixture(params INotificationChannel[] channels)
     {
@@ -22,10 +24,11 @@ public class NotificationDispatcherTests
 
         List<INotificationChannel> channelList = channels.ToList();
 
-        NotificationDispatcher dispatcher = new(
-            unitOfWork, channelList, NullLogger<NotificationDispatcher>.Instance);
+        ILogger<NotificationDispatcher> logger = Substitute.For<ILogger<NotificationDispatcher>>();
 
-        return new Fixture(dispatcher, notificationRepo, channelList);
+        NotificationDispatcher dispatcher = new(unitOfWork, channelList, logger);
+
+        return new Fixture(dispatcher, notificationRepo, channelList, logger);
     }
 
     private static Notification CreateNotification() =>
@@ -73,5 +76,23 @@ public class NotificationDispatcherTests
         await f.Dispatcher.DispatchAsync(notification.Id, CancellationToken.None);
 
         await healthy.Received(1).SendAsync(notification, Arg.Any<CancellationToken>());
+    }
+
+    // A row deleted (or rolled back) before the batch job ran must still leave a trace, as DispatchAsync does.
+    [Fact]
+    public async Task DispatchManyAsync_SomeIdsNotFound_SendsTheRestAndLogsAWarning()
+    {
+        INotificationChannel channel = Substitute.For<INotificationChannel>();
+        Fixture f = CreateFixture(channel);
+        Notification found = CreateNotification();
+        f.NotificationRepo
+            .ListAsync(Arg.Any<Expression<Func<Notification, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns([found]);
+
+        await f.Dispatcher.DispatchManyAsync([found.Id, Guid.NewGuid()], CancellationToken.None);
+
+        await channel.Received(1).SendAsync(found, Arg.Any<CancellationToken>());
+        Assert.Single(f.Logger.ReceivedCalls(), call =>
+            call.GetMethodInfo().Name == nameof(ILogger.Log) && (LogLevel)call.GetArguments()[0]! == LogLevel.Warning);
     }
 }

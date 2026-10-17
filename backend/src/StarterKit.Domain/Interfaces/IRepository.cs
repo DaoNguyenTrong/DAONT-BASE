@@ -19,6 +19,15 @@ public interface IRepository<T, TId>
         Expression<Func<T, bool>> predicate,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Matching rows projected in SQL — only the selected columns are read. For lookups that need a column or
+    /// two, not whole entities (e.g. a large jsonb column you'd otherwise load for nothing).
+    /// </summary>
+    Task<IReadOnlyList<TResult>> ListAsync<TResult>(
+        Expression<Func<T, bool>> predicate,
+        Expression<Func<T, TResult>> selector,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<T> Items, int TotalCount)> ListPagedAsync(
         int pageNumber,
         int pageSize,

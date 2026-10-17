@@ -72,10 +72,10 @@ function handleLogout() {
     rejectLabel: t('common.cancel'),
     accept: async () => {
       try {
+        // Ends in a full page reload to login (see the auth store's logout).
         await useAuthStore().logout()
       } finally {
         sidebar.closeMobile()
-        await router.replace({ name: 'login' })
       }
     },
   })
@@ -161,12 +161,13 @@ const profileVisible = ref(false)
             v-if="!sidebar.isMinimal"
             type="button"
             class="flex-1 cursor-pointer overflow-hidden text-left"
+            data-testid="app-sidebar-account"
             @click="viewProfile()"
           >
             <p
               class="truncate text-sm font-medium text-white hover:text-white/70 dark:text-surface-200 dark:hover:text-primary-200"
             >
-              {{ auth.account?.name || auth.account?.username || 'User' }}
+              {{ auth.account?.name || auth.account?.username || t('common.user') }}
             </p>
           </button>
           <n-tooltip trigger="hover" placement="top">
@@ -176,6 +177,7 @@ const profileVisible = ref(false)
                 ghost
                 :aria-label="t('auth.logout')"
                 class="cursor-pointer"
+                data-testid="app-sidebar-logout"
                 @click="handleLogout"
               >
                 <template #icon
@@ -217,42 +219,46 @@ const profileVisible = ref(false)
         </nav>
 
         <template #footer>
-          <div class="border-t border-white/10 px-4 py-2 dark:border-surface-800">
-            <OrganizationSwitcher />
-          </div>
-          <div
-            class="flex w-full items-center gap-2 border-t border-white/10 px-4 py-3 dark:border-surface-800"
-          >
-            <button
-              type="button"
-              :aria-label="t('nav.profile')"
-              class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 dark:bg-surface-600 dark:hover:bg-primary-400/20"
-              @click="viewProfile()"
+          <!-- Naive's drawer footer is a right-aligned flex row: without one column wrapper the switcher and the
+               account row sit side by side and the switcher is pushed off the drawer's left edge. -->
+          <div class="flex w-full flex-col">
+            <div class="border-t border-white/10 px-4 py-2 dark:border-surface-800">
+              <OrganizationSwitcher />
+            </div>
+            <div
+              class="flex w-full items-center gap-2 border-t border-white/10 px-4 py-3 dark:border-surface-800"
             >
-              <n-icon class="text-sm text-white/80 dark:text-surface-300"><User /></n-icon>
-            </button>
-            <button
-              type="button"
-              class="flex-1 cursor-pointer overflow-hidden text-left"
-              @click="viewProfile()"
-            >
-              <p
-                class="truncate text-sm font-medium text-white hover:text-white/70 dark:text-surface-200 dark:hover:text-primary-200"
+              <button
+                type="button"
+                :aria-label="t('nav.profile')"
+                class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 dark:bg-surface-600 dark:hover:bg-primary-400/20"
+                @click="viewProfile()"
               >
-                {{ auth.account?.name || auth.account?.username || 'User' }}
-              </p>
-            </button>
-            <n-button
-              type="error"
-              text
-              :aria-label="t('auth.logout')"
-              class="h-8 w-8 cursor-pointer"
-              @click="handleLogout"
-            >
-              <template #icon
-                ><n-icon class="text-sm"><Logout /></n-icon
-              ></template>
-            </n-button>
+                <n-icon class="text-sm text-white/80 dark:text-surface-300"><User /></n-icon>
+              </button>
+              <button
+                type="button"
+                class="flex-1 cursor-pointer overflow-hidden text-left"
+                @click="viewProfile()"
+              >
+                <p
+                  class="truncate text-sm font-medium text-white hover:text-white/70 dark:text-surface-200 dark:hover:text-primary-200"
+                >
+                  {{ auth.account?.name || auth.account?.username || t('common.user') }}
+                </p>
+              </button>
+              <n-button
+                type="error"
+                text
+                :aria-label="t('auth.logout')"
+                class="h-8 w-8 cursor-pointer"
+                @click="handleLogout"
+              >
+                <template #icon
+                  ><n-icon class="text-sm"><Logout /></n-icon
+                ></template>
+              </n-button>
+            </div>
           </div>
         </template>
       </n-drawer-content>

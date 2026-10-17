@@ -131,7 +131,11 @@ watch(visible, (open) => {
     </n-alert>
 
     <template v-else>
-      <ul v-if="rolesStore.roles.length > 0" class="mt-1 space-y-2">
+      <ul
+        v-if="rolesStore.roles.length > 0"
+        data-testid="organization-roles-list"
+        class="mt-1 space-y-2"
+      >
         <li
           v-for="role in rolesStore.roles"
           :key="role.id"
@@ -200,6 +204,7 @@ watch(visible, (open) => {
         v-if="canManage"
         type="primary"
         class="mt-4 min-h-11 w-full"
+        data-testid="organization-roles-create"
         @click="openCreateDialog"
       >
         <template #icon

@@ -31,15 +31,17 @@ watch(isDown, async (down, wasDown) => {
 // A session can lapse while the tab is open (refresh token expired): an API call
 // 401s, the client's silent refresh fails, and the auth store clears itself —
 // but the guard only runs on navigation, so the user is left on a now-
-// unauthorized shell. Bounce to login (keeping the destination) when that
-// happens. Boot-time failure never trips this: isAuthenticated starts false, so
-// there is no true→false transition.
+// unauthorized shell. Reload to login (keeping the destination) when that
+// happens — a full reload, so no store keeps the lapsed account's data (see
+// lib/session-exit.ts). Boot-time failure never trips this: isAuthenticated
+// starts false, so there is no true→false transition. On an explicit logout this
+// fires too, but the logout's own reload already won and this call is a no-op.
 const { isAuthenticated } = storeToRefs(useAuthStore())
 watch(isAuthenticated, (isAuth) => {
   if (isAuth) return
   const current = router.currentRoute.value
   if (!current.meta.requiresAuth) return
-  router.replace({ name: 'login', query: { redirect: current.fullPath } })
+  reloadToLogin({ redirect: current.fullPath })
 })
 
 const naiveThemeOverrides = computed(() => (isDark.value ? naiveTheme.dark : naiveTheme.light))

@@ -57,7 +57,9 @@ Git hooks (see README's "Git Hooks" section for the one-time `bun install` neede
 git push origin feature/your-feature-name
 ```
 
-Then create PR to `dev` branch on GitHub.
+Then create PR to `dev` branch on GitHub. CI (`.github/workflows/ci.yml`) runs the test gate on the PR — backend tests, an OpenAPI-export drift check, frontend formatting, type-check and unit tests; a red check means fix it before review. `scripts/test-gate.sh` runs the same checks locally.
+
+**Repository setup (once, by a maintainer):** add a ruleset for `main` that requires a pull request and the status checks `test / backend`, `test / frontend` and `test / guide`. Don't require status checks on `dev` without a bypass for the maintainer role: `/git-release` pushes the CHANGELOG commit to `dev` directly and the post-release reconcile is a direct `git push`, both of which a required-check rule rejects. On GitLab, enable *Settings → Merge requests → Pipelines must succeed*.
 
 ### 4. Update CHANGELOG
 
@@ -83,7 +85,7 @@ QA stabilizes on `release/vX.Y.Z` from here. Bugs found during stabilization go 
 
 ### Phase 2 — Ship (on `release/vX.Y.Z`)
 
-3. `/git-release` on `release/vX.Y.Z` — the skill pulls any hotfix that reached `main` during stabilization, runs the mandatory test suite (a `fix/*` PR may have landed since the cut, so this can't be skipped), opens and merges the `release/vX.Y.Z` → `main` PR, then tags `origin/main`. GitHub Actions creates the release from the tag.
+3. `/git-release` on `release/vX.Y.Z` — the skill pulls any hotfix that reached `main` during stabilization, runs the mandatory test suite (a `fix/*` PR may have landed since the cut, so this can't be skipped), opens and merges the `release/vX.Y.Z` → `main` PR, then tags `origin/main`. The tag's pipeline (`.github/workflows/release.yml`, or `.gitlab-ci.yml` on GitLab) runs the tests, builds and pushes the production images versioned from the tag, then creates the release. Protect `v*` tags so only maintainers can push one.
 
 ### Phase 3 — Reconcile (on `dev`)
 
@@ -94,6 +96,10 @@ QA stabilizes on `release/vX.Y.Z` from here. Bugs found during stabilization go 
    ```
 
    The merge is clean: `main`'s changes since the cut are `fix/*` commits and their bullets *inside* the frozen `## [vX.Y.Z]` section, while `dev`'s changes are new `## [Unreleased]` entries *above* it — two disjoint regions.
+
+### Quick release (on `dev`)
+
+For a small release that needs no stabilization window, `/git-release quick` on `dev` does it in one pass: it runs the mandatory test gate, compiles the `## [vX.Y.Z]` CHANGELOG section on `dev`, opens and merges a `dev` → `main` PR, then tags `origin/main`. There is no `release/vX.Y.Z` branch, so nothing gets QA'd on its own first; use the two-phase release above whenever QA has to sign off.
 
 ## Hotfix Process
 

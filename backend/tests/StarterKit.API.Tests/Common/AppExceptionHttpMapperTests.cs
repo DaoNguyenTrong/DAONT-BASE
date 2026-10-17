@@ -8,66 +8,31 @@ public class AppExceptionHttpMapperTests
 {
     private sealed class OtherAppException(string message) : AppException(message);
 
-    [Fact]
-    public void Map_NotFoundException_ReturnsNotFound()
+    // The first argument keeps each case's former method name in the test report.
+    [Theory]
+    [InlineData("Map_NotFoundException_ReturnsNotFound", typeof(NotFoundException), StatusCodes.Status404NotFound, "Not Found")]
+    [InlineData("Map_ConflictException_ReturnsConflict", typeof(ConflictException), StatusCodes.Status409Conflict, "Conflict")]
+    [InlineData("Map_ForbiddenException_ReturnsForbidden", typeof(ForbiddenException), StatusCodes.Status403Forbidden, "Forbidden")]
+    [InlineData("Map_UnauthorizedException_ReturnsUnauthorized", typeof(UnauthorizedException), StatusCodes.Status401Unauthorized, "Unauthorized")]
+    [InlineData("Map_DomainException_ReturnsBadRequest", typeof(DomainException), StatusCodes.Status400BadRequest, "Bad Request")]
+    [InlineData("Map_FormattedDomainException_ReturnsBadRequest", typeof(FormattedDomainException), StatusCodes.Status400BadRequest, "Bad Request")]
+    [InlineData("Map_ServiceUnavailableException_ReturnsServiceUnavailable", typeof(ServiceUnavailableException), StatusCodes.Status503ServiceUnavailable, "Service Unavailable")]
+    [InlineData("Map_UnmappedAppExceptionSubtype_ReturnsInternalServerError", typeof(OtherAppException), StatusCodes.Status500InternalServerError, "Internal Server Error")]
+    public void Map_ReturnsTheStatusAndTitleOfTheExceptionType(
+        string caseName,
+        Type exceptionType,
+        int expectedStatus,
+        string expectedTitle)
     {
-        (int statusCode, string title) = AppExceptionHttpMapper.Map(new NotFoundException("EntityNotFound"));
+        _ = caseName;
+        // Passed as a Type, not an instance, so every case stays a separately discovered, named test.
+        AppException exception = exceptionType == typeof(FormattedDomainException)
+            ? new FormattedDomainException("Invalid", "arg")
+            : (AppException)Activator.CreateInstance(exceptionType, "Message")!;
 
-        Assert.Equal(StatusCodes.Status404NotFound, statusCode);
-        Assert.Equal("Not Found", title);
-    }
+        (int statusCode, string title) = AppExceptionHttpMapper.Map(exception);
 
-    [Fact]
-    public void Map_ConflictException_ReturnsConflict()
-    {
-        (int statusCode, string title) = AppExceptionHttpMapper.Map(new ConflictException("Conflict"));
-
-        Assert.Equal(StatusCodes.Status409Conflict, statusCode);
-        Assert.Equal("Conflict", title);
-    }
-
-    [Fact]
-    public void Map_ForbiddenException_ReturnsForbidden()
-    {
-        (int statusCode, string title) = AppExceptionHttpMapper.Map(new ForbiddenException("Forbidden"));
-
-        Assert.Equal(StatusCodes.Status403Forbidden, statusCode);
-        Assert.Equal("Forbidden", title);
-    }
-
-    [Fact]
-    public void Map_UnauthorizedException_ReturnsUnauthorized()
-    {
-        (int statusCode, string title) = AppExceptionHttpMapper.Map(new UnauthorizedException("Unauthorized"));
-
-        Assert.Equal(StatusCodes.Status401Unauthorized, statusCode);
-        Assert.Equal("Unauthorized", title);
-    }
-
-    [Fact]
-    public void Map_DomainException_ReturnsBadRequest()
-    {
-        (int statusCode, string title) = AppExceptionHttpMapper.Map(new DomainException("Invalid"));
-
-        Assert.Equal(StatusCodes.Status400BadRequest, statusCode);
-        Assert.Equal("Bad Request", title);
-    }
-
-    [Fact]
-    public void Map_FormattedDomainException_ReturnsBadRequest()
-    {
-        (int statusCode, string title) = AppExceptionHttpMapper.Map(new FormattedDomainException("Invalid", "arg"));
-
-        Assert.Equal(StatusCodes.Status400BadRequest, statusCode);
-        Assert.Equal("Bad Request", title);
-    }
-
-    [Fact]
-    public void Map_UnmappedAppExceptionSubtype_ReturnsInternalServerError()
-    {
-        (int statusCode, string title) = AppExceptionHttpMapper.Map(new OtherAppException("Unmapped"));
-
-        Assert.Equal(StatusCodes.Status500InternalServerError, statusCode);
-        Assert.Equal("Internal Server Error", title);
+        Assert.Equal(expectedStatus, statusCode);
+        Assert.Equal(expectedTitle, title);
     }
 }

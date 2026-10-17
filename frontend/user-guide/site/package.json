@@ -1,0 +1,21 @@
+{
+  "name": "user-guide-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun scripts/sync-brand.ts && vitepress dev . --port 5174 --strictPort",
+    "build": "bun scripts/sync-brand.ts && vitepress build .",
+    "preview": "vitepress preview . --port 5174",
+    "test": "bun test",
+    "new-page": "bun scripts/new-page.ts",
+    "sync-brand": "bun scripts/sync-brand.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@fontsource/roboto": "5.3.0",
+    "@types/bun": "1.3.14",
+    "prettier": "3.8.4",
+    "vitepress": "1.6.4"
+  }
+}

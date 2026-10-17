@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using StarterKit.API.Common;
 
 namespace StarterKit.API.Middleware;
 
@@ -11,7 +12,6 @@ namespace StarterKit.API.Middleware;
 public sealed class CsrfProtectionMiddleware(RequestDelegate next)
 {
     private const string CsrfHeaderName = "X-CSRF-Protection";
-    private const string AccessTokenCookieName = "access_token";
 
     private static readonly JsonSerializerSettings ProblemJsonSettings = new()
     {
@@ -30,7 +30,7 @@ public sealed class CsrfProtectionMiddleware(RequestDelegate next)
             return;
         }
 
-        bool hasAccessTokenCookie = context.Request.Cookies.ContainsKey(AccessTokenCookieName);
+        bool hasAccessTokenCookie = context.Request.Cookies.ContainsKey(AuthCookies.AccessTokenName);
         bool hasExplicitCredential =
             context.Request.Headers.ContainsKey("Authorization") || context.Request.Headers.ContainsKey("X-Api-Key");
 

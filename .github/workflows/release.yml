@@ -1,3 +1,10 @@
+# Fired by the v* tag that /git-release pushes: test → production images → GitHub Release.
+# .gitlab-ci.yml is the same pipeline for a fork hosted on GitLab.
+#
+# Images are built here, from the tag, not from a push to main: /git-release merges into main
+# *before* it tags, so a main build runs while the tag doesn't exist yet and MinVer / `git describe`
+# report X.Y.(Z+1)-preview instead of X.Y.Z. Protect v* tags (Settings → Rules → Rulesets → tag
+# target v*) — whoever can push one publishes images.
 name: Release
 
 on:
@@ -6,41 +13,64 @@ on:
       - "v*"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  # The same gate every PR runs (ci.yml), re-run on the tagged commit the images are built from.
+  test:
+    uses: ./.github/workflows/test.yml
+
+  images:
+    needs: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [backend, frontend]
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # full history + tags: both Dockerfiles copy .git for the version
+          # Both Dockerfiles COPY .git/, and the build cache below is exported: keep the job token out of
+          # .git/config so no cached layer carries it.
+          persist-credentials: false
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Check the version source
+        run: test "$(git describe --tags --exact-match)" = "$GITHUB_REF_NAME"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
         with:
-          dotnet-version: "10.0.x"
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Restore (backend)
-        run: dotnet restore backend/StarterKit.sln
-
-      - name: Configure appsettings (backend)
-        run: cp backend/src/StarterKit.API/appsettings.Example.json backend/src/StarterKit.API/appsettings.json
-
-      - name: Test (backend)
-        run: backend/scripts/test.sh
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      # ghcr.io/<owner>/<repo>/<service>:X.Y.Z, plus :latest for a stable (non-pre-release) tag.
+      - id: meta
+        uses: docker/metadata-action@v5
         with:
-          bun-version: latest
+          images: ghcr.io/${{ github.repository }}/${{ matrix.service }}
+          tags: type=semver,pattern={{version}}
 
-      - name: Install deps (frontend)
-        run: bun install --cwd frontend --frozen-lockfile
+      - uses: docker/build-push-action@v6
+        with:
+          context: . # path context, not the default git context — the Dockerfiles need .git
+          file: ${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
 
-      - name: Test (frontend)
-        run: bun run --cwd frontend test:run
-
+  release:
+    needs: images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

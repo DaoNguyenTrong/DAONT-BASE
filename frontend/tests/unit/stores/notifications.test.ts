@@ -4,42 +4,60 @@ import { useNotificationsStore } from '@/stores/notifications'
 import type { NotificationDto } from '@/api/generated/model/notificationDto'
 import { setupTestPinia } from '../../helpers/pinia'
 import { server } from '../../helpers/msw/server'
+import { apiClient } from '@/api/client'
 
 // vi.hoisted: vi.mock's factory below is hoisted above these imports/consts by vitest, so the
 // fake connection must be defined via vi.hoisted to be visible inside the factory.
-const { fakeConnection, listeners, startMock, stopMock } = vi.hoisted(() => {
-  const listeners: Record<string, (...args: unknown[]) => void> = {}
-  const startMock = vi.fn(() => Promise.resolve())
-  const stopMock = vi.fn(() => Promise.resolve())
-  const fakeConnection = {
-    on: (event: string, handler: (...args: unknown[]) => void) => {
-      listeners[event] = handler
-    },
-    onreconnecting: (handler: () => void) => {
-      listeners.reconnecting = handler
-    },
-    onreconnected: (handler: () => void) => {
-      listeners.reconnected = handler
-    },
-    onclose: (handler: () => void) => {
-      listeners.close = handler
-    },
-    start: startMock,
-    stop: stopMock,
-  }
-  return { fakeConnection, listeners, startMock, stopMock }
-})
+type Handlers = Record<string, (...args: unknown[]) => void>
+const { makeFakeConnection, built, listeners, startMock, stopMock, withUrlMock } = vi.hoisted(
+  () => {
+    // Handlers of the most recently built connection — what fire() targets.
+    const listeners: Handlers = {}
+    // Every connection's own handlers, in build order, so a test can fire on a stale one.
+    const built: Handlers[] = []
+    const withUrlMock = vi.fn()
+    const startMock = vi.fn(() => Promise.resolve())
+    const stopMock = vi.fn(() => Promise.resolve())
+    function makeFakeConnection() {
+      for (const key of Object.keys(listeners)) delete listeners[key]
+      const own: Handlers = {}
+      built.push(own)
+      const register = (event: string, handler: (...args: unknown[]) => void) => {
+        own[event] = handler
+        listeners[event] = handler
+      }
+      return {
+        on: register,
+        onreconnecting: (handler: () => void) => register('reconnecting', handler),
+        onreconnected: (handler: () => void) => register('reconnected', handler),
+        onclose: (handler: () => void) => register('close', handler),
+        start: startMock,
+        stop: stopMock,
+      }
+    }
+    return { makeFakeConnection, built, listeners, startMock, stopMock, withUrlMock }
+  },
+)
+
+// Throws instead of silently no-op'ing when the store never registered the handler — a missing
+// registration is exactly the regression these tests exist to catch.
+function fire(event: string, ...args: unknown[]) {
+  const handler = listeners[event]
+  if (!handler) throw new Error(`No SignalR handler registered for '${event}'`)
+  handler(...args)
+}
 
 vi.mock('@microsoft/signalr', () => ({
   HubConnectionBuilder: class {
-    withUrl() {
+    withUrl(url: string) {
+      withUrlMock(url)
       return this
     }
     withAutomaticReconnect() {
       return this
     }
     build() {
-      return fakeConnection
+      return makeFakeConnection()
     }
   },
 }))
@@ -92,7 +110,7 @@ describe('useNotificationsStore', () => {
     const result = await store.fetchList(1, 10)
 
     expect(result.items).toHaveLength(1)
-    expect(result.items[0].id).toBe('notif-1')
+    expect(result.items[0]?.id).toBe('notif-1')
     expect(result.totalCount).toBe(1)
   })
 
@@ -256,7 +274,7 @@ describe('useNotificationsStore', () => {
       const store = useNotificationsStore()
       await store.connectRealtime()
 
-      listeners.ReceiveNotification(makeNotification())
+      fire('ReceiveNotification', makeNotification())
 
       expect(store.unreadCount).toBe(1)
 
@@ -268,6 +286,7 @@ describe('useNotificationsStore', () => {
         http.get('*/api/notifications/unread-count', () => HttpResponse.json({ count: 0 })),
       )
       const store = useNotificationsStore()
+      store.startPolling()
       await store.connectRealtime()
 
       const hits = vi.fn()
@@ -278,7 +297,7 @@ describe('useNotificationsStore', () => {
         }),
       )
 
-      listeners.reconnecting()
+      fire('reconnecting')
       await flushHttp()
       expect(hits).toHaveBeenCalledTimes(1) // resume() fetches immediately
 
@@ -294,8 +313,9 @@ describe('useNotificationsStore', () => {
         http.get('*/api/notifications/unread-count', () => HttpResponse.json({ count: 5 })),
       )
       const store = useNotificationsStore()
+      store.startPolling()
       await store.connectRealtime()
-      listeners.reconnecting()
+      fire('reconnecting')
       await flushHttp()
 
       const hits = vi.fn()
@@ -305,7 +325,7 @@ describe('useNotificationsStore', () => {
           return HttpResponse.json({ count: 7 })
         }),
       )
-      listeners.reconnected()
+      fire('reconnected')
       await flushHttp()
 
       expect(store.unreadCount).toBe(7) // catch-up fetch reconciles what may have been missed
@@ -324,6 +344,7 @@ describe('useNotificationsStore', () => {
         http.get('*/api/notifications/unread-count', () => HttpResponse.json({ count: 0 })),
       )
       const store = useNotificationsStore()
+      store.startPolling()
       await store.connectRealtime()
 
       const hits = vi.fn()
@@ -334,13 +355,113 @@ describe('useNotificationsStore', () => {
         }),
       )
 
-      listeners.close()
+      fire('close')
       await flushHttp()
       expect(hits).toHaveBeenCalledTimes(1)
 
       await vi.advanceTimersByTimeAsync(30_000)
       await flushHttp()
       expect(hits).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not revive the poll when onclose fires after the app shell tore everything down', async () => {
+      server.use(
+        http.get('*/api/notifications/unread-count', () => HttpResponse.json({ count: 0 })),
+      )
+      const store = useNotificationsStore()
+      store.startPolling()
+      await store.connectRealtime()
+      await flushHttp()
+
+      const hits = vi.fn()
+      server.use(
+        http.get('*/api/notifications/unread-count', () => {
+          hits()
+          return HttpResponse.json({ count: 0 })
+        }),
+      )
+
+      // AppLayout's onUnmounted order; a real connection.stop() then fires onclose.
+      store.stopPolling()
+      await store.disconnectRealtime()
+      fire('close')
+      fire('reconnecting')
+      await flushHttp()
+      await vi.advanceTimersByTimeAsync(30_000)
+      await flushHttp()
+
+      expect(hits).not.toHaveBeenCalled()
+    })
+
+    it('does not poll from realtime callbacks when polling was never started', async () => {
+      const hits = vi.fn()
+      server.use(
+        http.get('*/api/notifications/unread-count', () => {
+          hits()
+          return HttpResponse.json({ count: 0 })
+        }),
+      )
+      const store = useNotificationsStore()
+      await store.connectRealtime()
+
+      fire('close')
+      await vi.advanceTimersByTimeAsync(30_000)
+      await flushHttp()
+
+      expect(hits).not.toHaveBeenCalled()
+      await store.disconnectRealtime()
+    })
+
+    it('ignores a stale connection after a quick unmount/remount (logout then re-login)', async () => {
+      server.use(
+        http.get('*/api/notifications/unread-count', () => HttpResponse.json({ count: 0 })),
+      )
+      const store = useNotificationsStore()
+      store.startPolling()
+      await store.connectRealtime()
+      const stale = built.at(-1)!
+
+      // AppLayout's onUnmounted does not await disconnectRealtime; the remount runs first.
+      store.stopPolling()
+      const pendingDisconnect = store.disconnectRealtime()
+      store.startPolling()
+      await store.connectRealtime()
+      await pendingDisconnect
+      await flushHttp()
+
+      const hits = vi.fn()
+      server.use(
+        http.get('*/api/notifications/unread-count', () => {
+          hits()
+          return HttpResponse.json({ count: 0 })
+        }),
+      )
+      // The old connection's real stop() fires its onclose — it must not touch the new session.
+      stale.close?.()
+      await vi.advanceTimersByTimeAsync(30_000)
+      await flushHttp()
+      expect(hits).not.toHaveBeenCalled()
+
+      // And the new connection must still be the one a later teardown stops.
+      stopMock.mockClear()
+      store.stopPolling()
+      await store.disconnectRealtime()
+      expect(stopMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('builds the hub URL from the runtime API base URL without a double slash', async () => {
+      const original = apiClient.defaults.baseURL
+      apiClient.defaults.baseURL = 'https://api.example.test/'
+      withUrlMock.mockClear()
+      try {
+        const store = useNotificationsStore()
+        await store.connectRealtime()
+
+        expect(withUrlMock).toHaveBeenCalledWith('https://api.example.test/hubs/notifications')
+        await store.disconnectRealtime()
+      } finally {
+        apiClient.defaults.baseURL = original
+      }
     })
 
     it('disconnectRealtime stops the hub connection', async () => {

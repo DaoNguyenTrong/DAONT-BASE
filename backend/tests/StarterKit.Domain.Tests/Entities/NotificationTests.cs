@@ -66,6 +66,26 @@ public class NotificationTests
         Assert.Null(notification.Data);
     }
 
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("   ", null)]
+    [InlineData(" event-1 ", "event-1")]
+    public void Create_NormalizesTheDedupeKey(string? key, string? expected)
+    {
+        Notification notification = Notification.Create(ValidParams() with { DedupeKey = key });
+
+        Assert.Equal(expected, notification.DedupeKey);
+    }
+
+    // The column holds 200 characters; failing here names the problem instead of a database error at save.
+    [Fact]
+    public void Create_WithDedupeKeyOver200Characters_ThrowsDomainException()
+    {
+        NotificationParams p = ValidParams() with { DedupeKey = new string('k', 201) };
+
+        DomainAssert.ThrowsWithMessage(DomainMessages.NotificationDedupeKeyTooLong, () => Notification.Create(p));
+    }
+
     [Fact]
     public void MarkRead_SetsReadAt()
     {

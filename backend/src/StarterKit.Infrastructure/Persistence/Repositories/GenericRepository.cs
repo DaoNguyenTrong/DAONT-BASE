@@ -42,6 +42,14 @@ public class GenericRepository<T, TId>(AppDbContext dbContext) : IRepository<T, 
         return await dbSet.Where(predicate).ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<TResult>> ListAsync<TResult>(
+        Expression<Func<T, bool>> predicate,
+        Expression<Func<T, TResult>> selector,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbSet.Where(predicate).Select(selector).ToListAsync(cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<T> Items, int TotalCount)> ListPagedAsync(
         int pageNumber,
         int pageSize,
@@ -66,7 +74,10 @@ public class GenericRepository<T, TId>(AppDbContext dbContext) : IRepository<T, 
         IQueryable<T> query = dbSet.Where(predicate);
         int totalCount = await query.CountAsync(cancellationToken);
 
-        query = query.OrderByDescending(entity => entity.CreatedAt);
+        // Id tie-breaks rows sharing a CreatedAt (the audit interceptor stamps one `now` for a
+        // whole SaveChanges batch), otherwise Postgres may order ties differently per page query
+        // and a row shows up on two pages or on none.
+        query = query.OrderByDescending(entity => entity.CreatedAt).ThenByDescending(entity => entity.Id);
 
         List<T> items = await query
             .Skip((pageNumber - 1) * pageSize)
@@ -92,6 +103,7 @@ public class GenericRepository<T, TId>(AppDbContext dbContext) : IRepository<T, 
         int totalCount = await query.CountAsync(cancellationToken);
         List<T> items = await query
             .OrderByDescending(entity => entity.CreatedAt)
+            .ThenByDescending(entity => entity.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);

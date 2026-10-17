@@ -1,6 +1,8 @@
 import type { RouteRecordRaw } from 'vue-router'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 import { useSidebarMenu } from '@/composables/use-sidebar-menu'
+import { useAuthStore } from '@/stores/auth'
 import { withSetup } from '../../helpers/with-setup'
 
 const stub = { template: '<div />' }
@@ -10,6 +12,56 @@ function layoutRoutes(children: RouteRecordRaw[]): RouteRecordRaw[] {
 }
 
 describe('useSidebarMenu', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('hides an item whose route needs a permission the active organization does not grant', async () => {
+    useAuthStore().permissions = ['reports.view']
+    const routes = layoutRoutes([
+      {
+        path: 'reports',
+        name: 'reports',
+        component: stub,
+        meta: { permission: 'reports.view', sidebar: { labelKey: 'nav.reports', icon: stub } },
+      },
+      {
+        path: 'billing',
+        name: 'billing',
+        component: stub,
+        meta: { permission: 'billing.manage', sidebar: { labelKey: 'nav.billing', icon: stub } },
+      },
+      {
+        path: 'open',
+        name: 'open',
+        component: stub,
+        meta: { sidebar: { labelKey: 'nav.open', icon: stub } },
+      },
+    ])
+
+    const { result } = await withSetup(() => useSidebarMenu(), '/', routes)
+
+    expect(result.value.map((item) => item.routeName)).toEqual(['reports', 'open'])
+  })
+
+  it('shows a gated item once the permission arrives (e.g. after a token refresh)', async () => {
+    const routes = layoutRoutes([
+      {
+        path: 'billing',
+        name: 'billing',
+        component: stub,
+        meta: { permission: 'billing.manage', sidebar: { labelKey: 'nav.billing', icon: stub } },
+      },
+    ])
+
+    const { result } = await withSetup(() => useSidebarMenu(), '/', routes)
+    expect(result.value).toHaveLength(0)
+
+    useAuthStore().permissions = ['billing.manage']
+
+    expect(result.value.map((item) => item.routeName)).toEqual(['billing'])
+  })
+
   it('excludes routes without meta.sidebar', async () => {
     const routes = layoutRoutes([
       {

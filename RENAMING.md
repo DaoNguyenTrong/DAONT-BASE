@@ -1,123 +1,105 @@
 # Renaming This Project
 
-This repo currently ships under the name `StarterKit`. It was itself renamed once before (from
-a prior product name), and that pass is the basis for this guide — see
-`plans/implements/07. Turn FeedbackHub into a generic app starter.md` for the original, one-off
-version of this exact procedure. This document generalizes it so the next rename doesn't require
-re-deriving the mapping from scratch.
+This repo ships under the name `StarterKit`. A fork renames it once, right after cloning, with
+`scripts/rename.sh`. (The repo was itself renamed once before — see
+`plans/implements/07. Turn FeedbackHub into a generic app starter.md` for that one-off pass.)
 
-## Naming forms currently in use
-
-| Form                | Current value                | Used in                                                                 |
-| -------------------- | ----------------------------- | ------------------------------------------------------------------------- |
-| PascalCase            | `StarterKit`                  | C# namespaces, project/solution file names & content, JWT `Issuer`/`Audiences`, `EmailSettings.FromName`, OpenAPI doc title |
-| PascalCase + suffix   | `StarterKit_api`              | Postgres database name (connection string, `docker-compose.yml`)         |
-| kebab-case            | `starter-kit`                 | `frontend/package.json` `"name"`                                        |
-
-Pick the equivalent three forms for the new name before starting (e.g. `Acme` / `Acme_api` / `acme`).
-
-## Scope (as of this writing)
-
-Grep for the exact current counts before you start — they drift as the codebase grows:
+## Quick start
 
 ```bash
-grep -rlI "StarterKit" --include=*.* . --exclude-dir=node_modules --exclude-dir=bin --exclude-dir=obj --exclude-dir=.git --exclude-dir=dist | wc -l
-find . -iname "*StarterKit*" -not -path "*/node_modules/*" -not -path "*/bin/*" -not -path "*/obj/*" -not -path "*/.git/*"
+scripts/rename.sh --dry-run Acme   # list the path moves and the files it would rewrite
+scripts/rename.sh Acme             # do it (refuses to run with uncommitted tracked changes)
 ```
 
-At last check: **225 files** contain the string, **17 physical paths** have it in the name.
+The new name is PascalCase; every other form is derived from it:
 
-### 1. Backend — physical paths (`git mv`, not delete+recreate)
+| Form       | Current       | `Acme` / `CimpVbi`  | Used in                                                                                                                                                                                         |
+| ---------- | ------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PascalCase | `StarterKit`  | `Acme` / `CimpVbi`  | C# namespaces, `.sln`/`.csproj` names and paths (`backend/Dockerfile` too), DB name `StarterKit_api`, JWT `Issuer`/`Audiences`, `EmailSettings.FromName`, DataProtection purpose, OpenAPI title |
+| camelCase  | `starterKit`  | `acme` / `cimpVbi`  | `frontend/orval.config.ts` project key                                                                                                                                                          |
+| lowercase  | `starterkit`  | `acme` / `cimpvbi`  | root `package.json` name, storage bucket, `POSTGRES_USER`, Docker volumes, Prometheus job, Grafana dashboard (file, `uid`, queries), test databases and temp dirs                               |
+| kebab-case | `starter-kit` | `acme` / `cimp-vbi` | `frontend/package.json` name (and `frontend/bun.lock`)                                                                                                                                          |
+| UPPERCASE  | `STARTERKIT`  | `ACME` / `CIMPVBI`  | nothing today — replaced if it appears                                                                                                                                                          |
 
-- `backend/StarterKit.sln`
-- `backend/src/StarterKit.{Domain,Application,Infrastructure,API}/` + each folder's `.csproj`
-- `backend/tests/StarterKit.{Domain,Application,Infrastructure,API}.Tests/` + each folder's `.csproj`
+What the script does:
 
-### 2. Backend — text (namespaces, usings, project references, EF migration snapshots)
+1. `git mv` every tracked path carrying the name (project folders move whole, so their gitignored
+   `bin/`, `obj/` and `appsettings.json` move along).
+2. Rewrites every exact form above in every tracked text file — no extension filter, so
+   `backend/Dockerfile`, `bun.lock` and the EF migration snapshots are covered.
+3. Lists the gitignored `appsettings*.json` / `.env*` that still name the old project
+   (`--include-local` rewrites them too).
+4. Fails if `git grep` still finds an exact form, then lists prose mentions ("starter kit") for you
+   to review — they describe the template and are left alone.
 
-Every `namespace StarterKit.*;` / `using StarterKit.*;` declaration, every `<ProjectReference>` in
-the `.csproj` files, and the entity-type strings baked into
-`Infrastructure/Migrations/*.Designer.cs` + `AppDbContextModelSnapshot.cs` (e.g.
-`"StarterKit.Domain.Entities.Account"`). These are plain string literals EF uses for model
-comparison — safe to bulk text-replace as long as every occurrence is replaced consistently.
-Also: `Services/DataProtectionSecretProtector.cs` (`"StarterKit.Secrets"` protector purpose
-string — changing it invalidates any data already protected under the old purpose string) and
-`Extensions/OpenApiExtensions.cs` (`document.Info.Title`).
+Left as written: `plans/`, `CHANGELOG.md`, `.claude/decisions.md`, this file and the script — they
+are history. A fork renaming itself again passes `--from Acme NewName`. Two limits: the new name
+must not contain the old one (`StarterKitPro` — rename through a temporary name), and a one-word old
+name loses its case forms (`acme` was both `starterkit` and `starter-kit`), so each occurrence
+becomes the lowercase new form (`newname`, also for package names).
 
-### 3. Config values (semantic, not just text — see Caveats)
+## After the script
 
-- `backend/src/StarterKit.API/appsettings.Example.json` **and** the gitignored local
-  `appsettings.json`: `ConnectionStrings.DefaultConnection` DB name, `JwtSettings.Issuer`,
-  `JwtSettings.Audiences`, `EmailSettings.FromName`.
-- `docker-compose.yml`: `POSTGRES_DB`.
-
-### 4. Frontend
-
-- `frontend/package.json` `"name"`.
-- `frontend/README.md` title.
-- (Frontend has no other naming coupling — `index.html`/locales already say the generic "App
-  Starter", not `StarterKit`.)
-
-### 5. CI
-
-- `.github/workflows/release.yml` — `.sln` path in the restore/test steps.
-
-### 6. `.claude/` tooling
-
-- `rules/{architecture,commands}.md` and any other rule file with a `backend/StarterKit.sln` /
-  `dotnet test` command example.
-- `hooks/pre-task-reminder.sh` — same `.sln` path.
-- `skills/clean-architecture-review/{SKILL.md,violation-patterns.md}`,
-  `skills/crud-entity/SKILL.md` — check for hardcoded `StarterKit.*` namespace examples.
-- `decisions.md` — only if an entry names the old project name as prose; don't touch entries just
-  because they mention a namespace incidentally.
-
-### 7. Root & shared docs
-
-- `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `CLAUDE.md`, `AGENTS.md` — title + `.sln`/path
-  references.
-- `shared/openapi/README.md`, `shared/openapi/openapi.json` (`info.title`/`info.description`).
-
-## Procedure (least-effort order)
-
-1. **Pick the new name's three case forms** (see table above).
-2. **`git mv` the 17 physical paths** first, so the working tree matches the new layout before any
-   text edit touches file contents (avoids editing a file and then moving it).
-3. **Bulk text-replace**, scoped to tracked source (skip `bin/`, `obj/`, `node_modules/`, `dist/`
-   — these regenerate on next build):
+1. Rebuild and test (stale `bin/`/`obj/` still name the old projects):
    ```bash
-   grep -rlI "StarterKit" --include=*.* . --exclude-dir=node_modules --exclude-dir=bin --exclude-dir=obj --exclude-dir=.git --exclude-dir=dist \
-     | xargs sed -i 's/StarterKit/NewName/g'
+   rm -rf backend/src/*/bin backend/src/*/obj backend/tests/*/bin backend/tests/*/obj
+   dotnet restore backend/Acme.sln && backend/scripts/test.sh
+   bun install && bun install --cwd frontend && bun run --cwd frontend test:run && bun run --cwd frontend build
    ```
-   Run the same for the `starter-kit` (kebab-case) hits separately — don't conflate the two cases
-   in one regex, they land in different files with different casing rules.
-4. **Manually update the gitignored `appsettings.json`** (bulk replace above only touches it if it
-   already exists on this machine — every other developer must redo this locally after pulling).
-5. `dotnet build backend/{NewName}.sln --no-restore -m:1` — let the compiler catch anything the
-   grep-based sweep missed (stale namespace, mismatched project reference name).
-6. `dotnet test backend/{NewName}.sln --no-restore -m:1` and `bun run --cwd frontend test:run` +
-   `bun run --cwd frontend build`.
-7. `npx gitnexus analyze` to refresh the index against the new namespaces, then
-   `gitnexus_detect_changes(scope: "all")` to confirm only the expected symbols moved and nothing
-   was accidentally broken.
-8. Manual smoke test: register → check the verification email in Mailpit (`localhost:8025`) →
-   verify → log in.
+2. Final check — must list only the history files above and prose:
+   ```bash
+   git grep -nIi 'starter.\?kit'
+   ```
+3. Every other developer redoes their gitignored config after pulling — a pull moves only tracked
+   files, so `appsettings.json` stays behind in `backend/src/StarterKit.API/`. On the renamed
+   checkout, `scripts/rename.sh --include-local Acme` touches nothing tracked: it rewrites the local
+   `appsettings*.json` / `.env*` and moves them into the renamed project folder. Then delete the
+   leftover `backend/src/StarterKit.*` / `backend/tests/StarterKit.*` folders (only `bin/`/`obj/`
+   remain).
+4. The user guide: the script already renames `name` in
+   `frontend/user-guide/site/.vitepress/product.ts`; set `publisher` and the logo file names
+   (`brand`, files in `frontend/public/`) there by hand, and rewrite the home pages
+   `frontend/user-guide/site/src/index.md` and `src/en/index.md`. Those are the guide's fork-owned
+   files — base-owned files (`src/base/**`, `theme/**`, `sidebar.base.ts`) stay as they are so later
+   guide updates from the base merge cleanly (see `frontend/user-guide/README.md`).
+5. CodeGraph re-indexes on its own (file watcher); restart Serena so its language servers load the
+   new project paths.
+5. Smoke test: register → verification email in Mailpit (`localhost:8025`) → verify → log in.
 
-## Caveats — do not blindly bulk-replace these without a decision
+## Caveats — runtime identifiers
 
-- **Database name** (`ConnectionStrings.DefaultConnection` / `docker-compose.yml`
-  `POSTGRES_DB`): renaming the string doesn't rename an existing database. Either
-  `ALTER DATABASE "StarterKit_api" RENAME TO "NewName_api";` on every environment that has one, or
-  accept that local/dev databases get recreated from scratch. Coordinate before touching anything
-  with real data.
-- **`JwtSettings.Issuer` / `Audiences`**: these are validated on every request. Changing them
-  invalidates every access and refresh token issued under the old values — every logged-in user is
-  forced to re-authenticate the moment this ships. Fine for a fresh project with no real users;
-  needs a deliberate rollout plan otherwise.
-- **`DataProtectionSecretProtector`'s purpose string** (`"StarterKit.Secrets"`): changing it means
-  any secret already protected under the old purpose string can no longer be unprotected. Only
-  matters if something has already been encrypted in a persisted environment.
-- **GitNexus's repo id** (`DAONT-BASE` — see `gitnexus://repo/DAONT-BASE/...` resource URIs
-  throughout `.claude/skills/gitnexus/`) tracks the **folder name**, not the code namespace. A
-  code-name-only rename (`StarterKit` → `NewName`) does **not** require touching these URIs; they
-  only change if the repo's folder itself is renamed.
+On a fresh fork none of this matters. On anything already deployed, each of these changes behaviour
+the moment it ships — to keep an old value, revert that line after running the script.
+
+- **Database name** (`StarterKit_api` in `ConnectionStrings.DefaultConnection`, `POSTGRES_DB`) and
+  **`POSTGRES_USER`**: renaming the string doesn't rename the database, and the Postgres image reads
+  `POSTGRES_*` only when it initialises an empty volume. Either `ALTER DATABASE "StarterKit_api"
+RENAME TO "Acme_api";` (and keep the old user) everywhere it exists, or start from an empty
+  database.
+- **Docker volumes** (`starterkit-postgres-data`, `-api-uploads`, `-api-logs`, `-seaweedfs-data`):
+  a renamed volume is a **new, empty volume** — the database and uploaded files stay behind in the
+  old one. Keep the old names, or copy the data across before switching
+  (`docker run --rm -v old:/from -v new:/to alpine cp -a /from/. /to/`).
+- **Storage bucket** (`starterkit`): the new bucket starts empty; stored files stay in the old one.
+- **JWT `Issuer` / `Audiences`**: validated on every request — every issued access and refresh token
+  stops working and every user signs in again.
+- **DataProtection purpose** (`"StarterKit.Secrets"`, `DataProtectionSecretProtector`): values
+  protected under the old purpose can no longer be read. Nothing in the template stores any yet —
+  it matters once a fork persists `ISecretProtector` output.
+- **Prometheus job** (`starterkit-api`) and the Grafana dashboard `uid`: metrics under the new job
+  name start a new series — history stays under the old label, and bookmarks to the old dashboard
+  URL break.
+
+## Fork checklist (beyond the name)
+
+- **Git host** — GitHub is the default. On another host (e.g. GitLab):
+  - `.claude/release-kit.json`: `prCli` (`gh` → `glab`) and `ciTriggerNote`.
+  - `lefthook.yml` `branch-guard`: the hint names `gh pr merge`.
+  - `CONTRIBUTING.md`: "create PR to `dev` on GitHub", "GitHub Actions creates the release".
+  - CI: `.gitlab-ci.yml` is the GitLab twin of `.github/workflows/release.yml` — delete the one
+    you don't use. On GitLab the runner needs Docker (`docker:dind`, privileged — see the file).
+  - Protect `v*` tags so only maintainers can push a release.
+- **`SECURITY.md`** — the reporting link and email point at this template's maintainer.
+- **`.serena/project.yml`** `project_name` — tracks the folder name (`DAONT-BASE`), not the code
+  name; change it only if the folder is renamed.
+- **`CHANGELOG.md`** — start the fork's own history under `[Unreleased]`.

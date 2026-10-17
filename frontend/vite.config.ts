@@ -46,7 +46,15 @@ export default defineConfig(({ mode }) => {
       }),
       Components({
         types: [{ from: 'vue-router', names: ['RouterLink', 'RouterView'] }],
-        resolvers: [NaiveUiResolver()],
+        resolvers: [
+          // Every <n-select> is AppSelect: re-picking clears, filtering ignores accents.
+          (name) => {
+            if (name === 'NSelect') {
+              return { name: 'default', from: '@/components/AppSelect.vue' }
+            }
+          },
+          NaiveUiResolver(),
+        ],
         dts: 'src/typings/components.d.ts',
       }),
     ],
@@ -62,6 +70,8 @@ export default defineConfig(({ mode }) => {
           '**/docs/.vitepress/cache/**',
           '**/documents/**',
           '**/plans/**',
+          // The user guide is its own VitePress package with its own dev server.
+          '**/user-guide/**',
           '**/.claude/**',
           '**/.git/**',
           '**/node_modules/**',
@@ -69,6 +79,11 @@ export default defineConfig(({ mode }) => {
           '**/build/**',
           '**/public/**',
         ],
+      },
+      // The header's "?" link opens /guide/ on the app's origin, as nginx serves it in production. Run
+      // `bun run --cwd frontend/user-guide/site dev` alongside to follow it; dev has no session gate.
+      proxy: {
+        '/guide': { target: 'http://localhost:5174', ws: true },
       },
     },
     define: {

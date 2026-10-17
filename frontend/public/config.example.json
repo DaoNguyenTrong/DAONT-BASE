@@ -1,3 +1,12 @@
 {
-  "apiBaseUrl": "https://api.example.com"
+  "apiBaseUrl": "https://api.example.com",
+  "googleClientId": "",
+  "microsoftClientId": "",
+  "microsoftTenantId": "common",
+  "firebaseApiKey": "",
+  "firebaseAuthDomain": "",
+  "firebaseProjectId": "",
+  "firebaseMessagingSenderId": "",
+  "firebaseAppId": "",
+  "firebaseVapidKey": ""
 }

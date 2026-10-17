@@ -1,6 +1,10 @@
 import { createDiscreteApi, darkTheme } from 'naive-ui'
 import type { DialogOptions } from 'naive-ui'
 import naiveThemeOverrides from '@/theme/naive-theme'
+import {
+  getConfirmationOverrideNaive,
+  type ConfirmationOptionsNaive,
+} from './confirmation-override'
 
 /**
  * Naive UI equivalent of `src/lib/feedback.ts`.
@@ -27,28 +31,8 @@ const { message, dialog } = createDiscreteApi(['message', 'dialog'], {
 // discrete dialog instance instead of creating a second `createDiscreteApi` call.
 export { dialog }
 
-type ConfirmationOptionsNaive = {
-  header?: string
-  message?: string
-  acceptLabel?: string
-  rejectLabel?: string
-  accept?: () => void
-  reject?: () => void
-}
-
-// Test-only seam, mirroring `setConfirmationService` in feedback.ts — the
-// discrete dialog API has no "not yet installed" state to hook into, so
-// tests need an explicit override instead to avoid depending on a dialog
-// that's teleported outside the mounted component tree.
-let confirmOverride: ((options: ConfirmationOptionsNaive) => void) | null = null
-
-export function setConfirmationOverrideNaive(
-  fn: ((options: ConfirmationOptionsNaive) => void) | null,
-) {
-  confirmOverride = fn
-}
-
 export function requestConfirmationNaive(options: ConfirmationOptionsNaive) {
+  const confirmOverride = getConfirmationOverrideNaive()
   if (confirmOverride) {
     confirmOverride(options)
     return
@@ -57,8 +41,9 @@ export function requestConfirmationNaive(options: ConfirmationOptionsNaive) {
   const dialogOptions: DialogOptions = {
     title: options.header,
     content: options.message,
-    positiveText: options.acceptLabel ?? 'Yes',
-    negativeText: options.rejectLabel ?? 'No',
+    // Resolved per call, so the labels follow the locale active when the dialog opens.
+    positiveText: options.acceptLabel ?? i18n.global.t('common.yes'),
+    negativeText: options.rejectLabel ?? i18n.global.t('common.no'),
     onPositiveClick: () => {
       void options.accept?.()
     },

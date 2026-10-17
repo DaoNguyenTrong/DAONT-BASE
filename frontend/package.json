@@ -10,13 +10,14 @@
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
-    "type-check": "vue-tsc --noEmit -p tsconfig.app.json && vue-tsc --noEmit -p tsconfig.node.json",
+    "type-check": "vue-tsc --noEmit -p tsconfig.app.json && vue-tsc --noEmit -p tsconfig.node.json && vue-tsc --noEmit -p tsconfig.vitest.json && vue-tsc --noEmit -p tsconfig.e2e.json",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install chromium",
+    "guide:capture": "playwright test -c user-guide/tools/playwright.capture.config.ts",
     "format": "prettier --write --experimental-cli src/ e2e/"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "@vicons/tabler": "^0.13.0",
     "axios": "^1.18.1",
     "firebase": "^12.17.0",
+    "fuse.js": "^7.5.0",
     "marked": "^18.0.5",
     "naive-ui": "^2.44.1",
     "pinia": "^4.0.2",

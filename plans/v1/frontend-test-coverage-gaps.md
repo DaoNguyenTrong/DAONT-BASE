@@ -1,5 +1,7 @@
 # Frontend: lấp khoảng trống test (AccountsView, concurrent-401 refresh, router guard, coverage tooling)
 
+> **Lỗi thời (2026-10-17).** `AccountsView.vue` không còn trong `src/`, `@vitest/coverage-v8` đã cài, coverage được báo cáo trong CI. Quy chuẩn test hiện hành nằm ở `.claude/rules/testing.md` — không dùng file này làm căn cứ.
+
 ## Context
 
 Đánh giá test frontend (30 file, 209 test, tất cả pass, không `.only`/`.skip`) cho thấy chất lượng test hiện có tốt (dùng `deferred()` để test race condition, MSW để mock HTTP thật, branch theo `error.problem.code` thay vì generic message) nhưng còn 3 khoảng trống cụ thể và 1 việc hạ tầng:

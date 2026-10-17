@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.6.0] - 2026-10-17
+
+### Added
+
+- Accounts lock temporarily after repeated wrong passwords, and a migrate command lets multi-instance deploys apply migrations once before startup. (#48)
+- Every pull request and push to dev runs the backend and frontend tests, a contract drift check, type-check and formatting, with coverage in the run summary. (#49)
+- A testing standards guide defines which layer each kind of change is tested at and how tests are written. (#49)
+- A Vietnamese/English user guide site with a page template, a scaffold command and content checks in CI. (#50)
+- The user guide is served at /guide/ and opens from a "?" button in the app header. (#51)
+- By default only signed-in users can read the user guide; set GUIDE_PUBLIC=true to make it public. (#51)
+- The user guide covers getting started, the account, organizations, notifications, a FAQ and a glossary, with a new home page. (#53)
+
+### Changed
+
+- Usernames and emails became case-insensitive, Redis must run with noeviction, and notifications filter by read state instead of unread-only. (#48)
+
+### Removed
+
+- Removed the inactive product-owner and PRD workflow templates. (#49)
+
+### Fixed
+
+- Cached data no longer turns stale after concurrent writes or a Redis outage, and an aborted request no longer logs a server error. (#48)
+- Registering or removing a push token with surrounding spaces no longer fails or leaves the subscription behind. (#49)
+- The markdown editor, the sidebar's name fallback and confirmation dialog buttons now follow the selected language. (#49)
+- The organization menu at the foot of the desktop sidebar no longer runs off the bottom of the screen. (#53)
+- Roles no longer show raw permission codes; every permission has a readable name in both languages. (#53)
+
+### Security
+
+- Upgraded vulnerable cryptography and MessagePack packages, and auth cookie Secure and SameSite settings became configurable. (#48)
+
 ## [v1.5.2] - 2026-09-03
 
 ### Changed

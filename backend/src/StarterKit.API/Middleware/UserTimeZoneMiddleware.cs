@@ -18,7 +18,9 @@ public sealed class UserTimeZoneMiddleware(RequestDelegate next)
     public async Task InvokeAsync(HttpContext context)
     {
         if (!context.Request.Path.StartsWithSegments("/api")
-            || context.Request.Path.StartsWithSegments("/api/health"))
+            || context.Request.Path.StartsWithSegments("/api/health")
+            // nginx's auth_request subrequest for /guide/ forwards only the browser's cookie.
+            || context.Request.Path.StartsWithSegments("/api/auth/check"))
         {
             await next(context);
             return;

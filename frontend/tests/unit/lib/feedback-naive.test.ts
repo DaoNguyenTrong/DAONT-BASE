@@ -3,17 +3,16 @@ import { nextTick } from 'vue'
 import {
   dialog,
   requestConfirmationNaive,
-  setConfirmationOverrideNaive,
   showErrorMessageNaive,
   showInfoMessageNaive,
   showSuccessMessageNaive,
 } from '@/lib/feedback-naive'
+import { setConfirmationOverrideNaive } from '@/lib/confirmation-override'
+import i18n from '@/plugins/i18n'
 
 // `message` isn't exported (only `dialog` is, for composable reuse), and
-// `createDiscreteApi` runs once at module load — before any per-file `vi.mock`
-// could intercept it, since `tests/setup.ts` already imports this module for
-// `setConfirmationOverrideNaive`. So message assertions go through the real,
-// teleported DOM output instead of a mock.
+// `createDiscreteApi` runs once at module load, so message assertions go
+// through the real, teleported DOM output instead of a mock.
 async function flushMessage() {
   await nextTick()
   await new Promise((resolve) => setTimeout(resolve, 20))
@@ -57,14 +56,30 @@ describe('feedback-naive', () => {
       expect(options.content).toBe('This is permanent')
     })
 
-    it('defaults positiveText/negativeText to Yes/No when labels are omitted', () => {
+    it('defaults positiveText/negativeText to the localized yes/no when labels are omitted', () => {
       const warningSpy = vi.spyOn(dialog, 'warning').mockImplementation(() => ({}) as never)
 
       requestConfirmationNaive({ header: 'Delete?', message: 'Sure?' })
 
       const options = warningSpy.mock.calls[0]![0]
-      expect(options.positiveText).toBe('Yes')
-      expect(options.negativeText).toBe('No')
+      expect(options.positiveText).toBe(i18n.global.t('common.yes'))
+      expect(options.negativeText).toBe(i18n.global.t('common.no'))
+    })
+
+    it('resolves the default labels in the locale active when the dialog opens', () => {
+      const warningSpy = vi.spyOn(dialog, 'warning').mockImplementation(() => ({}) as never)
+      i18n.global.locale.value = 'vi'
+
+      try {
+        requestConfirmationNaive({ header: 'Delete?', message: 'Sure?' })
+      } finally {
+        i18n.global.locale.value = 'en'
+      }
+
+      const options = warningSpy.mock.calls[0]![0]
+      expect(options.positiveText).toBe(i18n.global.t('common.yes', {}, { locale: 'vi' }))
+      expect(options.negativeText).toBe(i18n.global.t('common.no', {}, { locale: 'vi' }))
+      expect(options.positiveText).not.toBe(i18n.global.t('common.yes', {}, { locale: 'en' }))
     })
 
     it('uses acceptLabel/rejectLabel when provided', () => {

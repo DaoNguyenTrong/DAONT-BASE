@@ -6,6 +6,12 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     guestOnly?: boolean
+    /**
+     * Permission code (`lib/permissions.ts`) the active organization must grant: hides the route's
+     * sidebar item and sends a signed-in user without it to home. A UI gate only — the API still
+     * checks every request. Never put one on `home`, the fallback itself.
+     */
+    permission?: string
     breadcrumbKey?: string
     sidebar?: {
       labelKey: string
@@ -17,6 +23,10 @@ declare module 'vue-router' {
 
 const router = createRouter({
   history: createWebHashHistory(),
+  // Only reaches pages that scroll the window (login, register…), where back/forward restores the
+  // saved position. Inside the app shell the page scrolls `main` instead, which AppLayout resets to
+  // the top on every path change — back/forward included; no position is saved for it.
+  scrollBehavior: (_to, _from, savedPosition) => savedPosition ?? { top: 0 },
   routes: [
     {
       path: '/',
@@ -68,6 +78,14 @@ const router = createRouter({
       component: () => import('@/views/VerifyEmailView.vue'),
     },
     {
+      // nginx sends a reader of the private user guide here when their session cookie is missing or
+      // expired; the guard routes them through login, then the view sends them back to the guide.
+      path: '/guide-auth',
+      name: 'guide-auth',
+      component: () => import('@/views/GuideAuthView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),
@@ -77,11 +95,11 @@ const router = createRouter({
 
 export function resolveGuardRedirect(
   to: {
-    meta: { requiresAuth?: boolean; guestOnly?: boolean }
+    meta: { requiresAuth?: boolean; guestOnly?: boolean; permission?: string }
     fullPath: string
     query: Record<string, unknown>
   },
-  auth: { isAuthenticated: boolean },
+  auth: { isAuthenticated: boolean; hasPermission: (code: string) => boolean },
   health: { isDown: boolean },
 ) {
   // During an API outage, ServerErrorScreen takes over the whole screen and the
@@ -97,6 +115,11 @@ export function resolveGuardRedirect(
     // Preserve the destination so LoginView can return the user there after
     // signing in, instead of always dropping them on the home page.
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  // Hiding the sidebar item isn't enough: a typed URL or a bookmark still reaches the route.
+  if (to.meta.permission && auth.isAuthenticated && !auth.hasPermission(to.meta.permission)) {
+    return useHomeRoute()
   }
 
   if (to.meta.guestOnly && auth.isAuthenticated) {

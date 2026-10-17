@@ -4,17 +4,25 @@ node_modules/
 # Playwright MCP scratch snapshots/logs
 .playwright-mcp/
 
-# lock files — this is a starter-kit template, each downstream project
-# generates its own on first install rather than inheriting ours
+# lock files — bun is the only package manager here; bun.lock IS tracked so the Dockerfile's and
+# CI's `bun install --frozen-lockfile` actually pin dependency versions (forks inherit it and update
+# it like any other file). Other managers' lockfiles are ignored to avoid accidental drift.
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
-bun.lock
 
 # agent tooling
 .codegraph/
-.serena/
+# .serena/project.yml is the shared Serena config (language servers etc.) and IS tracked;
+# cache/, memories/ and project.local.yml are per-machine.
+.serena/*
+!.serena/project.yml
 .codex/*
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+.worktrees/
+__pycache__/
 
 # Logs
 logs
@@ -49,6 +57,14 @@ coverage
 *.tsbuildinfo
 .eslintcache
 frontend/src/typings/
+# user guide (frontend/user-guide/site): VitePress cache and files scripts/sync-brand.ts writes
+frontend/user-guide/site/.vitepress/cache/
+frontend/user-guide/site/src/public/brand/
+**/brand-tokens.generated.css
+# user guide capture tool: the saved browser session (a live refresh token), its env and run output
+frontend/user-guide/tools/.auth/
+frontend/user-guide/tools/.env
+frontend/user-guide/tools/.results/
 
 # orval — regenerated from shared/openapi/openapi.json via `postinstall` / `bun run codegen`
 frontend/src/api/generated/
@@ -110,3 +126,7 @@ appsettings.json
 appsettings.Development.json
 appsettings.Backup.json
 appsettings.Production.json
+appsettings.Staging.json
+
+# local file storage (Storage:BasePath, default "uploads" under the API's content root)
+**/uploads/

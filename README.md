@@ -4,6 +4,8 @@ An app starter kit for new web applications: .NET 10 Clean Architecture on the b
 
 This is **not** a finished product — no business features are baked in. Remove/replace whatever you don't need and add your own domain on top of this foundation.
 
+Starting a project from it? Rename it first — `scripts/rename.sh NewName`, then the fork checklist in [`RENAMING.md`](RENAMING.md).
+
 ## Already Included
 
 - **Auth**: email + password register/login (JWT access + refresh token, refresh token stored as a SHA-256 hash), mandatory email verification via SMTP, Google + Microsoft login (credential flow / MSAL popup), session management (list/revoke by device).
@@ -77,7 +79,7 @@ dotnet run --project backend/src/StarterKit.API
 backend/scripts/test.sh
 ```
 
-Production: migrations are applied automatically on startup via `Database.MigrateAsync`.
+Production: migrations are applied automatically on startup via `Database.MigrateAsync`. Running several API instances? Set `DatabaseSettings__MigrateOnStartup=false` on them and run `dotnet StarterKit.API.dll migrate` once before starting them, so they don't race on the same migration.
 
 ### 3. Frontend (`frontend/`)
 
@@ -128,7 +130,7 @@ bun run --cwd frontend codegen
 
 ### CI
 
-There is no CI workflow running build/test on PR/push yet (`.github/workflows/` only has `release.yml`, triggered on `v*` tags). Run the commands above locally before requesting a review.
+Every PR into `dev`/`main`/`release/**` and every push to `dev` runs the test gate (`.github/workflows/ci.yml` → `test.yml`): backend tests plus an OpenAPI-export drift check, frontend formatting, type-check and unit tests. The release pipeline runs the same gate: a `v*` tag runs the tests, builds and pushes the production images, then creates the release (`.github/workflows/release.yml`; `.gitlab-ci.yml` is the same pipeline for a fork on GitLab). Protect `v*` tags — whoever can push one publishes images.
 
 For full details, see `.claude/rules/commands.md`.
 
@@ -154,11 +156,46 @@ cp .env.prod.example .env.prod
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
-Migrations apply automatically on startup. Uploaded files and API logs persist in named volumes
+Each release tag also publishes both images, versioned from the tag: `ghcr.io/<owner>/<repo>/{backend,frontend}:X.Y.Z` (`:latest` follows the newest stable tag; on GitLab, `$CI_REGISTRY_IMAGE/...`). Build them yourself as above, or point the `api`/`web` services at those images to deploy without building on the server.
+
+Migrations apply automatically on startup (see `DatabaseSettings:MigrateOnStartup` above for several instances). Uploaded files and API logs persist in named volumes
 (`starterkit-api-uploads`, `starterkit-api-logs`); Postgres data in `starterkit-postgres-data`.
 
-Not included yet (fine for a first deploy, revisit before scaling): TLS termination at nginx, and
-an `/health` endpoint for container healthchecks.
+Deploy notes:
+
+- **Keep `VITE_API_BASE_URL` empty** for this setup — nginx serves the SPA and the API from one
+  origin, so the frontend calls relative `/api/...` paths.
+- **Frontend config is runtime, not build-time.** The Google/Microsoft client ids and Firebase
+  values in `.env.prod` are passed to the `web` container, which writes them into `/config.json` at
+  startup (`frontend/docker/40-write-runtime-config.sh`). One image serves every environment;
+  changing a value needs `docker compose ... up -d`, not `--build`. Any key left empty falls back to
+  the value baked in at build time (none, by default).
+- **Serving over plain http (no TLS in front of nginx)?** The auth cookies default to
+  `Secure` + `SameSite=None`, which a browser silently drops on a non-`localhost` http origin —
+  login returns 200 and every later request is 401. Set this in the bind-mounted `appsettings.json`:
+
+  ```json
+  "AuthCookieSettings": { "Secure": false, "SameSite": "Lax" }
+  ```
+
+  Tokens then travel in cleartext — acceptable for an internal demo, not for real data. The API
+  refuses to start with `Secure: false` + `SameSite: None` (browsers reject that pair). Put TLS in
+  front and restore the defaults before real use.
+- **Using Redis for the cache?** Set its `maxmemory-policy` to `noeviction` — no `volatile-*` or
+  `allkeys-*` policy. Every key the cache writes has a TTL, the invalidation counters included
+  (`CacheSettings:MaxExpirationMinutes`, default 1440, plus a minute; longer entry TTLs are clamped
+  to it); evicting a counter before that would resurrect stale entries (e.g. revoked permissions).
+  Size Redis so it doesn't fill up: at `maxmemory` it rejects writes, so invalidations fail (logged)
+  and stale entries live until their TTL. A Redis outage only slows requests down — the cache falls
+  back to the database and logs it.
+- **User guide at `/guide/`** is private by default: nginx asks the API whether the reader is signed
+  in, which needs the API on the same origin (`VITE_API_BASE_URL` empty). Set `GUIDE_PUBLIC=true` in
+  `.env.prod` to open it to everyone — see [frontend/user-guide/README.md](frontend/user-guide/README.md).
+- **Secrets stay out of images.** `appsettings*.json` and `.env*` are excluded from the Docker build
+  context (`.dockerignore`); only the bind-mounted copy is read at runtime.
+
+Not included yet (fine for a first deploy, revisit before scaling): TLS termination at nginx. `api` and
+`web` have healthchecks (`/api/health` and the SPA root); `web` starts once `api` is healthy.
 
 ## Documentation
 
@@ -167,6 +204,7 @@ an `/health` endpoint for container healthchecks.
 - Security policy / reporting a vulnerability: [SECURITY.md](SECURITY.md)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
 - Key architecture decisions: [.claude/decisions.md](.claude/decisions.md)
+- End-user guide (Hướng dẫn sử dụng, VitePress, served at `/guide/`): [frontend/user-guide/README.md](frontend/user-guide/README.md)
 
 ## License
 

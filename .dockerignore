@@ -9,24 +9,40 @@
 **/obj/
 **/logs/
 **/uploads/
+**/coverage/
 .serena/
 .codegraph/
+# agent tooling — .claude/worktrees/ and .worktrees/ hold whole repo checkouts (with their own
+# .env*/node_modules), which must never ride along in the build context.
+.claude/
+.worktrees/
 .playwright-mcp/
 plans/
 monitoring/
-*.md
-tests/
+**/*.md
+# ...except the user guide's pages, which are the guide's source (a later line wins).
+!frontend/user-guide/site/src/**/*.md
+**/tests/
+# User guide: screenshot tooling and files the guide's build regenerates.
+frontend/user-guide/tools/
+**/user-guide/site/src/public/brand/
+**/.vitepress/cache/
+**/brand-tokens.generated.css
 
-# Real secrets — never bake into any image, only appsettings.Example.json is a template.
-appsettings.json
-appsettings.Development.json
-appsettings.Production.json
-appsettings.Backup.json
+# Real secrets — never bake into any image, only the *.Example.json / *.example files are templates.
+# Every pattern here is anchored to the build-context root (the repo root), so a bare
+# `appsettings.json` would only match a file at the repo root — the `**/` prefix is what actually
+# reaches backend/src/StarterKit.API/appsettings.json and frontend/.env*.
+**/appsettings*.json
+!**/appsettings*.Example.json
 
 .vs/
 *.user
 
-.env
-.env.*
-!.env.example
-!.env.prod.example
+# Deploy-time frontend config (gitignored too) — must come from the container env or a mount.
+**/public/config.json
+
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example

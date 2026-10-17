@@ -3,6 +3,7 @@ import { AxiosHeaders } from 'axios'
 import type { AxiosRequestHeaders } from 'axios'
 
 import type { ProblemDetails } from './types'
+import { getRuntimeConfig } from '@/lib/runtime-config'
 
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
@@ -109,17 +110,28 @@ function isPasswordChangeRequest(url?: string) {
   return url === '/api/profile/password'
 }
 
+/**
+ * Array query params as repeated keys (`ids=3&ids=4`), not axios's default `ids[]=3&ids[]=4`:
+ * ASP.NET's model binder looks for the key `ids` and binds the bracketed form to an empty array —
+ * a silent failure, the server answers 200 with unfiltered data. Set on the client so every
+ * generated call with an array param is covered at once.
+ */
+const REPEATED_KEY_ARRAY_PARAMS = { indexes: null } as const
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  // Build-time value at module load; main.ts re-applies getRuntimeConfig() once config.json is in.
+  baseURL: getRuntimeConfig().apiBaseUrl,
   withCredentials: true,
   timeout: 300_000,
+  paramsSerializer: REPEATED_KEY_ARRAY_PARAMS,
   headers: {
     'Content-Type': 'application/json',
   },
 })
 
 export const refreshClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  // Build-time value at module load; main.ts re-applies getRuntimeConfig() once config.json is in.
+  baseURL: getRuntimeConfig().apiBaseUrl,
   withCredentials: true,
   timeout: 300_000,
   headers: {

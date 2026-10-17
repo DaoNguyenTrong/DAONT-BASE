@@ -11,8 +11,7 @@ const CHROME_ANDROID =
   'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
 const EDGE_WINDOWS =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
-const FIREFOX_LINUX =
-  'Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0'
+const FIREFOX_LINUX = 'Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0'
 const SAFARI_MACOS =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15'
 const SAFARI_IPHONE =
@@ -21,55 +20,26 @@ const SAFARI_IPAD =
   'Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
 
 describe('formatDeviceInfo', () => {
-  it('returns null for null input', () => {
-    expect(formatDeviceInfo(null)).toBeNull()
+  it.each([
+    ['returns null for null input', null],
+    ['returns null for empty string', ''],
+    ['returns null for whitespace-only string', '   '],
+    ['returns null for unrecognised UA instead of exposing raw string', 'UnknownAgent/1.0'],
+  ])('%s', (_title, input) => {
+    expect(formatDeviceInfo(input)).toBeNull()
   })
 
-  it('returns null for empty string', () => {
-    expect(formatDeviceInfo('')).toBeNull()
-  })
-
-  it('returns null for whitespace-only string', () => {
-    expect(formatDeviceInfo('   ')).toBeNull()
-  })
-
-  it('detects Chrome on Linux', () => {
-    expect(formatDeviceInfo(CHROME_LINUX)).toBe('Chrome on Linux')
-  })
-
-  it('detects Chrome on Windows', () => {
-    expect(formatDeviceInfo(CHROME_WINDOWS)).toBe('Chrome on Windows')
-  })
-
-  it('detects Chrome on macOS', () => {
-    expect(formatDeviceInfo(CHROME_MACOS)).toBe('Chrome on macOS')
-  })
-
-  it('detects Chrome on Android', () => {
-    expect(formatDeviceInfo(CHROME_ANDROID)).toBe('Chrome on Android')
-  })
-
-  it('detects Edge on Windows (not misidentified as Chrome)', () => {
-    expect(formatDeviceInfo(EDGE_WINDOWS)).toBe('Edge on Windows')
-  })
-
-  it('detects Firefox on Linux', () => {
-    expect(formatDeviceInfo(FIREFOX_LINUX)).toBe('Firefox on Linux')
-  })
-
-  it('detects Safari on macOS (not Chrome despite Safari/ token)', () => {
-    expect(formatDeviceInfo(SAFARI_MACOS)).toBe('Safari on macOS')
-  })
-
-  it('detects Safari on iPhone', () => {
-    expect(formatDeviceInfo(SAFARI_IPHONE)).toBe('Safari on iPhone')
-  })
-
-  it('detects Safari on iPad', () => {
-    expect(formatDeviceInfo(SAFARI_IPAD)).toBe('Safari on iPad')
-  })
-
-  it('returns null for unrecognised UA instead of exposing raw string', () => {
-    expect(formatDeviceInfo('UnknownAgent/1.0')).toBeNull()
+  it.each([
+    ['detects Chrome on Linux', CHROME_LINUX, 'Chrome on Linux'],
+    ['detects Chrome on Windows', CHROME_WINDOWS, 'Chrome on Windows'],
+    ['detects Chrome on macOS', CHROME_MACOS, 'Chrome on macOS'],
+    ['detects Chrome on Android', CHROME_ANDROID, 'Chrome on Android'],
+    ['detects Edge on Windows (not misidentified as Chrome)', EDGE_WINDOWS, 'Edge on Windows'],
+    ['detects Firefox on Linux', FIREFOX_LINUX, 'Firefox on Linux'],
+    ['detects Safari on macOS (not Chrome despite Safari/ token)', SAFARI_MACOS, 'Safari on macOS'],
+    ['detects Safari on iPhone', SAFARI_IPHONE, 'Safari on iPhone'],
+    ['detects Safari on iPad', SAFARI_IPAD, 'Safari on iPad'],
+  ])('%s', (_title, ua, label) => {
+    expect(formatDeviceInfo(ua)).toBe(label)
   })
 })

@@ -100,8 +100,12 @@ public class RegistrationServiceTests
         Account account = Account.Create(new AccountParams(
             Name: "Nguyen Van A",
             Username: username,
-            Email: email,
-            Status: status));
+            Email: email));
+
+        if (!status)
+        {
+            account.Deactivate();
+        }
 
         if (passwordHash is not null)
         {
@@ -140,31 +144,31 @@ public class RegistrationServiceTests
 
     // RegisterAsync
 
-    [Fact]
-    public async Task RegisterAsync_UsernameExists_ThrowsConflict()
+    // The first argument keeps each case's former method name in the test report.
+    [Theory]
+    [InlineData("RegisterAsync_UsernameExists_ThrowsConflict",
+        "nva", "nva@example.com", "nva", "nva@example.com", ApplicationMessages.AccountUsernameAlreadyExists)]
+    [InlineData("RegisterAsync_EmailExists_ThrowsConflict",
+        "other", "nva@example.com", "nva", "nva@example.com", ApplicationMessages.AccountEmailAlreadyExists)]
+    [InlineData("RegisterAsync_EmailDiffersOnlyByCase_ThrowsConflict",
+        "other", "nva@example.com", "nva", " NVA@Example.com ", ApplicationMessages.AccountEmailAlreadyExists)]
+    public async Task RegisterAsync_Duplicate_ThrowsConflict(
+        string caseName,
+        string existingUsername,
+        string existingEmail,
+        string requestedUsername,
+        string requestedEmail,
+        string expectedMessage)
     {
-        Fixture f = CreateFixture();
-        RepositoryPredicateStub.StubFirstOrDefault(f.AccountRepo, [CreateAccount()]);
-        RegisterRequest request = CreateRegisterRequest();
-
-        await ApplicationAssert.ThrowsWithMessageAsync<ConflictException>(
-            ApplicationMessages.AccountUsernameAlreadyExists,
-            () => f.Service.RegisterAsync(request, CancellationToken.None));
-
-        await f.AccountRepo.DidNotReceive().AddAsync(Arg.Any<Account>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task RegisterAsync_EmailExists_ThrowsConflict()
-    {
+        _ = caseName;
         Fixture f = CreateFixture();
         RepositoryPredicateStub.StubFirstOrDefault(
             f.AccountRepo,
-            [CreateAccount(username: "other", email: "nva@example.com")]);
-        RegisterRequest request = CreateRegisterRequest(username: "nva", email: "nva@example.com");
+            [CreateAccount(username: existingUsername, email: existingEmail)]);
+        RegisterRequest request = CreateRegisterRequest(username: requestedUsername, email: requestedEmail);
 
         await ApplicationAssert.ThrowsWithMessageAsync<ConflictException>(
-            ApplicationMessages.AccountEmailAlreadyExists,
+            expectedMessage,
             () => f.Service.RegisterAsync(request, CancellationToken.None));
 
         await f.AccountRepo.DidNotReceive().AddAsync(Arg.Any<Account>(), Arg.Any<CancellationToken>());

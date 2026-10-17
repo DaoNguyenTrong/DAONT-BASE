@@ -19,6 +19,15 @@ export interface LocaleSchema {
     sortDefault: string
     sortAscending: string
     sortDescending: string
+    yes: string
+    no: string
+    user: string
+  }
+  markdownEditor: {
+    split: string
+    editor: string
+    preview: string
+    emptyPreview: string
   }
   errors: {
     requestFailed: string
@@ -52,6 +61,7 @@ export interface LocaleSchema {
     usernameRequired: string
     passwordRequired: string
     invalidCredentials: string
+    accountTemporarilyLocked: string
     loginFailed: string
     logoutConfirmMessage: string
     logoutFailed: string
@@ -109,6 +119,11 @@ export interface LocaleSchema {
     toggleSidebar: string
     collapseSidebar: string
     expandSidebar: string
+    userGuide: string
+  }
+  guideAuth: {
+    opening: string
+    failed: string
   }
   profile: {
     title: string
@@ -123,6 +138,7 @@ export interface LocaleSchema {
     currentPasswordRequired: string
     newPasswordRequired: string
     newPasswordTooShort: string
+    passwordChangeTemporarilyLocked: string
     name: string
     namePlaceholder: string
     nameRequired: string
@@ -172,8 +188,6 @@ export interface LocaleSchema {
     empty: string
     emptyHint: string
     created: string
-    switchedTo: string
-    switchedToPersonal: string
     members: string
     membersTitle: string
     membersEmpty: string
@@ -210,6 +224,10 @@ export interface LocaleSchema {
     permissionOrganizationManage: string
     permissionOrganizationMembersManage: string
     permissionOrganizationRolesManage: string
+    permissionFilesManage: string
+    permissionApiKeysManage: string
+    permissionAuditLogsView: string
+    permissionSettingsManage: string
   }
   notifications: {
     title: string
@@ -248,6 +266,15 @@ const en: LocaleSchema = {
     sortDefault: 'Default',
     sortAscending: 'Ascending',
     sortDescending: 'Descending',
+    yes: 'Yes',
+    no: 'No',
+    user: 'User',
+  },
+  markdownEditor: {
+    split: 'Split',
+    editor: 'Editor',
+    preview: 'Preview',
+    emptyPreview: 'Nothing to preview yet',
   },
   errors: {
     requestFailed: 'Request failed',
@@ -283,6 +310,8 @@ const en: LocaleSchema = {
     usernameRequired: 'Username is required.',
     passwordRequired: 'Password is required.',
     invalidCredentials: 'Your username or password is incorrect.',
+    accountTemporarilyLocked:
+      'This account is temporarily locked after too many failed sign-in attempts. Please try again in a few minutes.',
     loginFailed: 'Unable to sign in right now. Please try again.',
     logoutConfirmMessage: 'Do you want to sign out from this session?',
     logoutFailed:
@@ -299,7 +328,7 @@ const en: LocaleSchema = {
       'Unable to resend the verification email right now. Please try again.',
     nameRequired: 'Name is required.',
     emailInvalid: 'Enter a valid email address.',
-    passwordTooShort: 'Password must be at least 8 characters.',
+    passwordTooShort: 'Password must be at least {min} characters.',
     usernameAlreadyExists: 'This username is already taken.',
     emailAlreadyExists: 'An account with this email already exists.',
     registerFailed: 'Unable to create your account right now. Please try again.',
@@ -348,6 +377,11 @@ const en: LocaleSchema = {
     toggleSidebar: 'Toggle sidebar',
     collapseSidebar: 'Collapse sidebar',
     expandSidebar: 'Expand sidebar',
+    userGuide: 'User guide',
+  },
+  guideAuth: {
+    opening: 'Opening the user guide…',
+    failed: "Couldn't open the user guide. Please try again later.",
   },
   profile: {
     title: 'Profile',
@@ -361,7 +395,9 @@ const en: LocaleSchema = {
     newPasswordPlaceholder: 'Enter a new password',
     currentPasswordRequired: 'Current password is required.',
     newPasswordRequired: 'New password is required.',
-    newPasswordTooShort: 'New password must be at least 8 characters.',
+    newPasswordTooShort: 'New password must be at least {min} characters.',
+    passwordChangeTemporarilyLocked:
+      'Changing the password is temporarily locked after too many wrong current passwords. Please try again in a few minutes.',
     name: 'Name',
     namePlaceholder: 'Enter the full name',
     nameRequired: 'Name is required.',
@@ -411,8 +447,6 @@ const en: LocaleSchema = {
     empty: 'No organizations yet',
     emptyHint: 'Create an organization to get started.',
     created: 'Organization created',
-    switchedTo: 'Switched to {name}',
-    switchedToPersonal: 'Switched to your personal workspace',
     members: 'Members',
     membersTitle: 'Members of {name}',
     membersEmpty: 'No members yet.',
@@ -451,6 +485,10 @@ const en: LocaleSchema = {
     permissionOrganizationManage: 'Manage organization',
     permissionOrganizationMembersManage: 'Manage members',
     permissionOrganizationRolesManage: 'Manage roles',
+    permissionFilesManage: 'Manage files',
+    permissionApiKeysManage: 'Manage API keys',
+    permissionAuditLogsView: 'View audit logs',
+    permissionSettingsManage: 'Manage settings',
   },
   notifications: {
     title: 'Notifications',

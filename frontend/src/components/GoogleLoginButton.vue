@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
-const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+const clientId = getRuntimeConfig().googleClientId
 const ready = ref(false)
 const { error, showResendVerification, handleCredential } = useGoogleAuth()
 

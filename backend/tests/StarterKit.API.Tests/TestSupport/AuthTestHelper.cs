@@ -204,5 +204,10 @@ public static class AuthTestHelper
 
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
             context.SaveChangesAsync(cancellationToken);
+
+        // Only seeds an API key, which saves once — no transaction to manage.
+        public Task ExecuteInTransactionAsync(
+            Func<CancellationToken, Task> operation, CancellationToken cancellationToken = default) =>
+            operation(cancellationToken);
     }
 }

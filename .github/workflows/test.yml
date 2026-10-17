@@ -1,0 +1,154 @@
+# The test gate, shared by ci.yml (every PR, every push to dev) and release.yml (the v* tag), so the
+# gate a PR must pass and the gate a release must pass can't drift apart. .gitlab-ci.yml's `test`
+# job is the GitLab twin, scripts/test-gate.sh the local one (and /git-release's gate) — change all
+# three together.
+name: Test
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # MinVer (backend/Directory.Build.props) versions every build from tags
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/**/*.csproj', 'backend/Directory.Build.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore backend/StarterKit.sln
+
+      - name: Configure appsettings
+        run: cp backend/src/StarterKit.API/appsettings.Example.json backend/src/StarterKit.API/appsettings.json
+
+      # Infrastructure.Tests and API.Tests start Postgres through Testcontainers — the hosted runner's
+      # Docker daemon is enough.
+      - name: Test
+        run: backend/scripts/test.sh
+        env:
+          STARTERKIT_TEST_COVERAGE: "1"
+
+      # Reported, not gated — see .claude/rules/testing.md § Coverage. Migrations and compiler-generated classes are filtered out.
+      - name: Coverage summary
+        if: ${{ !cancelled() && hashFiles('backend/TestResults/coverage/**/coverage.cobertura.xml') != '' }}
+        run: |
+          dotnet tool install dotnet-reportgenerator-globaltool --version 5.5.11 --tool-path "$RUNNER_TEMP/tools"
+          "$RUNNER_TEMP/tools/reportgenerator" \
+            -reports:"backend/TestResults/coverage/**/coverage.cobertura.xml" \
+            -targetdir:"backend/TestResults/coverage-report" \
+            -reporttypes:"MarkdownSummaryGithub;TextSummary" \
+            -classfilters:"-StarterKit.Infrastructure.Migrations.*;-Microsoft.AspNetCore.OpenApi.Generated*;-System.Runtime.CompilerServices*"
+          cat backend/TestResults/coverage-report/Summary.txt
+          cat backend/TestResults/coverage-report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+
+      # A controller/DTO change without a re-export leaves the frontend's generated client stale, and
+      # no test notices. The export needs no database (see commands.md § OpenAPI Spec Export).
+      - name: Check the OpenAPI contract is exported
+        run: |
+          dotnet build backend/src/StarterKit.API/StarterKit.API.csproj --no-restore -m:1 -p:OpenApiGenerateDocumentsOnBuild=true
+          if ! git diff --exit-code -- shared/openapi/openapi.json; then
+            echo "::error file=shared/openapi/openapi.json::openapi.json is out of date — run the export (commands.md § OpenAPI Spec Export) and commit the result."
+            exit 1
+          fi
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # vite.config.ts versions the app with `git describe --tags`; a shallow clone has no tags,
+          # so the version falls back to a commit hash and AppFooter's version test fails.
+          fetch-depth: 0
+
+      # vue-tsc, vite and vitest run on Node (engines: ^20.19.0 || >=22.12.0); pinned rather than
+      # relying on whatever the runner image ships.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+
+      # postinstall runs orval, regenerating src/api/generated/ from the committed openapi.json.
+      - name: Install deps
+        run: bun install --cwd frontend --frozen-lockfile
+
+      # Lefthook formats on commit, but not for a commit made with --no-verify or before `bun install`
+      # at the repo root installed the hooks.
+      - name: Check formatting
+        run: bun run --cwd frontend prettier --check --experimental-cli src/ e2e/
+
+      # src/typings/ (auto-imports.d.ts, components.d.ts) is gitignored and written by the Vite
+      # plugins, not by `bun install` — and complete only after a build, which transforms every
+      # component. vue-tsc needs it.
+      - name: Generate typings
+        run: bun run --cwd frontend build-only
+
+      # vitest doesn't type-check — a type error at a generated-client call site only fails here.
+      - name: Type-check
+        run: bun run --cwd frontend type-check
+
+      - name: Test
+        run: bun run --cwd frontend test:coverage
+
+      # Reported, not gated — see .claude/rules/testing.md § Coverage.
+      - name: Coverage summary
+        if: ${{ !cancelled() && hashFiles('frontend/coverage/coverage-summary.json') != '' }}
+        run: |
+          node >> "$GITHUB_STEP_SUMMARY" <<'JS'
+          const t = require('./frontend/coverage/coverage-summary.json').total
+          const row = (k) => `| ${k} | ${t[k].pct}% | ${t[k].covered} / ${t[k].total} |`
+          console.log(['## Frontend coverage', '', '| Metric | % | Covered |', '|---|---|---|',
+            ...['lines', 'branches', 'functions', 'statements'].map(row)].join('\n'))
+          JS
+
+  # The user guide (frontend/user-guide/site): its own VitePress package and lockfile.
+  guide:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The guide shows the same `git describe --tags` version as the app footer.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+
+      - name: Install deps
+        run: bun install --cwd frontend/user-guide/site --frozen-lockfile
+
+      - name: Check formatting
+        run: bun run --cwd frontend/user-guide/site format:check
+
+      # Unit tests plus the content integrity check (both languages, sidebar, images, permissions).
+      - name: Test
+        run: bun run --cwd frontend/user-guide/site test
+
+      # Fails on dead links in either language.
+      - name: Build
+        run: bun run --cwd frontend/user-guide/site build

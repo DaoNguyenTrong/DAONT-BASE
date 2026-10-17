@@ -1,12 +1,19 @@
 import { http, HttpResponse } from 'msw'
 import { flushPromises } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { reloadToLogin } from '@/lib/session-exit'
 import App from '@/App.vue'
 import { useAuthStore } from '@/stores/auth'
 import { markSessionHint } from '@/lib/auth-session'
 import { server } from './helpers/msw/server'
 import { makeAccount, makeAuthResponse } from './helpers/msw/fixtures'
 import { renderComponent } from './helpers/render'
+import { storeIn } from './helpers/pinia'
+
+vi.mock('@/lib/session-exit', () => ({
+  reloadTo: vi.fn(),
+  reloadToLogin: vi.fn(),
+}))
 
 // No fake timers here — let real macrotasks drain so MSW's fetch responses and
 // the chained recovery watcher (restoreSession → router.replace) settle.
@@ -69,10 +76,33 @@ describe('App', () => {
     wrapper.unmount()
   })
 
-  it('bounces to login (keeping the destination) when the session lapses on a protected route', async () => {
+  it('on an explicit logout, reloads to a plain login — never with a redirect into the old page', async () => {
+    server.use(
+      http.get('*/api/health', () => new Promise<Response>(() => {})),
+      http.post('*/api/auth/logout', () => new HttpResponse(null, { status: 204 })),
+    )
+    vi.mocked(reloadToLogin).mockClear()
+
+    const { wrapper, pinia } = await renderComponent(App, {
+      initialRoute: '/organizations',
+      initialState: { auth: { account: makeAccount() } },
+      global: { stubs },
+    })
+
+    await storeIn(pinia, useAuthStore).logout()
+    await settle()
+
+    // The lapse watcher also fires (isAuthenticated true → false); the logout's exit must come
+    // first so the next account to sign in isn't sent to the previous account's page.
+    expect(vi.mocked(reloadToLogin).mock.calls[0]).toEqual([])
+
+    wrapper.unmount()
+  })
+
+  it('reloads to login (keeping the destination) when the session lapses on a protected route', async () => {
     server.use(http.get('*/api/health', () => new Promise<Response>(() => {})))
 
-    const { wrapper, router } = await renderComponent(App, {
+    const { wrapper, router, pinia } = await renderComponent(App, {
       initialRoute: '/organizations',
       initialState: { auth: { account: makeAccount() } },
       global: { stubs },
@@ -81,11 +111,11 @@ describe('App', () => {
     expect(router.currentRoute.value.name).toBe('organizations')
 
     // Mirror the client interceptor clearing auth after a failed silent refresh.
-    useAuthStore().clearAuth()
+    storeIn(pinia, useAuthStore).clearAuth()
     await settle()
 
-    expect(router.currentRoute.value.name).toBe('login')
-    expect(router.currentRoute.value.query.redirect).toBe('/organizations')
+    // A full reload, not router.replace: no store may outlive the account that just lapsed.
+    expect(reloadToLogin).toHaveBeenCalledWith({ redirect: '/organizations' })
 
     wrapper.unmount()
   })

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using StarterKit.API.Common;
@@ -20,7 +21,22 @@ public class ExceptionHandlingMiddlewareTests
     private sealed record Fixture(
         ExceptionHandlingMiddleware Middleware, IStringLocalizer<Messages> Localizer, DefaultHttpContext Context);
 
-    private static Fixture CreateFixture(RequestDelegate next)
+    private sealed class OtherAppException(string message) : AppException(message);
+
+    private sealed class RecordingLogger : ILogger<ExceptionHandlingMiddleware>
+    {
+        public List<LogLevel> Levels { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
+            Levels.Add(logLevel);
+    }
+
+    private static Fixture CreateFixture(RequestDelegate next, ILogger<ExceptionHandlingMiddleware>? logger = null)
     {
         IStringLocalizer<Messages> localizer = Substitute.For<IStringLocalizer<Messages>>();
 
@@ -32,7 +48,8 @@ public class ExceptionHandlingMiddlewareTests
                 callInfo.ArgAt<string>(0),
                 $"localized:{callInfo.ArgAt<string>(0)}:{string.Join(",", callInfo.ArgAt<object[]>(1))}"));
 
-        ExceptionHandlingMiddleware middleware = new(next, NullLogger<ExceptionHandlingMiddleware>.Instance, localizer);
+        ExceptionHandlingMiddleware middleware = new(
+            next, logger ?? NullLogger<ExceptionHandlingMiddleware>.Instance, localizer);
 
         DefaultHttpContext context = new();
         context.Response.Body = new MemoryStream();
@@ -97,40 +114,49 @@ public class ExceptionHandlingMiddlewareTests
         _ = f.Localizer.Received(1)["EntityNotFound", Arg.Is<object[]>(a => a != null && a.Length == 2 && Equals(a[0], "Role") && Equals(a[1], missingId))];
     }
 
-    [Fact]
-    public async Task InvokeAsync_ConflictException_Returns409()
+    [Theory]
+    [InlineData("InvokeAsync_ConflictException_Returns409", typeof(ConflictException), StatusCodes.Status409Conflict, "Conflict")]
+    [InlineData("InvokeAsync_ForbiddenException_Returns403", typeof(ForbiddenException), StatusCodes.Status403Forbidden, "Forbidden")]
+    [InlineData("InvokeAsync_UnauthorizedException_Returns401", typeof(UnauthorizedException), StatusCodes.Status401Unauthorized, "Unauthorized")]
+    public async Task InvokeAsync_AppException_MapsToItsStatus(string caseName, Type exceptionType, int status, string title)
     {
-        Fixture f = CreateFixture(_ => throw new ConflictException("Conflict.Key"));
+        _ = caseName;
+        string key = $"{title}.Key";
+        Fixture f = CreateFixture(_ => throw (Exception)Activator.CreateInstance(exceptionType, key)!);
 
         CodedProblemDetails body = await InvokeAndReadBodyAsync(f);
 
-        Assert.Equal(StatusCodes.Status409Conflict, f.Context.Response.StatusCode);
-        Assert.Equal("Conflict", body.Title);
-        Assert.Equal("Conflict.Key", body.Code);
+        Assert.Equal(status, f.Context.Response.StatusCode);
+        Assert.Equal(title, body.Title);
+        Assert.Equal(key, body.Code);
+    }
+
+    // A 503 is a dependency being down — worth a warning. A 500 from an AppException means a subtype nobody
+    // mapped, our own bug, so it logs at Error like every other 500 and trips the same alerts.
+    [Theory]
+    [InlineData("InvokeAsync_UnmappedAppException_LogsError", typeof(OtherAppException), LogLevel.Error)]
+    [InlineData("InvokeAsync_ServiceUnavailableException_LogsWarning", typeof(ServiceUnavailableException), LogLevel.Warning)]
+    public async Task InvokeAsync_ServerSideAppException_LogsAtTheLevelOfItsStatus(
+        string caseName, Type exceptionType, LogLevel expected)
+    {
+        _ = caseName;
+        RecordingLogger logger = new();
+        Fixture f = CreateFixture(_ => throw (AppException)Activator.CreateInstance(exceptionType, "Message")!, logger);
+
+        await f.Middleware.InvokeAsync(f.Context);
+
+        Assert.Equal([expected], logger.Levels);
     }
 
     [Fact]
-    public async Task InvokeAsync_ForbiddenException_Returns403()
+    public async Task InvokeAsync_ClientSideAppException_LogsNothing()
     {
-        Fixture f = CreateFixture(_ => throw new ForbiddenException("Forbidden.Key"));
+        RecordingLogger logger = new();
+        Fixture f = CreateFixture(_ => throw new ConflictException("Conflict"), logger);
 
-        CodedProblemDetails body = await InvokeAndReadBodyAsync(f);
+        await f.Middleware.InvokeAsync(f.Context);
 
-        Assert.Equal(StatusCodes.Status403Forbidden, f.Context.Response.StatusCode);
-        Assert.Equal("Forbidden", body.Title);
-        Assert.Equal("Forbidden.Key", body.Code);
-    }
-
-    [Fact]
-    public async Task InvokeAsync_UnauthorizedException_Returns401()
-    {
-        Fixture f = CreateFixture(_ => throw new UnauthorizedException("Unauthorized.Key"));
-
-        CodedProblemDetails body = await InvokeAndReadBodyAsync(f);
-
-        Assert.Equal(StatusCodes.Status401Unauthorized, f.Context.Response.StatusCode);
-        Assert.Equal("Unauthorized", body.Title);
-        Assert.Equal("Unauthorized.Key", body.Code);
+        Assert.Empty(logger.Levels);
     }
 
     [Fact]
@@ -189,5 +215,32 @@ public class ExceptionHandlingMiddlewareTests
         await f.Middleware.InvokeAsync(f.Context);
 
         Assert.StartsWith("application/problem+json", f.Context.Response.ContentType);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ClientAbortedRequest_Returns499WithoutBody()
+    {
+        using CancellationTokenSource aborted = new();
+        Fixture f = CreateFixture(_ => throw new OperationCanceledException(aborted.Token));
+        aborted.Cancel();
+        f.Context.RequestAborted = aborted.Token;
+
+        await f.Middleware.InvokeAsync(f.Context);
+
+        // F5 / changing a filter mid-request is not a server error: no 500, no Error-level log.
+        Assert.Equal(StatusCodes.Status499ClientClosedRequest, f.Context.Response.StatusCode);
+        Assert.Equal(0, f.Context.Response.Body.Length);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_CancellationNotCausedByTheClient_StillReturns500()
+    {
+        // e.g. an internal timeout's CancellationTokenSource — RequestAborted is NOT cancelled.
+        Fixture f = CreateFixture(_ => throw new TaskCanceledException("internal timeout"));
+
+        CodedProblemDetails body = await InvokeAndReadBodyAsync(f);
+
+        Assert.Equal(StatusCodes.Status500InternalServerError, f.Context.Response.StatusCode);
+        Assert.Equal(StatusCodes.Status500InternalServerError, body.Status);
     }
 }

@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { Home, Menu2 } from '@vicons/tabler'
+import { Help, Home, Menu2 } from '@vicons/tabler'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const sidebar = useSidebarStore()
+const localeStore = useLocaleStore()
+
+// Served by nginx next to the app (frontend/user-guide); Vietnamese is the guide's root locale.
+const userGuideHref = computed(() =>
+  localeStore.currentLocale === 'en' ? '/guide/en/' : '/guide/',
+)
 
 function handleToggle() {
   if (window.innerWidth >= 1024) {
@@ -43,7 +49,7 @@ function navigateTo(routeName: string, event: MouseEvent) {
     <n-button
       :aria-label="t('nav.toggleSidebar')"
       text
-      class="h-9 w-9 lg:h-8 lg:w-8"
+      class="h-9 w-9 shrink-0 max-lg:h-11! max-lg:w-11! lg:h-8 lg:w-8"
       @click="handleToggle"
     >
       <template #icon
@@ -51,7 +57,7 @@ function navigateTo(routeName: string, event: MouseEvent) {
       ></template>
     </n-button>
 
-    <n-breadcrumb class="hidden! lg:flex! breadcrumb-align-fix">
+    <n-breadcrumb class="hidden! min-w-0 lg:flex! breadcrumb-align-fix">
       <n-breadcrumb-item
         v-for="item in breadcrumbItems"
         :key="item.routeName"
@@ -59,20 +65,77 @@ function navigateTo(routeName: string, event: MouseEvent) {
         @click="navigateTo(item.routeName, $event)"
       >
         <n-icon v-if="item.home"><Home /></n-icon>
-        <template v-else>{{ item.label }}</template>
+        <!-- A long label is cut with "…" so the trail stays on one line; `title` keeps the full text. -->
+        <span v-else data-testid="app-header-crumb-text" :title="item.label">{{ item.label }}</span>
       </n-breadcrumb-item>
     </n-breadcrumb>
 
     <div class="flex-1" />
 
-    <NotificationBell />
-    <AppControls />
+    <n-tooltip trigger="hover" placement="bottom">
+      <template #trigger>
+        <n-button
+          tag="a"
+          :href="userGuideHref"
+          target="_blank"
+          rel="noopener"
+          :aria-label="t('nav.userGuide')"
+          data-testid="app-header-user-guide"
+          text
+          class="h-9 w-9 shrink-0 max-lg:h-11! max-lg:w-11! lg:h-8 lg:w-8"
+        >
+          <template #icon
+            ><n-icon><Help /></n-icon
+          ></template>
+        </n-button>
+      </template>
+      {{ t('nav.userGuide') }}
+    </n-tooltip>
+
+    <!-- On phones the bell goes rightmost, so its panel (anchored to the bell's right edge) has the whole
+         viewport width to open into instead of running off the left edge. -->
+    <div class="flex max-sm:order-2">
+      <NotificationBell />
+    </div>
+    <AppControls class="max-sm:order-1" />
   </header>
 </template>
 
 <style scoped>
+/*
+ * The trail stays on one line instead of pushing the header out of shape when a crumb carries a long name
+ * (an entity title in a fork). Every crumb has a width cap, even with room to spare, so one long name can't
+ * take the whole row; narrower still, the last crumb (the current page) gives way first. Separators don't shrink.
+ */
 .breadcrumb-align-fix :deep(> ul) {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.breadcrumb-align-fix :deep(.n-breadcrumb-item) {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 12rem;
+  flex-shrink: 1;
+}
+
+.breadcrumb-align-fix :deep(.n-breadcrumb-item:last-child) {
+  max-width: 18rem;
+  flex-shrink: 1000;
+}
+
+.breadcrumb-align-fix :deep(.n-breadcrumb-item__link) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumb-align-fix :deep(.n-breadcrumb-item__separator) {
+  flex-shrink: 0;
 }
 </style>

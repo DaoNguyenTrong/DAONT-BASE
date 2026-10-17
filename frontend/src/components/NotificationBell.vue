@@ -71,16 +71,23 @@ function reportError(error: unknown) {
 </script>
 
 <template>
+  <!-- Anchored to the bell's right edge, which AppHeader keeps rightmost on phones: 2rem narrower than
+       the viewport leaves a margin on both sides; 360px from ~392px up. -->
   <n-popover
     v-model:show="showPopover"
     trigger="click"
     placement="bottom-end"
-    style="padding: 0; width: 360px"
+    style="padding: 0; width: min(360px, calc(100vw - 2rem))"
     @update:show="handleShowChange"
   >
     <template #trigger>
       <n-badge :value="unreadCount" :max="99" :show="unreadCount > 0">
-        <n-button :aria-label="t('notifications.title')" circle secondary>
+        <n-button
+          :aria-label="t('notifications.title')"
+          circle
+          secondary
+          class="pointer-coarse:size-10!"
+        >
           <template #icon
             ><n-icon><Bell /></n-icon
           ></template>
@@ -88,12 +95,18 @@ function reportError(error: unknown) {
       </n-badge>
     </template>
 
-    <div class="flex max-h-96 w-full flex-col">
+    <div class="flex max-h-[min(24rem,70dvh)] w-full flex-col">
       <div
         class="flex items-center justify-between border-b border-surface-200 px-3 py-2 dark:border-surface-800"
       >
         <span class="font-medium">{{ t('notifications.title') }}</span>
-        <n-button text size="tiny" :disabled="unreadCount === 0" @click="handleMarkAllAsRead">
+        <n-button
+          text
+          size="tiny"
+          class="pointer-coarse:min-h-10"
+          :disabled="unreadCount === 0"
+          @click="handleMarkAllAsRead"
+        >
           <template #icon
             ><n-icon><Checks /></n-icon
           ></template>
@@ -122,6 +135,7 @@ function reportError(error: unknown) {
                 v-if="!item.isRead"
                 text
                 size="tiny"
+                class="shrink-0 pointer-coarse:min-h-10 pointer-coarse:min-w-10"
                 :aria-label="t('notifications.markAsRead')"
                 @click="handleMarkAsRead(item)"
               >

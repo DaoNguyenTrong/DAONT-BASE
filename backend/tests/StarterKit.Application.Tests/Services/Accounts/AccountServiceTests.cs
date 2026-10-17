@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using StarterKit.Application.Common.Interfaces;
+using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Resources;
 using StarterKit.Application.Services.Accounts;
 using StarterKit.Application.Tests.TestSupport;
@@ -16,7 +18,8 @@ public class AccountServiceTests
         IRepository<Account, Guid> AccountRepo,
         IUnitOfWork UnitOfWork,
         ICurrentUserService CurrentUserService,
-        IPasswordHasher PasswordHasher);
+        IPasswordHasher PasswordHasher,
+        IPasswordAttemptStore PasswordAttempts);
 
     private static Fixture CreateFixture()
     {
@@ -27,9 +30,16 @@ public class AccountServiceTests
         ICurrentUserService currentUserService = Substitute.For<ICurrentUserService>();
         IPasswordHasher passwordHasher = Substitute.For<IPasswordHasher>();
 
-        AccountService service = new(unitOfWork, currentUserService, passwordHasher);
+        // First attempt of a fresh window unless a test says otherwise.
+        IPasswordAttemptStore passwordAttempts = Substitute.For<IPasswordAttemptStore>();
+        passwordAttempts.ReserveAttemptAsync(
+                Arg.Any<PasswordAttemptPurpose>(), Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(1);
 
-        return new Fixture(service, accountRepo, unitOfWork, currentUserService, passwordHasher);
+        AccountService service = new(
+            unitOfWork, currentUserService, passwordHasher, passwordAttempts, Options.Create(new LoginLockoutSettings()));
+
+        return new Fixture(service, accountRepo, unitOfWork, currentUserService, passwordHasher, passwordAttempts);
     }
 
     private static Account CreateAccount(
@@ -165,6 +175,7 @@ public class AccountServiceTests
             () => f.Service.ChangePasswordAsync(request, CancellationToken.None));
 
         f.PasswordHasher.DidNotReceive().Verify(Arg.Any<string>(), Arg.Any<string>());
+        await f.PasswordAttempts.DidNotReceiveWithAnyArgs().ReserveAttemptAsync(default, default, default, default, default);
     }
 
     [Fact]
@@ -198,5 +209,103 @@ public class AccountServiceTests
         Assert.Equal("new-hashed-password", account.PasswordHash);
         f.AccountRepo.Received(1).Update(account);
         await f.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    // Reported before the check, like sign-in: refusing only a correct password would confirm the guess.
+    [Fact]
+    public async Task ChangePasswordAsync_Locked_RefusesWithTheLockMessage_WithoutCheckingThePassword()
+    {
+        Fixture f = CreateFixture();
+        Account account = ArrangeAccount(f);
+        f.PasswordAttempts.ReserveAttemptAsync(
+                PasswordAttemptPurpose.PasswordChange, account.Id, Arg.Any<DateTime>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns((int?)null);
+
+        await ApplicationAssert.ThrowsWithMessageAsync<UnauthorizedException>(
+            ApplicationMessages.PasswordChangeTemporarilyLocked,
+            () => f.Service.ChangePasswordAsync(new ChangePasswordRequest("current123", "newpassword123"), CancellationToken.None));
+
+        f.PasswordHasher.DidNotReceive().Verify(Arg.Any<string>(), Arg.Any<string>());
+        await f.UnitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_AttemptBeyondTheLimit_IsRefusedWithoutCheckingThePassword()
+    {
+        Fixture f = CreateFixture();
+        Account account = ArrangeAccount(f);
+        f.PasswordAttempts.ReserveAttemptAsync(
+                PasswordAttemptPurpose.PasswordChange, account.Id, Arg.Any<DateTime>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(6);
+
+        await ApplicationAssert.ThrowsWithMessageAsync<UnauthorizedException>(
+            ApplicationMessages.PasswordChangeTemporarilyLocked,
+            () => f.Service.ChangePasswordAsync(new ChangePasswordRequest("current123", "newpassword123"), CancellationToken.None));
+
+        f.PasswordHasher.DidNotReceive().Verify(Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    // Its own counter: a stolen session guessing here must not lock the owner out of signing in.
+    [Fact]
+    public async Task ChangePasswordAsync_WrongPasswordOnTheLastAllowedAttempt_LocksPasswordChangeOnly()
+    {
+        Fixture f = CreateFixture();
+        Account account = ArrangeAccount(f);
+        f.PasswordAttempts.ReserveAttemptAsync(
+                PasswordAttemptPurpose.PasswordChange, account.Id, Arg.Any<DateTime>(), TimeSpan.FromMinutes(15), Arg.Any<CancellationToken>())
+            .Returns(5);
+        f.PasswordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
+        DateTime before = DateTime.UtcNow;
+        using CancellationTokenSource aborted = new();
+        await aborted.CancelAsync();
+
+        await ApplicationAssert.ThrowsWithMessageAsync<UnauthorizedException>(
+            ApplicationMessages.InvalidCurrentPassword,
+            () => f.Service.ChangePasswordAsync(new ChangePasswordRequest("wrong-password", "newpassword123"), aborted.Token));
+
+        await f.PasswordAttempts.Received(1).LockAsync(
+            PasswordAttemptPurpose.PasswordChange,
+            account.Id,
+            Arg.Is<DateTime>(until => until >= before.AddMinutes(15) && until <= DateTime.UtcNow.AddMinutes(15)),
+            Arg.Is<CancellationToken>(token => !token.CanBeCanceled));
+        await f.PasswordAttempts.DidNotReceive().ReserveAttemptAsync(
+            PasswordAttemptPurpose.Login, Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_WrongPasswordBelowTheLimit_DoesNotLock()
+    {
+        Fixture f = CreateFixture();
+        ArrangeAccount(f);
+        f.PasswordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(
+            () => f.Service.ChangePasswordAsync(new ChangePasswordRequest("wrong-password", "newpassword123"), CancellationToken.None));
+
+        await f.PasswordAttempts.DidNotReceiveWithAnyArgs().LockAsync(default, default, default, default);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_CorrectPassword_ClearsThePasswordChangeCounter()
+    {
+        Fixture f = CreateFixture();
+        Account account = ArrangeAccount(f);
+        f.PasswordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+        f.PasswordHasher.Hash(Arg.Any<string>()).Returns("new-hashed-password");
+
+        await f.Service.ChangePasswordAsync(new ChangePasswordRequest("current123", "newpassword123"), CancellationToken.None);
+
+        await f.PasswordAttempts.Received(1).ClearAsync(
+            PasswordAttemptPurpose.PasswordChange, account.Id, Arg.Any<CancellationToken>());
+        await f.PasswordAttempts.DidNotReceive().ClearAsync(
+            PasswordAttemptPurpose.Login, Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    private static Account ArrangeAccount(Fixture f)
+    {
+        Account account = CreateAccount();
+        f.CurrentUserService.UserId.Returns(account.Id.ToString());
+        f.AccountRepo.GetByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+        return account;
     }
 }

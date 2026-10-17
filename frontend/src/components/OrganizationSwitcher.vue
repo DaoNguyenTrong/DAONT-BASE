@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Building, Check, ChevronDown, Loader, Settings } from '@vicons/tabler'
+import { BELOW_LG_QUERY } from '@/lib/responsive'
 
 const props = defineProps<{
   minimal?: boolean
@@ -10,23 +11,27 @@ const router = useRouter()
 const auth = useAuthStore()
 const organizationsStore = useOrganizationsStore()
 const sidebar = useSidebarStore()
+const { switchOrganization } = useOrganizationSwitch()
 
 const showMenu = ref(false)
+
+// Below `lg` the switcher only sits at the foot of the 280px mobile drawer, where a 240px menu opening to
+// the right runs off the screen — open it upward there; beside the desktop sidebar keep `right-start`.
+const belowLg = useMediaQuery(BELOW_LG_QUERY)
+const menuPlacement = computed(() => (belowLg.value ? 'top-start' : 'right-end'))
 const switchingTo = ref<string | null>(null)
 
 const currentLabel = computed(() => auth.organizationName ?? t('organizations.personalWorkspace'))
 
-async function switchTo(organizationId: string | null, name: string | null) {
+async function switchTo(organizationId: string | null) {
   if (switchingTo.value !== null || organizationId === auth.organizationId) {
     showMenu.value = false
     return
   }
   switchingTo.value = organizationId ?? 'personal'
   try {
-    await auth.switchOrganization({ organizationId })
-    showSuccessMessage(
-      name ? t('organizations.switchedTo', { name }) : t('organizations.switchedToPersonal'),
-    )
+    // Ends in a full page reload on success — no success toast, it wouldn't survive the reload.
+    await switchOrganization(organizationId)
   } catch (error) {
     if (error instanceof ApiError) {
       showErrorMessage(error.problem.title, error.problem.detail ?? t('errors.requestFailed'))
@@ -53,7 +58,7 @@ watch(showMenu, (open) => {
 </script>
 
 <template>
-  <n-popover v-model:show="showMenu" trigger="click" placement="right-start" :width="240">
+  <n-popover v-model:show="showMenu" trigger="click" :placement="menuPlacement" :width="240">
     <template #trigger>
       <!--
         The trigger slot needs a single, unconditional *element* root. Previously
@@ -63,7 +68,7 @@ watch(showMenu, (open) => {
         detached to the sidebar's top-left corner. Wrapping both modes in one
         <div> gives VTarget a real box to measure and anchor to.
       -->
-      <div :class="props.minimal ? 'inline-flex' : 'block'">
+      <div :class="props.minimal ? 'inline-flex' : 'block'" data-testid="organization-switcher">
         <n-tooltip v-if="props.minimal" trigger="hover" placement="right">
           <template #trigger>
             <button
@@ -99,7 +104,7 @@ watch(showMenu, (open) => {
       <button
         type="button"
         class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-100 dark:hover:bg-surface-800"
-        @click="switchTo(null, null)"
+        @click="switchTo(null)"
       >
         <n-icon class="shrink-0"
           ><Loader v-if="switchingTo === 'personal'" class="animate-spin" /><Check
@@ -113,7 +118,7 @@ watch(showMenu, (open) => {
         :key="organization.id"
         type="button"
         class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-100 dark:hover:bg-surface-800"
-        @click="switchTo(organization.id, organization.name)"
+        @click="switchTo(organization.id)"
       >
         <n-icon class="shrink-0">
           <Loader v-if="switchingTo === organization.id" class="animate-spin" />
@@ -127,6 +132,7 @@ watch(showMenu, (open) => {
       <button
         type="button"
         class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-100 dark:hover:bg-surface-800"
+        data-testid="organization-switcher-manage"
         @click="manageOrganizations"
       >
         <n-icon class="shrink-0"><Settings /></n-icon>
