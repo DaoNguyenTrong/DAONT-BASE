@@ -29,6 +29,27 @@ export interface LocaleSchema {
       vietnamese: string
       english: string
     }
+    settings: {
+      title: string
+      colorMode: string
+      light: string
+      dark: string
+      system: string
+      menuMode: string
+      menuModeWideOnly: string
+      menuTheme: string
+    }
+    menuModes: {
+      static: string
+      slim: string
+      slimPlus: string
+      drawer: string
+      horizontal: string
+    }
+    menuThemes: {
+      brand: string
+      transparent: string
+    }
   }
   markdownEditor: {
     split: string
@@ -282,6 +303,27 @@ const en: LocaleSchema = {
       open: 'Account',
       vietnamese: 'Tiếng Việt',
       english: 'English',
+    },
+    settings: {
+      title: 'Appearance settings',
+      colorMode: 'Color mode',
+      light: 'Light',
+      dark: 'Dark',
+      system: 'System',
+      menuMode: 'Menu type',
+      menuModeWideOnly: 'Applies on wide screens',
+      menuTheme: 'Menu color',
+    },
+    menuModes: {
+      static: 'Static',
+      slim: 'Slim',
+      slimPlus: 'Slim+',
+      drawer: 'Drawer',
+      horizontal: 'Horizontal',
+    },
+    menuThemes: {
+      brand: 'Brand',
+      transparent: 'Transparent',
     },
   },
   markdownEditor: {

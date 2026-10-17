@@ -31,6 +31,27 @@ const vi: LocaleSchema = {
       vietnamese: 'Tiếng Việt',
       english: 'English',
     },
+    settings: {
+      title: 'Cài đặt giao diện',
+      colorMode: 'Chế độ màu',
+      light: 'Sáng',
+      dark: 'Tối',
+      system: 'Theo hệ thống',
+      menuMode: 'Kiểu menu',
+      menuModeWideOnly: 'Áp dụng trên màn hình rộng',
+      menuTheme: 'Màu menu',
+    },
+    menuModes: {
+      static: 'Static',
+      slim: 'Slim',
+      slimPlus: 'Slim+',
+      drawer: 'Drawer',
+      horizontal: 'Horizontal',
+    },
+    menuThemes: {
+      brand: 'Thương hiệu',
+      transparent: 'Trong suốt',
+    },
   },
   markdownEditor: {
     split: 'Chia đôi',
