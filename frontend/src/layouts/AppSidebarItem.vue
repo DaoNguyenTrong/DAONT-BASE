@@ -1,116 +1,148 @@
 <script setup lang="ts">
 import { h } from 'vue'
-import { NIcon, type DropdownOption } from 'naive-ui'
+import { NIcon, type DropdownGroupOption, type DropdownOption } from 'naive-ui'
 import { ChevronDown, ChevronRight } from '@vicons/tabler'
-import type { SidebarMenuItem } from './sidebar-menu'
+import { containsRoute, type SidebarMenuItem } from './sidebar-menu'
+import { sidebarThemeClasses } from './sidebar-theme'
 
-const props = defineProps<{
-  item: SidebarMenuItem
-  depth: number
-  mobile?: boolean
-  minimal?: boolean
-}>()
+// 'panel' is the full-width list (static sidebar, mobile drawer): children open as an accordion.
+// 'slim' / 'slim-plus' are rail entries: children open in a flyout to the right.
+const props = withDefaults(
+  defineProps<{
+    item: SidebarMenuItem
+    depth: number
+    variant?: 'panel' | 'slim' | 'slim-plus'
+    mobile?: boolean
+  }>(),
+  { variant: 'panel', mobile: false },
+)
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const sidebar = useSidebarStore()
+const layout = useLayoutStore()
+const { isDark } = useThemePreference()
 
-const expandedKeys = ref<Set<string>>(new Set())
+const theme = computed(() => sidebarThemeClasses(layout.menuTheme, isDark.value))
+const label = computed(() => t(props.item.labelKey))
+const hasChildren = computed(() => Boolean(props.item.items?.length))
+const currentRouteName = computed(() => (typeof route.name === 'string' ? route.name : undefined))
+const isCurrent = computed(
+  () => Boolean(props.item.routeName) && props.item.routeName === currentRouteName.value,
+)
+const holdsCurrent = computed(() => containsRoute(props.item, currentRouteName.value))
 
-function toggleExpand(key: string) {
-  if (expandedKeys.value.has(key)) {
-    expandedKeys.value.delete(key)
-  } else {
-    expandedKeys.value.add(key)
-  }
-}
-
-function isActive(item: SidebarMenuItem): boolean {
-  if (item.routeName) {
-    return route.name === item.routeName
-  }
-  return false
-}
+// Accordion: open on arrival when it holds the current page, and again whenever navigation moves into it.
+const expanded = ref(holdsCurrent.value)
+watch(holdsCurrent, (holds) => {
+  if (holds) expanded.value = true
+})
 
 const minHeight = computed(() => (props.mobile ? 'min-h-11' : 'min-h-10'))
 const iconSize = 'text-base!'
+const railClass = computed(() =>
+  props.variant === 'slim-plus'
+    ? 'mb-1 flex w-full flex-col items-center gap-1 rounded-lg px-1 py-2 transition-colors'
+    : 'mb-1 flex min-h-10 w-full items-center justify-center rounded-lg py-2 transition-colors',
+)
 
-// Minimal mode popup
 function toDropdownOptions(items: SidebarMenuItem[]): DropdownOption[] {
-  return items.map((item) => ({
-    label: t(item.labelKey),
-    key: item.routeName ?? item.labelKey,
-    icon: () => h(NIcon, null, { default: () => h(item.icon) }),
-    children: item.items ? toDropdownOptions(item.items) : undefined,
+  return items.map((child) => ({
+    label: t(child.labelKey),
+    key: child.routeName ?? child.labelKey,
+    icon: () => h(NIcon, null, { default: () => h(child.icon) }),
+    children: child.items?.length ? toDropdownOptions(child.items) : undefined,
   }))
 }
 
-const popupOptions = computed(() => (props.item.items ? toDropdownOptions(props.item.items) : []))
+// The flyout leads with the entry's own name as a header row.
+const flyoutOptions = computed<DropdownGroupOption[]>(() => [
+  {
+    type: 'group',
+    key: `group:${props.item.labelKey}`,
+    label: label.value,
+    children: toDropdownOptions(props.item.items ?? []),
+  },
+])
 
-function handlePopupSelect(key: string) {
+function handleFlyoutSelect(key: string) {
   router.push({ name: key })
 }
 </script>
 
 <template>
-  <!-- Minimal mode: icon only with tooltip -->
-  <template v-if="minimal">
-    <n-tooltip v-if="!item.items" trigger="hover" placement="right">
+  <!-- Rail: one entry per top-level item or group -->
+  <template v-if="variant !== 'panel'">
+    <n-dropdown
+      v-if="hasChildren"
+      trigger="click"
+      placement="right-start"
+      :options="flyoutOptions"
+      :value="currentRouteName"
+      @select="handleFlyoutSelect"
+    >
+      <button
+        type="button"
+        aria-haspopup="menu"
+        :aria-label="label"
+        :title="variant === 'slim-plus' ? label : undefined"
+        class="cursor-pointer"
+        :class="[railClass, holdsCurrent ? theme.itemActive : theme.itemIdle]"
+      >
+        <n-icon :component="item.icon" :class="iconSize" />
+        <span
+          v-if="variant === 'slim-plus'"
+          class="line-clamp-2 w-full text-center text-[0.6875rem] leading-tight break-words"
+          >{{ label }}</span
+        >
+      </button>
+    </n-dropdown>
+
+    <RouterLink
+      v-else-if="variant === 'slim-plus'"
+      :to="{ name: item.routeName }"
+      :title="label"
+      :class="[railClass, isCurrent ? theme.itemActive : theme.itemIdle]"
+    >
+      <n-icon :component="item.icon" :class="iconSize" />
+      <span class="line-clamp-2 w-full text-center text-[0.6875rem] leading-tight break-words">{{
+        label
+      }}</span>
+    </RouterLink>
+
+    <n-tooltip v-else trigger="hover" placement="right">
       <template #trigger>
         <RouterLink
           :to="{ name: item.routeName }"
-          class="mb-1 flex min-h-10 w-full items-center justify-center rounded-lg py-2 transition-colors"
-          :class="
-            isActive(item)
-              ? 'bg-white/15 text-white dark:bg-primary-400/10 dark:text-primary-200'
-              : 'text-white/70 hover:bg-white/10 hover:text-white dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100'
-          "
-          @click="sidebar.closeMobile()"
+          :aria-label="label"
+          :class="[railClass, isCurrent ? theme.itemActive : theme.itemIdle]"
         >
           <n-icon :component="item.icon" :class="iconSize" />
         </RouterLink>
       </template>
-      {{ t(item.labelKey) }}
+      {{ label }}
     </n-tooltip>
-    <n-dropdown
-      v-else
-      trigger="click"
-      placement="right-start"
-      :options="popupOptions"
-      @select="handlePopupSelect"
-    >
-      <button
-        type="button"
-        :aria-label="t(item.labelKey)"
-        class="mb-1 flex min-h-10 w-full cursor-pointer items-center justify-center rounded-lg py-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100"
-      >
-        <n-icon :component="item.icon" :class="iconSize" />
-      </button>
-    </n-dropdown>
   </template>
 
-  <!-- Full / Mobile mode: item with children -->
-  <template v-else-if="item.items?.length">
+  <!-- Panel: item with children -->
+  <template v-else-if="hasChildren">
     <button
       type="button"
-      class="mb-0.5 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-white/70 transition-colors hover:bg-white/10 hover:text-white dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100"
-      :class="minHeight"
-      @click="toggleExpand(item.labelKey)"
+      :aria-expanded="expanded"
+      class="mb-0.5 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors"
+      :class="[minHeight, holdsCurrent ? [theme.text, 'font-semibold'] : theme.itemIdle]"
+      @click="expanded = !expanded"
     >
       <n-icon :component="item.icon" :class="iconSize" />
-      <span class="flex-1 truncate text-sm">{{ t(item.labelKey) }}</span>
-      <n-icon class="text-xs text-white/50 transition-transform duration-200">
-        <component :is="expandedKeys.has(item.labelKey) ? ChevronDown : ChevronRight" />
+      <span class="flex-1 truncate text-sm">{{ label }}</span>
+      <n-icon class="text-xs opacity-60">
+        <component :is="expanded ? ChevronDown : ChevronRight" />
       </n-icon>
     </button>
-    <div
-      v-if="expandedKeys.has(item.labelKey)"
-      class="ml-2 border-l border-white/15 pl-2 dark:border-surface-600"
-    >
+    <div v-if="expanded" class="ml-2 border-l pl-2" :class="theme.divider">
       <AppSidebarItem
         v-for="child in item.items"
-        :key="child.labelKey"
+        :key="child.routeName ?? child.labelKey"
         :item="child"
         :depth="depth + 1"
         :mobile="mobile"
@@ -118,21 +150,15 @@ function handlePopupSelect(key: string) {
     </div>
   </template>
 
-  <!-- Full / Mobile mode: leaf item -->
-  <template v-else>
-    <RouterLink
-      :to="{ name: item.routeName }"
-      class="mb-0.5 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors"
-      :class="[
-        minHeight,
-        isActive(item)
-          ? 'bg-white/15 font-medium text-white dark:bg-primary-400/10 dark:text-primary-200'
-          : 'text-white/70 hover:bg-white/10 hover:text-white dark:text-surface-300 dark:hover:bg-surface-700 dark:hover:text-surface-100',
-      ]"
-      @click="sidebar.closeMobile()"
-    >
-      <n-icon :component="item.icon" :class="iconSize" />
-      <span class="truncate text-sm">{{ t(item.labelKey) }}</span>
-    </RouterLink>
-  </template>
+  <!-- Panel: leaf item -->
+  <RouterLink
+    v-else
+    :to="{ name: item.routeName }"
+    class="mb-0.5 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors"
+    :class="[minHeight, isCurrent ? theme.itemActive : theme.itemIdle]"
+    @click="layout.closeMobile()"
+  >
+    <n-icon :component="item.icon" :class="iconSize" />
+    <span class="truncate text-sm">{{ label }}</span>
+  </RouterLink>
 </template>

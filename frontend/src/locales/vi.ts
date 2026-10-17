@@ -165,8 +165,6 @@ const vi: LocaleSchema = {
     organizations: 'Tổ chức',
     profile: 'Hồ sơ cá nhân',
     toggleSidebar: 'Đóng/mở thanh bên',
-    collapseSidebar: 'Thu gọn thanh bên',
-    expandSidebar: 'Mở rộng thanh bên',
     userGuide: 'Hướng dẫn sử dụng',
   },
   guideAuth: {

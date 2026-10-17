@@ -2,6 +2,8 @@
 import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
+import AppearanceSettings from './AppearanceSettings.vue'
+import CommandPalette from './CommandPalette.vue'
 
 const notificationsStore = useNotificationsStore()
 const route = useRoute()
@@ -32,7 +34,10 @@ onUnmounted(() => {
     and exposes a blank strip. `h-dvh`, not `h-screen`: on mobile `100vh` includes the area under the
     browser's address bar, hiding the footer.
   -->
-  <div class="relative flex h-dvh overflow-hidden bg-surface-100 dark:bg-surface-950">
+  <div
+    data-testid="app-shell"
+    class="relative flex h-dvh overflow-hidden bg-surface-100 dark:bg-surface-950"
+  >
     <AppSidebar />
     <div class="flex flex-1 flex-col overflow-hidden">
       <AppHeader />
@@ -44,5 +49,9 @@ onUnmounted(() => {
       </main>
       <AppFooter />
     </div>
+
+    <!-- Overlays opened from the header (⚙, "Go to…", Ctrl K); mounted once for the whole shell. -->
+    <AppearanceSettings />
+    <CommandPalette />
   </div>
 </template>

@@ -154,8 +154,6 @@ export interface LocaleSchema {
     organizations: string
     profile: string
     toggleSidebar: string
-    collapseSidebar: string
-    expandSidebar: string
     userGuide: string
   }
   guideAuth: {
@@ -449,8 +447,6 @@ const en: LocaleSchema = {
     organizations: 'Organizations',
     profile: 'Profile',
     toggleSidebar: 'Toggle sidebar',
-    collapseSidebar: 'Collapse sidebar',
-    expandSidebar: 'Expand sidebar',
     userGuide: 'User guide',
   },
   guideAuth: {

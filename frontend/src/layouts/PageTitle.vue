@@ -50,14 +50,15 @@ function navigateTo(routeName: string, event: MouseEvent) {
         <span v-else data-testid="app-header-crumb-text" :title="item.label">{{ item.label }}</span>
       </n-breadcrumb-item>
     </n-breadcrumb>
-    <h1
+    <!-- Not a heading: each page renders its own <h1>. -->
+    <p
       v-if="title"
       data-testid="app-header-title"
       class="m-0 truncate text-base font-semibold"
       :title="title.label"
     >
       {{ title.label }}
-    </h1>
+    </p>
   </div>
 </template>
 
