@@ -45,7 +45,7 @@ jobs:
 
       # Reported, not gated — see .claude/rules/testing.md § Coverage. Migrations and compiler-generated classes are filtered out.
       - name: Coverage summary
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && hashFiles('backend/TestResults/coverage/**/coverage.cobertura.xml') != '' }}
         run: |
           dotnet tool install dotnet-reportgenerator-globaltool --version 5.5.11 --tool-path "$RUNNER_TEMP/tools"
           "$RUNNER_TEMP/tools/reportgenerator" \
@@ -92,6 +92,12 @@ jobs:
       - name: Check formatting
         run: bun run --cwd frontend prettier --check --experimental-cli src/ e2e/
 
+      # src/typings/ (auto-imports.d.ts, components.d.ts) is gitignored and written by the Vite
+      # plugins, not by `bun install` — and complete only after a build, which transforms every
+      # component. vue-tsc needs it.
+      - name: Generate typings
+        run: bun run --cwd frontend build-only
+
       # vitest doesn't type-check — a type error at a generated-client call site only fails here.
       - name: Type-check
         run: bun run --cwd frontend type-check
@@ -101,7 +107,7 @@ jobs:
 
       # Reported, not gated — see .claude/rules/testing.md § Coverage.
       - name: Coverage summary
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && hashFiles('frontend/coverage/coverage-summary.json') != '' }}
         run: |
           node >> "$GITHUB_STEP_SUMMARY" <<'JS'
           const t = require('./frontend/coverage/coverage-summary.json').total

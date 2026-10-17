@@ -53,6 +53,7 @@ test:
     - export PATH="$HOME/.bun/bin:$PATH"
     - bun install --cwd frontend --frozen-lockfile
     - bun run --cwd frontend prettier --check --experimental-cli src/ e2e/
+    - bun run --cwd frontend build-only # writes src/typings/, which vue-tsc needs
     - bun run --cwd frontend type-check # vitest doesn't type-check
     - bun run --cwd frontend test:coverage
   artifacts:
