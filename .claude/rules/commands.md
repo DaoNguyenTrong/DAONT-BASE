@@ -139,6 +139,13 @@ Glob gotcha if you edit `lefthook.yml`: Lefthook's glob matcher (`gobwas/glob`) 
 
 ## CI
 
-There is **no CI workflow that runs build/test on PR or push today** — nothing blocks a merge on a failing build or test yet; run the commands above locally before asking for review.
+The test gate lives in one reusable workflow, `.github/workflows/test.yml`, run by two callers:
 
-The only pipeline is the release, fired by the `v*` tag the `git-release` skill (from the `release-kit` plugin) pushes: test → build and push both production images → create the release. `.github/workflows/release.yml` (images to GHCR) and `.gitlab-ci.yml` (images to the project's Container Registry) are the same pipeline for the two hosts; change both together. Images are built from the tag's pipeline, never from a push to `main`: `git-release` merges into `main` before it tags, so a `main` build can't see the tag and MinVer/`git describe` would report `X.Y.(Z+1)-preview`. Both need full history (`fetch-depth: 0` / `GIT_DEPTH: "0"`), and `v*` tags must be protected.
+- **`ci.yml`** — every PR into `dev`, `main` or `release/**`, and every push to `dev` (which covers `git-release`'s CHANGELOG commit and the `main` → `dev` reconcile merge, neither of which goes through a PR).
+- **`release.yml`** — the `v*` tag, before any image is built.
+
+Two parallel jobs. `backend`: `test.sh`, then the OpenAPI export followed by `git diff --exit-code shared/openapi/openapi.json` — a controller/DTO change committed without a re-export fails here. `frontend`: `bun install --frozen-lockfile`, `prettier --check` (catches commits that skipped Lefthook), `type-check` (vitest doesn't type-check), `test:coverage`. Both jobs write a coverage table to the run summary — reported, not gated (`testing.md` § Coverage). Run them locally before pushing with `scripts/test-gate.sh` — the same checks minus coverage, and the gate `git-release` runs (`release-kit.json`); change it together with `test.yml`; a red check on `main` blocks the merge once `test / backend` and `test / frontend` are required status checks (see `CONTRIBUTING.md`). E2E (Playwright) is not in CI — it needs a running backend with seeded accounts.
+
+`.gitlab-ci.yml` mirrors this: the `test` job runs on merge requests, pushes to `dev` and `v*` tags; `images`/`release` only on tags. Change the GitHub and GitLab files together.
+
+The release pipeline, fired by the `v*` tag the `git-release` skill (from the `release-kit` plugin) pushes: test → build and push both production images → create the release. `.github/workflows/release.yml` (images to GHCR) and `.gitlab-ci.yml` (images to the project's Container Registry) are the same pipeline for the two hosts; change both together. Images are built from the tag's pipeline, never from a push to `main`: `git-release` merges into `main` before it tags, so a `main` build can't see the tag and MinVer/`git describe` would report `X.Y.(Z+1)-preview`. Both need full history (`fetch-depth: 0` / `GIT_DEPTH: "0"`), and `v*` tags must be protected.

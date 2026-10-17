@@ -14,9 +14,10 @@ export default mergeConfig(
       },
       coverage: {
         provider: 'v8',
-        reporter: ['text', 'html'],
+        // json-summary feeds the coverage table CI writes to the run summary (.github/workflows/test.yml)
+        reporter: ['text', 'html', 'json-summary'],
         include: ['src/**/*.{ts,vue}'],
-        exclude: ['src/typings/**', 'src/main.ts'],
+        exclude: ['src/typings/**', 'src/api/generated/**', 'src/main.ts'],
       },
     },
   }),
