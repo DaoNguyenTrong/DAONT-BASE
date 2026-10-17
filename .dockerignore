@@ -20,7 +20,14 @@
 plans/
 monitoring/
 **/*.md
+# ...except the user guide's pages, which are the guide's source (a later line wins).
+!frontend/user-guide/site/src/**/*.md
 **/tests/
+# User guide: screenshot tooling and files the guide's build regenerates.
+frontend/user-guide/tools/
+**/user-guide/site/src/public/brand/
+**/.vitepress/cache/
+**/brand-tokens.generated.css
 
 # Real secrets — never bake into any image, only the *.Example.json / *.example files are templates.
 # Every pattern here is anchored to the build-context root (the repo root), so a bare

@@ -81,6 +81,8 @@ services:
       VITE_FIREBASE_MESSAGING_SENDER_ID: ${VITE_FIREBASE_MESSAGING_SENDER_ID:-}
       VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID:-}
       VITE_FIREBASE_VAPID_KEY: ${VITE_FIREBASE_VAPID_KEY:-}
+      # User guide at /guide/: private (signed-in users only) unless "true". See .env.prod.example.
+      GUIDE_PUBLIC: ${GUIDE_PUBLIC:-false}
     ports:
       - "80:80"
     depends_on:
