@@ -19,6 +19,15 @@ export interface LocaleSchema {
     sortDefault: string
     sortAscending: string
     sortDescending: string
+    yes: string
+    no: string
+    user: string
+  }
+  markdownEditor: {
+    split: string
+    editor: string
+    preview: string
+    emptyPreview: string
   }
   errors: {
     requestFailed: string
@@ -248,6 +257,15 @@ const en: LocaleSchema = {
     sortDefault: 'Default',
     sortAscending: 'Ascending',
     sortDescending: 'Descending',
+    yes: 'Yes',
+    no: 'No',
+    user: 'User',
+  },
+  markdownEditor: {
+    split: 'Split',
+    editor: 'Editor',
+    preview: 'Preview',
+    emptyPreview: 'Nothing to preview yet',
   },
   errors: {
     requestFailed: 'Request failed',

@@ -24,6 +24,7 @@ public sealed class PushSubscriptionsController(IPushSubscriptionService pushSub
     /// <summary>Removes a device's push registration token for the current account. No-op if not owned.</summary>
     [HttpDelete]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Remove([FromQuery] string token, CancellationToken cancellationToken)
     {

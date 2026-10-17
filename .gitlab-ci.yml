@@ -1,6 +1,7 @@
-# The same pipeline as .github/workflows/release.yml, for a fork hosted on GitLab (GitHub ignores
-# this file, GitLab ignores .github/). Fired by the v* tag that /git-release pushes:
-# test → production images → GitLab Release.
+# The same pipelines as .github/workflows/{ci,test,release}.yml, for a fork hosted on GitLab (GitHub
+# ignores this file, GitLab ignores .github/). Every merge request and every push to dev runs `test`
+# alone; the v* tag that /git-release pushes runs test → production images → GitLab Release.
+# Make the MR pipeline required: Settings → Merge requests → "Pipelines must succeed".
 #
 # Images are built here, from the tag, not from a push to main: /git-release merges into main
 # *before* it tags, so a main build runs while the tag doesn't exist yet and MinVer / `git describe`
@@ -20,6 +21,8 @@ stages:
 workflow:
   rules:
     - if: $CI_COMMIT_TAG =~ /^v/
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "dev"
 
 variables:
   GIT_DEPTH: "0" # full history + tags: MinVer and `git describe` version the build from them
@@ -36,20 +39,36 @@ test:
   extends: .docker
   stage: test
   image: mcr.microsoft.com/dotnet/sdk:10.0
+  variables:
+    STARTERKIT_TEST_COVERAGE: "1" # reported, not gated — .claude/rules/testing.md § Coverage
   script:
     - dotnet restore backend/StarterKit.sln
     - cp backend/src/StarterKit.API/appsettings.Example.json backend/src/StarterKit.API/appsettings.json
     - backend/scripts/test.sh
+    # A controller/DTO change without a re-export leaves the frontend's generated client stale.
+    - dotnet build backend/src/StarterKit.API/StarterKit.API.csproj --no-restore -m:1 -p:OpenApiGenerateDocumentsOnBuild=true
+    - git diff --exit-code -- shared/openapi/openapi.json || { echo "openapi.json is out of date — run the export and commit it"; exit 1; }
     - apt-get update && apt-get install -y --no-install-recommends unzip # the bun installer unzips
-    - curl -fsSL https://bun.sh/install | bash
+    - curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.14"
     - export PATH="$HOME/.bun/bin:$PATH"
     - bun install --cwd frontend --frozen-lockfile
-    - bun run --cwd frontend test:run
+    - bun run --cwd frontend prettier --check --experimental-cli src/ e2e/
+    - bun run --cwd frontend build-only # writes src/typings/, which vue-tsc needs
+    - bun run --cwd frontend type-check # vitest doesn't type-check
+    - bun run --cwd frontend test:coverage
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: backend/TestResults/coverage/**/coverage.cobertura.xml
 
 # $CI_REGISTRY_IMAGE/<service>:X.Y.Z, plus :latest for a stable (non-pre-release) tag.
 images:
   extends: .docker
   stage: images
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
   image: docker:27
   parallel:
     matrix:
@@ -73,6 +92,8 @@ images:
 
 release:
   stage: release
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
   image: registry.gitlab.com/gitlab-org/cli:latest
   script:
     - echo "Creating release $CI_COMMIT_TAG"

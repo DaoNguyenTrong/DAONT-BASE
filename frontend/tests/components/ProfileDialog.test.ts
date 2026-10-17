@@ -7,6 +7,7 @@ import { server } from '../helpers/msw/server'
 import { renderComponent } from '../helpers/render'
 import type { ProfileDto, SessionDto } from '@/api/types'
 import en from '@/locales/en'
+import i18n from '@/plugins/i18n'
 
 function makeProfile(overrides: Partial<ProfileDto> = {}): ProfileDto {
   return {
@@ -268,7 +269,7 @@ describe('ProfileDialog', () => {
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Changing the password is temporarily locked')
+    expect(wrapper.text()).toContain(i18n.global.t('profile.passwordChangeTemporarilyLocked'))
     expect(wrapper.text()).not.toContain('backend text')
   })
 
@@ -366,7 +367,9 @@ describe('ProfileDialog', () => {
     const { wrapper } = await openDialog()
     await openSessionsTab(wrapper)
 
-    expect(wrapper.find('button[aria-label="Sign out"]').exists()).toBe(false)
+    expect(
+      wrapper.find(`button[aria-label="${i18n.global.t('profile.signOutDevice')}"]`).exists(),
+    ).toBe(false)
   })
 
   it('revokes a single session and removes it from the list', async () => {
@@ -391,7 +394,9 @@ describe('ProfileDialog', () => {
     const { wrapper } = await openDialog()
     await openSessionsTab(wrapper)
 
-    const revokeButtons = wrapper.findAll('button[aria-label="Sign out"]')
+    const revokeButtons = wrapper.findAll(
+      `button[aria-label="${i18n.global.t('profile.signOutDevice')}"]`,
+    )
     expect(revokeButtons).toHaveLength(1)
     await revokeButtons[0]!.trigger('click')
     await flushPromises()

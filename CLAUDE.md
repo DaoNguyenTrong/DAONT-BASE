@@ -33,7 +33,7 @@ Follow this order for every non-trivial task:
 
 ### Worktrees
 
-A git worktree (including an agent's `isolation: "worktree"`) has only tracked files: no `backend/src/StarterKit.API/appsettings*.json`, no `.env*`, no `frontend/node_modules`, `frontend/src/api/generated/` or `frontend/src/typings/` (run `bun install --cwd frontend` there to regenerate the last two). Copy the gitignored config in before building or testing, and remove the worktree (`git worktree remove <path>`) when done. `isolation: "worktree"` branches from `origin`'s default branch, not the local `HEAD` — an agent there does not see unpushed local commits, so hand it the branch or the diff explicitly.
+A git worktree (including an agent's `isolation: "worktree"`) has only tracked files: no `backend/src/StarterKit.API/appsettings*.json`, no `.env*`, no `frontend/node_modules`, `frontend/src/api/generated/` or `frontend/src/typings/` (`bun install --cwd frontend` regenerates `api/generated/`; `typings/` comes from a Vite run and is complete only after `bun run --cwd frontend build-only` — `type-check` fails without it). Copy the gitignored config in before building or testing, and remove the worktree (`git worktree remove <path>`) when done. `isolation: "worktree"` branches from `origin`'s default branch, not the local `HEAD` — an agent there does not see unpushed local commits, so hand it the branch or the diff explicitly.
 
 ### Commits
 
@@ -89,7 +89,7 @@ If the superpowers plugin is installed, its skills yield to this file. Where a s
 - **Requirement gaps stop the run** — subagent-driven development's "rulings, not stalls" covers technical ambiguity only. A missing or conflicting business rule or acceptance criterion means stop and ask; never write a ruling that invents business behavior.
 - **Branch & worktree** — work in the current checkout on one `feature/*` branch cut from `dev`. Don't create a worktree for a skill run: the gitignored config and generated client are missing there (see Worktrees). Subagents that build the backend run one at a time (`-m:1`, shared `obj/`).
 - **Commits** — implementers may commit per task on `feature/*` (local only, never on `dev`/`main`) so per-task review ranges work, following Commits above.
-- **TDD** — "delete the code and start over" applies only to code written in the current task, never to changes already on the branch.
+- **TDD** — follow `superpowers:test-driven-development` within `testing.md` (which layer, which conventions; a bug fix starts from a failing regression test). "Delete the code and start over" applies only to code written in the current task, never to changes already on the branch.
 - **Tests** — baseline and verification use `backend/scripts/test.sh` and `bun run --cwd frontend test:run`.
 - **Finishing** — base is `dev` (`main` only for a hotfix); never merge locally or delete the branch. Without an explicit order to push or open a PR, leave the branch as it is.
 - **Gated side effects** — push/PR and `.claude/decisions.md` (confirmation gate) still need the user, even mid-plan.
@@ -117,4 +117,5 @@ All rule files in `.claude/rules/` are auto-loaded. This table documents when ea
 | `commands.md`             | Building/running/testing the backend or the frontend                                                                      |
 | `frontend-conventions.md` | Writing Vue/TypeScript — components, stores, api client patterns                                                          |
 | `localization.md`         | Adding or editing user-facing messages (backend and/or frontend)                                                          |
+| `testing.md`              | Writing or changing tests; deciding which layer a change must be tested at                                                |
 | `serena.md`               | Using Serena symbol navigation tools — read-only lookup works backend + frontend, caller-search/rename is backend C# only |

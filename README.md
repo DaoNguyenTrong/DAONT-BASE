@@ -130,7 +130,7 @@ bun run --cwd frontend codegen
 
 ### CI
 
-There is no CI workflow running build/test on PR/push yet — run the commands above locally before requesting a review. The only pipeline is the release: a `v*` tag runs the tests, builds and pushes the production images, then creates the release (`.github/workflows/release.yml`; `.gitlab-ci.yml` is the same pipeline for a fork on GitLab). Protect `v*` tags — whoever can push one publishes images.
+Every PR into `dev`/`main`/`release/**` and every push to `dev` runs the test gate (`.github/workflows/ci.yml` → `test.yml`): backend tests plus an OpenAPI-export drift check, frontend formatting, type-check and unit tests. The release pipeline runs the same gate: a `v*` tag runs the tests, builds and pushes the production images, then creates the release (`.github/workflows/release.yml`; `.gitlab-ci.yml` is the same pipeline for a fork on GitLab). Protect `v*` tags — whoever can push one publishes images.
 
 For full details, see `.claude/rules/commands.md`.
 

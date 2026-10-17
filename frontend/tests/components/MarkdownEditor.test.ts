@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import MarkdownEditor from '@/components/MarkdownEditor.vue'
+import i18n from '@/plugins/i18n'
 import { renderComponent } from '../helpers/render'
 
 describe('MarkdownEditor', () => {
@@ -9,7 +10,25 @@ describe('MarkdownEditor', () => {
     })
 
     expect(wrapper.find('textarea').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Chưa có nội dung')
+    expect(wrapper.text()).toContain(i18n.global.t('markdownEditor.emptyPreview'))
+  })
+
+  it('labels the mode switcher and both panes from the locale', async () => {
+    const { wrapper } = await renderComponent(MarkdownEditor, {
+      props: { modelValue: '' },
+    })
+
+    const buttonLabels = wrapper.findAll('button').map((button) => button.text())
+    expect(buttonLabels).toEqual([
+      i18n.global.t('markdownEditor.split'),
+      i18n.global.t('markdownEditor.editor'),
+      i18n.global.t('markdownEditor.preview'),
+    ])
+    const paneHeaders = wrapper.findAll('.border-b.px-4.py-1').map((header) => header.text())
+    expect(paneHeaders).toEqual([
+      i18n.global.t('markdownEditor.editor'),
+      i18n.global.t('markdownEditor.preview'),
+    ])
   })
 
   it('renders marked-parsed HTML in the preview pane for markdown content', async () => {

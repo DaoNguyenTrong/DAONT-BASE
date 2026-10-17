@@ -19,13 +19,16 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
+const { t } = useI18n()
+
 const viewMode = ref<ViewMode>('split')
 
-const modeOptions: Array<{ value: ViewMode; icon: Component; label: string }> = [
-  { value: 'split', icon: Columns, label: 'Chia đôi' },
-  { value: 'editor', icon: Pencil, label: 'Soạn thảo' },
-  { value: 'preview', icon: Eye, label: 'Xem trước' },
-]
+// computed, so the labels follow a locale switch while the editor is open
+const modeOptions = computed<Array<{ value: ViewMode; icon: Component; label: string }>>(() => [
+  { value: 'split', icon: Columns, label: t('markdownEditor.split') },
+  { value: 'editor', icon: Pencil, label: t('markdownEditor.editor') },
+  { value: 'preview', icon: Eye, label: t('markdownEditor.preview') },
+])
 
 const renderedMarkdown = computed(() => {
   return marked.parse(props.modelValue ?? '') as string
@@ -81,7 +84,7 @@ const renderedMarkdown = computed(() => {
         <div
           class="border-b border-surface-100 px-4 py-1 text-xs text-surface-400 dark:border-surface-800/60 dark:text-surface-500"
         >
-          Soạn thảo
+          {{ t('markdownEditor.editor') }}
         </div>
         <n-input
           type="textarea"
@@ -97,7 +100,7 @@ const renderedMarkdown = computed(() => {
         <div
           class="border-b border-surface-100 px-4 py-1 text-xs text-surface-400 dark:border-surface-800/60 dark:text-surface-500"
         >
-          Xem trước
+          {{ t('markdownEditor.preview') }}
         </div>
         <div class="flex-1 overflow-auto p-5">
           <div
@@ -105,7 +108,9 @@ const renderedMarkdown = computed(() => {
             class="flex min-h-40 flex-col items-center justify-center gap-2 text-center"
           >
             <n-icon class="text-2xl text-surface-300 dark:text-surface-600"><File /></n-icon>
-            <span class="text-sm text-surface-400 dark:text-surface-500">Chưa có nội dung</span>
+            <span class="text-sm text-surface-400 dark:text-surface-500">{{
+              t('markdownEditor.emptyPreview')
+            }}</span>
           </div>
           <div
             v-else

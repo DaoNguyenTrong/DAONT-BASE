@@ -11,6 +11,10 @@
 # Tests tagged [Trait("Category", "RealData")] read gitignored real source data (an import file,
 # a large reference data set) and are skipped by default — they only change outcome when that data
 # changes. Set STARTERKIT_TEST_REAL_DATA=1 to include them.
+#
+# STARTERKIT_TEST_COVERAGE=1 also collects coverage (coverlet, Cobertura) into
+# backend/TestResults/coverage/ — one coverage.cobertura.xml per test project; CI merges them into
+# the run summary with ReportGenerator (see .claude/rules/testing.md § Coverage).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -30,10 +34,18 @@ if [[ "${STARTERKIT_TEST_REAL_DATA:-0}" != "1" ]]; then
   filter_args=(--filter "Category!=RealData")
 fi
 
+coverage_args=()
+if [[ "${STARTERKIT_TEST_COVERAGE:-0}" == "1" ]]; then
+  coverage_dir="$ROOT_DIR/backend/TestResults/coverage"
+  rm -rf "$coverage_dir"
+  coverage_args=(--collect "XPlat Code Coverage" --results-directory "$coverage_dir")
+fi
+
 pids=()
 for project in "${projects[@]}"; do
   # ${a[@]+...}: under set -u, bash before 4.4 (macOS ships 3.2) calls an empty array unbound.
-  dotnet test "$project" --no-build --no-restore -m:1 ${filter_args[@]+"${filter_args[@]}"} &
+  dotnet test "$project" --no-build --no-restore -m:1 ${filter_args[@]+"${filter_args[@]}"} \
+    ${coverage_args[@]+"${coverage_args[@]}"} &
   pids+=("$!")
 done
 

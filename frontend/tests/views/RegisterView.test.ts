@@ -7,6 +7,8 @@ import RegisterView from '@/views/RegisterView.vue'
 import { server } from '../helpers/msw/server'
 import { renderComponent } from '../helpers/render'
 import en from '@/locales/en'
+import i18n from '@/plugins/i18n'
+import { PASSWORD_MIN_LENGTH } from '@/lib/password-policy'
 
 function problemResponse(body: Record<string, unknown>, status: number) {
   return HttpResponse.json(body, {
@@ -67,7 +69,9 @@ describe('RegisterView', () => {
     await wrapper.find('input#password').setValue('short')
     await submitRegister(wrapper)
 
-    expect(wrapper.text()).toContain('Password must be at least 8 characters.')
+    expect(wrapper.text()).toContain(
+      i18n.global.t('auth.passwordTooShort', { min: PASSWORD_MIN_LENGTH }),
+    )
     expect(called).toBe(false)
   })
 

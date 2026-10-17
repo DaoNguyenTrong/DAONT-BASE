@@ -72,5 +72,7 @@ Prettier only (`frontend/.prettierrc.json`: no semicolons, single quotes, printW
 
 ## Testing
 
+What to test and how to write it: `testing.md`. Tooling:
+
 - Unit: Vitest + `@vue/test-utils`, mock HTTP with `msw`, mock Pinia state with `@pinia/testing`.
 - E2E: Playwright (`frontend/e2e`), install browsers once via `bun run --cwd frontend test:e2e:install`.

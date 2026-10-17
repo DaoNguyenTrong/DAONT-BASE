@@ -7,6 +7,7 @@ import { server } from '../helpers/msw/server'
 import { renderComponent } from '../helpers/render'
 import { makeOrganization, makeRole } from '../factories/organization'
 import en from '@/locales/en'
+import i18n from '@/plugins/i18n'
 
 const mockOpen = vi.hoisted(() => vi.fn())
 
@@ -65,9 +66,7 @@ describe('OrganizationRolesDialog', () => {
     )
     expect(
       wrapper
-        .find(
-          'button[aria-label="Delete this role? Members holding only this role will lose its permissions."]',
-        )
+        .find(`button[aria-label="${i18n.global.t('organizations.roleDeleteConfirm')}"]`)
         .exists(),
     ).toBe(true)
   })
