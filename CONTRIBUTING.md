@@ -97,6 +97,10 @@ QA stabilizes on `release/vX.Y.Z` from here. Bugs found during stabilization go 
 
    The merge is clean: `main`'s changes since the cut are `fix/*` commits and their bullets *inside* the frozen `## [vX.Y.Z]` section, while `dev`'s changes are new `## [Unreleased]` entries *above* it — two disjoint regions.
 
+### Quick release (on `dev`)
+
+For a small release that needs no stabilization window, `/git-release quick` on `dev` does it in one pass: it runs the mandatory test gate, compiles the `## [vX.Y.Z]` CHANGELOG section on `dev`, opens and merges a `dev` → `main` PR, then tags `origin/main`. There is no `release/vX.Y.Z` branch, so nothing gets QA'd on its own first; use the two-phase release above whenever QA has to sign off.
+
 ## Hotfix Process
 
 For an emergency production fix that can't wait for `dev`'s next `[Unreleased]` to ship:
