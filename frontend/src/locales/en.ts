@@ -120,6 +120,10 @@ export interface LocaleSchema {
     collapseSidebar: string
     expandSidebar: string
   }
+  guideAuth: {
+    opening: string
+    failed: string
+  }
   profile: {
     title: string
     updateSuccess: string
@@ -368,6 +372,10 @@ const en: LocaleSchema = {
     toggleSidebar: 'Toggle sidebar',
     collapseSidebar: 'Collapse sidebar',
     expandSidebar: 'Expand sidebar',
+  },
+  guideAuth: {
+    opening: 'Opening the user guide…',
+    failed: "Couldn't open the user guide. Please try again later.",
   },
   profile: {
     title: 'Profile',
