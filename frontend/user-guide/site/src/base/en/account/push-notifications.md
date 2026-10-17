@@ -14,7 +14,7 @@ Push notifications tell you about something new, such as being added to an organ
 
 ## Steps
 
-1. At the bottom of the left sidebar, click your name to open your **Profile**.
+1. At the top right, click your avatar, then choose **Profile**.
 2. Select the **Push notifications** tab.
 3. Turn on the **Push notifications** switch.
 4. When the browser asks whether the site may send notifications, choose **Allow**.

@@ -23,6 +23,7 @@ export const baseChapters: Chapter[] = [
       { slug: 'profile', text: { vi: 'Cập nhật hồ sơ', en: 'Update your profile' } },
       { slug: 'change-password', text: { vi: 'Đổi mật khẩu', en: 'Change your password' } },
       { slug: 'sessions', text: { vi: 'Phiên đăng nhập', en: 'Manage your sessions' } },
+      { slug: 'appearance', text: { vi: 'Chỉnh giao diện', en: 'Adjust the appearance' } },
       {
         slug: 'push-notifications',
         text: { vi: 'Thông báo đẩy', en: 'Push notifications' },

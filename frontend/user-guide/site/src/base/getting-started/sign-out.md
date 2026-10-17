@@ -9,7 +9,7 @@ description: 'Kết thúc phiên làm việc trên máy đang dùng.'
 
 ## Các bước
 
-1. Ở chân thanh bên trái, cạnh tên của bạn, bấm nút **Đăng xuất** (biểu tượng mũi tên ra khỏi cửa).
+1. Ở góc trên phải, bấm vào ảnh đại diện của bạn, rồi chọn **Đăng xuất** (biểu tượng mũi tên ra khỏi cửa) ở cuối menu.
 2. Trong hộp thoại xác nhận, bấm **Xác nhận**.
 
 <figure>
@@ -19,10 +19,10 @@ description: 'Kết thúc phiên làm việc trên máy đang dùng.'
 <figcaption>Xác nhận đăng xuất</figcaption>
 </figure>
 
-| #   | Thành phần        |
-| --- | ----------------- |
-| 1   | Nút **Đăng xuất** |
-| 2   | Nút **Xác nhận**  |
+| #   | Thành phần                              |
+| --- | --------------------------------------- |
+| 1   | Ảnh đại diện; menu có mục **Đăng xuất** |
+| 2   | Nút **Xác nhận**                        |
 
 ## Kết quả
 

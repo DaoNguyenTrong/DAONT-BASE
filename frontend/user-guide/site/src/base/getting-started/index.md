@@ -14,11 +14,11 @@ description: 'Ứng dụng làm được gì, và tài liệu này giúp bạn t
 <figcaption>Màn hình chính của ứng dụng</figcaption>
 </figure>
 
-| #   | Thành phần                                                                       |
-| --- | -------------------------------------------------------------------------------- |
-| 1   | Thanh bên: các mục chính và tổ chức đang làm việc                                |
-| 2   | Thanh trên: vị trí hiện tại, hướng dẫn sử dụng, thông báo, giao diện và ngôn ngữ |
-| 3   | Nội dung của mục đang mở                                                         |
+| #   | Thành phần                                                                  |
+| --- | --------------------------------------------------------------------------- |
+| 1   | Thanh bên: các mục chính                                                    |
+| 2   | Thanh trên: vị trí hiện tại, thông báo, cài đặt giao diện và menu tài khoản |
+| 3   | Nội dung của mục đang mở                                                    |
 
 ::: tip
 Gõ từ khoá vào ô **Tìm kiếm** ở đầu trang, có dấu hay không dấu đều được.

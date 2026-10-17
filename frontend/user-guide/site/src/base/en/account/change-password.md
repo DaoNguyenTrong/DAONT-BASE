@@ -14,7 +14,7 @@ Change your password from time to time, or right away if you think someone else 
 
 ## Steps
 
-1. At the bottom of the left sidebar, click your name to open your **Profile**.
+1. At the top right, click your avatar, then choose **Profile**.
 2. Select the **Change password** tab.
 3. Enter your **Current password**.
 4. Enter a **New password** of at least 8 characters. Click the eye icon to check what you typed.

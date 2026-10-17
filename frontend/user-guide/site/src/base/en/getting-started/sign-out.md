@@ -9,7 +9,7 @@ Sign out when you're done, especially on a shared computer. Signing out ends the
 
 ## Steps
 
-1. At the bottom of the left sidebar, next to your name, click the **Logout** button (the arrow-out-of-door icon).
+1. At the top right, click your avatar, then choose **Logout** (the arrow-out-of-door icon) at the bottom of the menu.
 2. In the confirmation dialog, click **Confirm**.
 
 <figure>

@@ -9,7 +9,7 @@ Every time you sign in on a browser or device, the app starts a session. Check t
 
 ## View your sessions
 
-1. At the bottom of the left sidebar, click your name to open your **Profile**.
+1. At the top right, click your avatar, then choose **Profile**.
 2. Select the **Active sessions** tab.
 
 Each session shows the device and browser, when it was **Last active**, its IP address and when it **Signed in**. The session on the computer you are using has the **This device** tag. The **Remember login** tag means the session survives closing the browser.
