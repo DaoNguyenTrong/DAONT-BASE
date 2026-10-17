@@ -3,6 +3,10 @@ import { Check, ChevronDown, Language, Logout, User } from '@vicons/tabler'
 import { initialsOf } from '@/lib/initials'
 import type { SupportedLocale } from '@/plugins/i18n'
 
+// 'on-brand' is the trigger on the purple menu bar (horizontal mode, brand color, light): white tones there.
+const props = withDefaults(defineProps<{ tone?: 'default' | 'on-brand' }>(), { tone: 'default' })
+const onBrand = computed(() => props.tone === 'on-brand')
+
 const { t } = useI18n()
 const auth = useAuthStore()
 const layout = useLayoutStore()
@@ -46,21 +50,35 @@ const itemClass =
       <button
         type="button"
         :aria-label="t('layout.userMenu.open')"
-        class="flex cursor-pointer items-center gap-2 rounded-lg p-1 transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+        class="flex cursor-pointer items-center gap-2 rounded-lg p-1 transition-colors"
+        :class="
+          onBrand ? 'text-white hover:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/10'
+        "
         data-testid="app-header-user-menu"
       >
         <span
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-600 text-xs font-semibold text-white"
+          data-testid="user-menu-avatar"
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+          :class="onBrand ? 'bg-white/20' : 'bg-primary-600'"
           aria-hidden="true"
           >{{ initials }}</span
         >
         <span class="hidden min-w-0 max-w-40 flex-col text-left leading-tight xl:flex">
           <span class="truncate text-sm font-medium" :title="displayName">{{ displayName }}</span>
-          <span class="truncate text-xs text-surface-500" :title="organizationLabel">{{
-            organizationLabel
-          }}</span>
+          <span
+            data-testid="user-menu-organization"
+            class="truncate text-xs"
+            :class="onBrand ? 'text-white/70' : 'text-surface-500'"
+            :title="organizationLabel"
+            >{{ organizationLabel }}</span
+          >
         </span>
-        <n-icon class="hidden shrink-0 text-sm text-surface-400 xl:block"><ChevronDown /></n-icon>
+        <n-icon
+          data-testid="user-menu-chevron"
+          class="hidden shrink-0 text-sm xl:block"
+          :class="onBrand ? 'text-white/70' : 'text-surface-400'"
+          ><ChevronDown
+        /></n-icon>
       </button>
     </template>
 

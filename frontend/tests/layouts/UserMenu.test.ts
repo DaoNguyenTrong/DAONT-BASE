@@ -9,8 +9,13 @@ import { storeIn } from '../helpers/pinia'
 
 const t = i18n.global.t
 
-function render(account: Record<string, unknown>, organizationName: string | null = null) {
+function render(
+  account: Record<string, unknown>,
+  organizationName: string | null = null,
+  props: { tone?: 'default' | 'on-brand' } = {},
+) {
   return renderComponent(UserMenu, {
+    props,
     initialState: {
       auth: { account, organizationName },
       organizations: { loaded: true, myOrganizations: [] },
@@ -42,6 +47,33 @@ describe('UserMenu', () => {
     expect(trigger.text()).toContain('NT')
     expect(trigger.text()).toContain('Nguyễn Trọng')
     expect(trigger.text()).toContain('Acme')
+  })
+
+  it('draws the trigger in white tones on the brand menu bar', async () => {
+    const account = { id: '1', name: 'Jane Doe', username: 'jane' }
+    const brand = await render(account, 'Acme', { tone: 'on-brand' })
+
+    const avatar = brand.wrapper.get('[data-testid="user-menu-avatar"]')
+    expect(avatar.classes()).toContain('bg-white/20')
+    expect(avatar.classes()).not.toContain('bg-primary-600')
+    const org = brand.wrapper.get('[data-testid="user-menu-organization"]')
+    expect(org.classes()).toContain('text-white/70')
+    expect(org.classes()).not.toContain('text-surface-500')
+    expect(brand.wrapper.get('[data-testid="user-menu-chevron"]').classes()).toContain(
+      'text-white/70',
+    )
+    brand.wrapper.unmount()
+
+    const plain = await render(account, 'Acme')
+    expect(plain.wrapper.get('[data-testid="user-menu-avatar"]').classes()).toContain(
+      'bg-primary-600',
+    )
+    expect(plain.wrapper.get('[data-testid="user-menu-organization"]').classes()).toContain(
+      'text-surface-500',
+    )
+    expect(plain.wrapper.get('[data-testid="user-menu-chevron"]').classes()).toContain(
+      'text-surface-400',
+    )
   })
 
   it('shows the personal workspace when no organization is active', async () => {

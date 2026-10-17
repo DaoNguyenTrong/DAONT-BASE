@@ -1,6 +1,7 @@
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
+import { NButton } from 'naive-ui'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppHeader from '@/layouts/AppHeader.vue'
 import type { MenuMode } from '@/lib/layout-preferences'
@@ -19,9 +20,14 @@ function stubBelowLg(matches: boolean) {
 }
 
 async function mountHeader(
-  options: { path?: string; variant?: 'bar' | 'actions'; menuMode?: MenuMode } = {},
+  options: {
+    path?: string
+    variant?: 'bar' | 'actions'
+    tone?: 'default' | 'on-brand'
+    menuMode?: MenuMode
+  } = {},
 ) {
-  const { path = '/', variant, menuMode } = options
+  const { path = '/', variant, tone, menuMode } = options
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -50,8 +56,20 @@ async function mountHeader(
   })
 
   const wrapper = mount(AppHeader, {
-    props: variant ? { variant } : {},
-    global: { plugins: [pinia, router], stubs: { UserMenu: true, NotificationBell: true } },
+    props: { ...(variant ? { variant } : {}), ...(tone ? { tone } : {}) },
+    global: {
+      plugins: [pinia, router],
+      stubs: {
+        UserMenu: {
+          props: ['tone'],
+          template: '<div data-testid="user-menu-stub" :data-tone="tone" />',
+        },
+        NotificationBell: {
+          props: ['tone'],
+          template: '<div data-testid="bell-stub" :data-tone="tone" />',
+        },
+      },
+    },
   })
 
   return { wrapper, layout: storeIn(pinia, useLayoutStore) }
@@ -120,6 +138,37 @@ describe('AppHeader', () => {
     expect(wrapper.find('[data-testid="app-header-palette"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="app-header-settings"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="app-header-user-guide"]').exists()).toBe(true)
+  })
+
+  it('draws the action cluster for the brand menu bar when on brand', async () => {
+    const brand = await mountHeader({ variant: 'actions', tone: 'on-brand' })
+
+    const pill = brand.wrapper.get('[data-testid="app-header-palette"]')
+    expect(pill.classes()).toEqual(expect.arrayContaining(['border-white/20', 'bg-white/10']))
+    expect(pill.classes()).toContain('text-white/80')
+    expect(pill.classes()).not.toContain('text-surface-500')
+    for (const testid of ['app-header-user-guide', 'app-header-settings']) {
+      const button = brand.wrapper
+        .findAllComponents(NButton)
+        .find((b) => b.attributes('data-testid') === testid)!
+      expect(button.props('textColor')).toBeTruthy()
+    }
+    expect(brand.wrapper.get('[data-testid="user-menu-stub"]').attributes('data-tone')).toBe(
+      'on-brand',
+    )
+    expect(brand.wrapper.get('[data-testid="bell-stub"]').attributes('data-tone')).toBe('on-brand')
+    brand.wrapper.unmount()
+
+    const plain = await mountHeader({ variant: 'actions' })
+    const plainPill = plain.wrapper.get('[data-testid="app-header-palette"]')
+    expect(plainPill.classes()).toContain('text-surface-500')
+    expect(plainPill.classes()).not.toContain('bg-white/10')
+    for (const button of plain.wrapper.findAllComponents(NButton)) {
+      expect(button.props('textColor')).toBeUndefined()
+    }
+    expect(plain.wrapper.get('[data-testid="user-menu-stub"]').attributes('data-tone')).toBe(
+      'default',
+    )
   })
 
   it('links to the user guide in a new tab', async () => {

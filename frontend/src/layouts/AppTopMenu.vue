@@ -24,8 +24,11 @@ const barWordmarkSrc = computed(() =>
     : wordmarkSrc.value,
 )
 
-// The header's actions are drawn for the page background; on the purple bar their icons turn white (below).
-const onBrand = computed(() => layout.menuTheme === 'brand' && !isDark.value)
+// The header's actions are drawn for the page background; the purple bar asks for their white tones. The
+// dark brand bar is a dark surface, which their default look already suits.
+const headerTone = computed(() =>
+  layout.menuTheme === 'brand' && !isDark.value ? 'on-brand' : 'default',
+)
 
 const currentRouteName = computed(() => (typeof route.name === 'string' ? route.name : undefined))
 
@@ -101,11 +104,7 @@ const entryClass =
   <div
     data-testid="app-top-menu"
     class="relative flex h-16 shrink-0 items-center gap-3 px-4"
-    :class="[
-      theme.surface,
-      layout.menuTheme === 'transparent' && ['border-b', theme.divider],
-      onBrand && 'top-menu-on-brand',
-    ]"
+    :class="[theme.surface, layout.menuTheme === 'transparent' && ['border-b', theme.divider]]"
   >
     <button
       type="button"
@@ -173,7 +172,7 @@ const entryClass =
       </n-dropdown>
     </nav>
 
-    <AppHeader variant="actions" class="shrink-0" :class="onBrand && 'text-white'" />
+    <AppHeader variant="actions" :tone="headerTone" class="shrink-0" />
 
     <!-- The measuring copy: same boxes as the bar (bold, as when active), never seen or focused. -->
     <div
@@ -197,24 +196,3 @@ const entryClass =
     </div>
   </div>
 </template>
-
-<style scoped>
-/*
- * Naive UI sets its button colors as inline custom properties; an `!important` declaration here outranks
- * them. Only the bar's own descendants are reached: the user menu's and the bell's popovers are teleported
- * out of it and keep their colors.
- */
-.top-menu-on-brand :deep(.n-button) {
-  --n-text-color: rgb(255 255 255 / 0.8) !important;
-  --n-text-color-hover: #fff !important;
-  --n-text-color-pressed: #fff !important;
-  --n-text-color-focus: #fff !important;
-}
-
-.top-menu-on-brand :deep(.n-button--secondary) {
-  --n-color: rgb(255 255 255 / 0.1) !important;
-  --n-color-hover: rgb(255 255 255 / 0.15) !important;
-  --n-color-pressed: rgb(255 255 255 / 0.2) !important;
-  --n-color-focus: rgb(255 255 255 / 0.15) !important;
-}
-</style>

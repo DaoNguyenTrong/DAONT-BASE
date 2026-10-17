@@ -99,8 +99,8 @@ async function mountTopMenu(options: { path?: string; menuTheme?: MenuTheme } = 
       stubs: {
         teleport: true,
         AppHeader: {
-          props: ['variant'],
-          template: '<div data-testid="header-stub" :data-variant="variant" />',
+          props: ['variant', 'tone'],
+          template: '<div data-testid="header-stub" :data-variant="variant" :data-tone="tone" />',
         },
       },
     },
@@ -253,24 +253,22 @@ describe('AppTopMenu', () => {
     expect(transparentBar.classes()).toContain('border-b')
   })
 
-  it('recolors the header actions on the light brand bar only', async () => {
+  it('asks the header for its on-brand look on the light brand bar only', async () => {
+    const toneOf = (wrapper: VueWrapper) =>
+      wrapper.get('[data-testid="header-stub"]').attributes('data-tone')
+
     const brand = await mountTopMenu()
-    expect(brand.wrapper.get('[data-testid="app-top-menu"]').classes()).toContain(
-      'top-menu-on-brand',
-    )
+    expect(toneOf(brand.wrapper)).toBe('on-brand')
     brand.wrapper.unmount()
 
     const transparent = await mountTopMenu({ menuTheme: 'transparent' })
-    expect(transparent.wrapper.get('[data-testid="app-top-menu"]').classes()).not.toContain(
-      'top-menu-on-brand',
-    )
+    expect(toneOf(transparent.wrapper)).toBe('default')
     transparent.wrapper.unmount()
 
+    // The dark brand bar is a dark surface, which the header's default look already suits.
     useThemePreference().setPreference('dark')
     const brandDark = await mountTopMenu()
-    expect(brandDark.wrapper.get('[data-testid="app-top-menu"]').classes()).not.toContain(
-      'top-menu-on-brand',
-    )
+    expect(toneOf(brandDark.wrapper)).toBe('default')
   })
 
   it('goes home from the logo', async () => {
