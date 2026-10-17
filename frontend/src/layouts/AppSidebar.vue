@@ -76,6 +76,33 @@ function handlePanelLeave() {
   if (!isTouch.value) layout.collapseDrawer()
 }
 
+// Keyboard: tabbing into the rail opens the drawer so the pin button and the menu are reachable. A touch
+// tap focuses the entry it hits, which must not expand (a leaf tap navigates), so on touch screens only
+// keyboard-driven focus counts. The entry under focus is replaced by its panel twin, so focus moves to the
+// logo button, which stays mounted.
+function isKeyboardFocus(target: EventTarget | null) {
+  if (!isTouch.value) return true
+  try {
+    return target instanceof Element && target.matches(':focus-visible')
+  } catch {
+    return true
+  }
+}
+function handleFocusIn(event: FocusEvent) {
+  if (!isDrawer.value || !layout.isRail || belowLg.value || !isKeyboardFocus(event.target)) return
+  if (!layout.drawerExpanded) {
+    layout.expandDrawer()
+    if (event.target !== homeEl.value) homeEl.value?.focus()
+  }
+}
+// Focus leaving the sidebar for another element puts the panel away; focus lost to nowhere does not.
+function handleFocusOut(event: FocusEvent) {
+  const next = event.relatedTarget
+  if (overlay.value && next instanceof Node && !asideEl.value?.contains(next)) {
+    layout.collapseDrawer()
+  }
+}
+
 // A tap on the rail's empty area (the nav itself, not one of its entries) expands the drawer; a tap on an
 // entry navigates or opens its flyout as usual.
 function handleRailTap(event: MouseEvent) {
@@ -112,6 +139,8 @@ watch(
 )
 
 const panelEl = ref<HTMLElement | null>(null)
+const asideEl = ref<HTMLElement | null>(null)
+const homeEl = ref<HTMLElement | null>(null)
 function handleDocumentClick(event: MouseEvent) {
   if (overlay.value && panelEl.value && !panelEl.value.contains(event.target as Node)) {
     layout.collapseDrawer()
@@ -119,6 +148,8 @@ function handleDocumentClick(event: MouseEvent) {
 }
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && layout.drawerExpanded && !layout.drawerPinned) {
+    // Focus inside the panel would be dropped to the page when it closes; the logo is on the rail too.
+    if (asideEl.value?.contains(document.activeElement)) homeEl.value?.focus()
     layout.collapseDrawer()
   }
 }
@@ -142,7 +173,10 @@ onUnmounted(() => {
     class="relative hidden shrink-0 flex-col transition-[width] duration-300 ease-in-out lg:flex"
     :class="[theme.surface, layout.menuTheme === 'brand' && ['border-r', theme.divider]]"
     :style="{ width }"
+    ref="asideEl"
     @mouseenter="handleRailEnter"
+    @focusin="handleFocusIn"
+    @focusout="handleFocusOut"
   >
     <!-- The same column serves the rail, the pinned/static sidebar and the drawer's overlay panel. -->
     <div
@@ -163,6 +197,7 @@ onUnmounted(() => {
         :class="layout.menuTheme === 'brand' && ['border-b', theme.divider]"
       >
         <button
+          ref="homeEl"
           type="button"
           data-testid="app-sidebar-home"
           class="flex h-full min-w-0 flex-1 cursor-pointer items-center justify-center transition-colors"

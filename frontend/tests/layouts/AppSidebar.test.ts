@@ -89,6 +89,7 @@ async function mountSidebar(
     staticInactive?: boolean
     mobileOpen?: boolean
   } = {},
+  attachTo?: HTMLElement,
 ) {
   const router = await buildRouter()
   const pinia = createTestingPinia({
@@ -98,6 +99,7 @@ async function mountSidebar(
   })
 
   const wrapper = mount(AppSidebar, {
+    attachTo,
     global: { plugins: [pinia, router], stubs: { teleport: true } },
   })
 
@@ -324,6 +326,27 @@ describe('AppSidebar', () => {
       await flushPromises()
 
       expect(layout.drawerExpanded).toBe(false)
+    })
+
+    it('opens on keyboard focus so the pin button and panel can be reached with Tab', async () => {
+      stubMedia()
+      const host = document.body.appendChild(document.createElement('div'))
+      const { wrapper: attached, layout: store } = await mountSidebar({ menuMode: 'drawer' }, host)
+      attached.get<HTMLElement>(`a[aria-label="${t('nav.home')}"]`).element.focus()
+      await flushPromises()
+
+      expect(store.drawerExpanded).toBe(true)
+      const pin = attached.get('[data-testid="app-sidebar-pin"]')
+      ;(pin.element as HTMLElement).focus()
+      expect(document.activeElement).toBe(pin.element)
+
+      // Esc closes it and leaves focus on the rail's logo, not on the page.
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      await flushPromises()
+      expect(store.drawerExpanded).toBe(false)
+      expect(document.activeElement).toBe(attached.get('[data-testid="app-sidebar-home"]').element)
+      attached.unmount()
+      host.remove()
     })
 
     it('pins and stays pinned after a reload', async () => {
