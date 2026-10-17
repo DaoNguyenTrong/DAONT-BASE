@@ -15,6 +15,8 @@ bun run --cwd frontend/user-guide/site preview    # xem bản build
 bun run --cwd frontend/user-guide/site format     # prettier
 ```
 
+Muốn mở HDSD từ nút "?" trên header của app khi dev, chạy `dev` của site song song với `bun run --cwd frontend dev`: dev server của app chuyển `/guide` sang cổng 5174. Khi dev không có bước kiểm phiên.
+
 `dev` và `build` chạy `scripts/sync-brand.ts` trước. Script này chép logo từ `frontend/public/` và sinh token màu từ `frontend/src/assets/styles/tailwind.css`, nên màu và logo của site luôn khớp với ứng dụng.
 
 ## File nào của ai
@@ -77,6 +79,43 @@ Fork không cung cấp một tính năng của base thì liệt kê chương đ�
 
 - Chỉ ẩn được chương có `hideable: true` trong `sidebar.base.ts`. Chương nền tảng (Bắt đầu, Câu hỏi thường gặp, Thuật ngữ) không ẩn được; liệt kê chúng thì build báo lỗi.
 - Vì vậy, một trang **không được** link sang chương `hideable` khác (link trong cùng chương thì được). Nếu không, ẩn chương đó sẽ để lại link chết. Test `content-integrity` chặn trường hợp này.
+
+## Triển khai và quyền truy cập
+
+Image `web` (`frontend/Dockerfile`) build site và phục vụ nó tại `/guide/` bằng chính nginx của app. Biến `GUIDE_PUBLIC` của service `web` (`docker-compose.prod.yml`, `.env.prod`) chọn chế độ:
+
+| `GUIDE_PUBLIC`        | Chế độ  | Ai đọc được                                             |
+| --------------------- | ------- | ------------------------------------------------------- |
+| rỗng hoặc `false`     | private | người đã đăng nhập vào app (mặc định)                   |
+| `true`                | public  | mọi người                                               |
+| giá trị khác (`True`) | private | như mặc định, kèm một dòng cảnh báo trong log container |
+
+`frontend/docker/41-guide-mode.sh` chọn snippet nginx (`guide-private.conf` hoặc `guide-public.conf`) lúc container khởi động. Đổi chế độ chỉ cần `docker compose ... up -d`, không phải build lại.
+
+### Chế độ private hoạt động thế nào
+
+- Với mỗi request vào `/guide/`, nginx hỏi API `GET /api/auth/check` bằng cookie `access_token` của trình duyệt (`auth_request`). API key không mở được HDSD.
+- Chưa có phiên hoặc phiên đã hết: nginx chuyển tới `/#/guide-auth?next=<trang>`. App bắt đăng nhập nếu cần, kiểm lại phiên, rồi đưa người đọc về đúng trang. Trang đích chỉ được nằm trong `/guide/`; giá trị lạ thì về trang chủ HDSD.
+- Cookie `access_token` sống 15 phút (`AccessTokenExpiryMinutes`). Đọc lâu hơn thế thì lần chuyển trang kế tiếp sẽ đi một vòng qua app: app làm mới phiên bằng refresh token và quay lại đúng trang, người đọc không phải đăng nhập lại khi refresh token còn hạn.
+- Site cũng kiểm lại phiên trước mỗi lần chuyển trang phía client (`.vitepress/theme/auth-guard.ts`), vì VitePress không tải lại trang qua nginx sau lần đầu.
+- API không trả lời: nginx trả trang lỗi tĩnh (`frontend/docker/guide-unavailable.html`, mã 500) thay vì nội dung.
+
+**Ràng buộc:** chế độ private cần API **cùng origin** với app (`VITE_API_BASE_URL` để trống, mặc định của compose). API ở origin khác thì cookie không đi theo request `/guide/`, và không ai đọc được HDSD; khi đó dùng `GUIDE_PUBLIC=true`.
+
+### Kiểm tra trước khi phát hành
+
+`frontend/docker/verify-guide-access.sh` build image, chạy nó với một API giả và kiểm bằng `curl`:
+
+- private: không phiên → 302 tới `/guide-auth`; có phiên → 200; `/guide` → 301; `next` bỏ query; CRLF mã hoá không chèn được header;
+- API sập → trang lỗi, không lộ nội dung;
+- public: không phiên → 200;
+- `GUIDE_PUBLIC` sai → vẫn private và có log;
+- app ở `/` vẫn chạy.
+
+Script cần Docker, không chạy trong CI. Thêm hai bước kiểm tay trên một bản deploy thật:
+
+1. Đăng xuất, mở `/guide/faq`, đăng nhập: bạn quay lại đúng `/guide/faq`.
+2. Đổi app sang English rồi bấm nút "?": HDSD mở `/guide/en/`.
 
 ## Test làm gì
 
