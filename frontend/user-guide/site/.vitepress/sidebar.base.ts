@@ -6,7 +6,14 @@ export const baseChapters: Chapter[] = [
   {
     slug: 'getting-started',
     text: { vi: 'Bắt đầu', en: 'Getting started' },
-    items: [{ slug: 'index', text: { vi: 'Giới thiệu', en: 'Introduction' } }],
+    items: [
+      { slug: 'index', text: { vi: 'Giới thiệu', en: 'Introduction' } },
+      { slug: 'register', text: { vi: 'Đăng ký tài khoản', en: 'Create an account' } },
+      { slug: 'verify-email', text: { vi: 'Xác minh email', en: 'Verify your email' } },
+      { slug: 'sign-in', text: { vi: 'Đăng nhập', en: 'Sign in' } },
+      { slug: 'sign-out', text: { vi: 'Đăng xuất', en: 'Sign out' } },
+      { slug: 'interface', text: { vi: 'Làm quen giao diện', en: 'Find your way around' } },
+    ],
   },
   { slug: 'faq', text: { vi: 'Câu hỏi thường gặp', en: 'FAQ' } },
 ]

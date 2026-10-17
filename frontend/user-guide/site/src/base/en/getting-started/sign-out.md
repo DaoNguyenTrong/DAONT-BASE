@@ -1,0 +1,29 @@
+---
+title: Sign out
+description: 'End your session on the device you are using.'
+---
+
+# Sign out
+
+Sign out when you're done, especially on a shared computer. Signing out ends the session on this device only; your other devices stay signed in.
+
+## Steps
+
+1. At the bottom of the left sidebar, next to your name, click the **Logout** button (the arrow-out-of-door icon).
+2. In the confirmation dialog, click **Confirm**.
+
+<figure>
+
+![The sign-out confirmation dialog](/base/images/en/getting-started/sign-out.jpg)
+
+<figcaption>Confirming sign-out</figcaption>
+</figure>
+
+| #   | Element                |
+| --- | ---------------------- |
+| 1   | The **Logout** button  |
+| 2   | The **Confirm** button |
+
+## Result
+
+The app returns to the sign-in screen. To sign out of your other devices too, use **Active sessions** in your **Profile**.
