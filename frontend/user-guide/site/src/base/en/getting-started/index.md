@@ -9,10 +9,16 @@ The application helps you work with your colleagues in each organization: manage
 
 <figure>
 
-![The application's main screen](/base/images/en/getting-started/overview.webp)
+![The application's main screen](/base/images/en/getting-started/overview.jpg)
 
 <figcaption>The application's main screen</figcaption>
 </figure>
+
+| #   | Element                                                                   |
+| --- | ------------------------------------------------------------------------- |
+| 1   | Sidebar: the main sections and the organization you work in               |
+| 2   | Top bar: where you are, the user guide, notifications, theme and language |
+| 3   | The content of the open section                                           |
 
 ::: tip
 Type a keyword into **Search** at the top of the page.

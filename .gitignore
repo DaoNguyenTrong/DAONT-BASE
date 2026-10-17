@@ -61,6 +61,10 @@ frontend/src/typings/
 frontend/user-guide/site/.vitepress/cache/
 frontend/user-guide/site/src/public/brand/
 **/brand-tokens.generated.css
+# user guide capture tool: the saved browser session (a live refresh token), its env and run output
+frontend/user-guide/tools/.auth/
+frontend/user-guide/tools/.env
+frontend/user-guide/tools/.results/
 
 # orval — regenerated from shared/openapi/openapi.json via `postinstall` / `bun run codegen`
 frontend/src/api/generated/
