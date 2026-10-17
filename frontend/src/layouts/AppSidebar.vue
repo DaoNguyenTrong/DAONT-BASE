@@ -152,8 +152,14 @@ function handleDocumentClick(event: MouseEvent) {
 }
 // Esc belongs to whatever is on top: an overlay (palette, settings panel, profile dialog) or a handler
 // that already took the key (the avatar menu, the palette's input) closes first, the drawer stays.
+// Whether an overlay was open is read in the capture phase: naive-ui's drawer and modal close themselves
+// from their own window-level listener, which doesn't prevent the key and may run before this one.
+let overlayOnTop = false
+function recordOverlay() {
+  overlayOnTop = layout.paletteOpen || layout.settingsOpen || layout.profileOpen
+}
 function handleKeydown(event: KeyboardEvent) {
-  if (event.defaultPrevented || layout.paletteOpen || layout.settingsOpen || layout.profileOpen) {
+  if (event.defaultPrevented || overlayOnTop) {
     return
   }
   if (event.key === 'Escape' && layout.drawerExpanded && !layout.drawerPinned) {
@@ -164,10 +170,12 @@ function handleKeydown(event: KeyboardEvent) {
 }
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick)
+  window.addEventListener('keydown', recordOverlay, true)
   window.addEventListener('keydown', handleKeydown)
 })
 onUnmounted(() => {
   document.removeEventListener('click', handleDocumentClick)
+  window.removeEventListener('keydown', recordOverlay, true)
   window.removeEventListener('keydown', handleKeydown)
 })
 </script>

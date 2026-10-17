@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Building, Home } from '@vicons/tabler'
 import AppSidebar from '@/layouts/AppSidebar.vue'
+import AppearanceSettings from '@/layouts/AppearanceSettings.vue'
 import type { MenuMode, MenuTheme } from '@/lib/layout-preferences'
 import { BELOW_LG_QUERY } from '@/lib/responsive'
 import i18n from '@/plugins/i18n'
@@ -350,6 +351,40 @@ describe('AppSidebar', () => {
         expect(layout.drawerExpanded).toBe(true)
       },
     )
+
+    // The real panel closes itself on Esc from naive-ui's own window-level listener, which doesn't prevent
+    // the key. Opened before the sidebar mounts, that listener is registered first and runs first.
+    it('stays open on the Escape that closes the real settings panel', async () => {
+      stubMedia()
+      const router = await buildRouter()
+      const pinia = createTestingPinia({
+        createSpy: vi.fn,
+        stubActions: false,
+        initialState: { layout: { menuMode: 'drawer', settingsOpen: true } },
+      })
+      const global = { plugins: [pinia, router], stubs: { teleport: true } }
+      const settings = mount(AppearanceSettings, { attachTo: document.body, global })
+      await flushPromises()
+      mount(AppSidebar, { global })
+      const layout = storeIn(pinia, useLayoutStore)
+      layout.expandDrawer()
+      await flushPromises()
+
+      settings
+        .get('[data-testid="appearance-mode-static"]')
+        .element.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: 'Escape',
+            code: 'Escape',
+            bubbles: true,
+            cancelable: true,
+          }),
+        )
+      await flushPromises()
+
+      expect(layout.settingsOpen).toBe(false)
+      expect(layout.drawerExpanded).toBe(true)
+    })
 
     it('stays open on an Escape another handler already took', async () => {
       stubMedia()
