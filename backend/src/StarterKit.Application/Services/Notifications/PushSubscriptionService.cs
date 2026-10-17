@@ -13,9 +13,11 @@ public sealed class PushSubscriptionService(
     {
         Guid accountId = GetCurrentAccountId();
         IRepository<PushSubscription, Guid> repository = unitOfWork.Repository<PushSubscription, Guid>();
+        // PushSubscription.Create stores the token trimmed — look it up the same way.
+        string token = request.Token.Trim();
 
         PushSubscription? existing = await repository.FirstOrDefaultAsync(
-            s => s.Token == request.Token, cancellationToken);
+            s => s.Token == token, cancellationToken);
 
         if (existing is null)
         {
@@ -36,9 +38,10 @@ public sealed class PushSubscriptionService(
     {
         Guid accountId = GetCurrentAccountId();
         IRepository<PushSubscription, Guid> repository = unitOfWork.Repository<PushSubscription, Guid>();
+        string trimmedToken = token.Trim();
 
         PushSubscription? existing = await repository.FirstOrDefaultAsync(
-            s => s.Token == token && s.AccountId == accountId, cancellationToken);
+            s => s.Token == trimmedToken && s.AccountId == accountId, cancellationToken);
 
         if (existing is null)
         {

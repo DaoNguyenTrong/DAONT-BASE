@@ -119,6 +119,35 @@ public sealed class PushSubscriptionsControllerTests(ApiFactoryFixture fixture) 
         Assert.False(await GetIsActiveAsync(previousOwnerClient));
     }
 
+    [Fact]
+    public async Task Register_SamePaddedTokenTwice_KeepsSingleTrimmedSubscription()
+    {
+        (HttpClient client, _) = await CreateAuthedClientAsync();
+        RegisterPushSubscriptionRequest request = new(" padded-token ", "Web");
+
+        HttpResponseMessage first = await client.PostAsJsonAsync(Route, request);
+        HttpResponseMessage second = await client.PostAsJsonAsync(Route, request);
+
+        Assert.Equal(HttpStatusCode.NoContent, first.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, second.StatusCode);
+        Assert.Single(await GetSubscriptionsAsync("padded-token"));
+    }
+
+    [Fact]
+    public async Task Register_PaddedTokenOwnedByAnotherAccount_ReassignsToCaller()
+    {
+        (_, Account previousOwner) = await CreateAuthedClientAsync();
+        (HttpClient callerClient, Account caller) = await CreateAuthedClientAsync();
+        await SeedSubscriptionAsync(previousOwner.Id, "shared-device-token");
+
+        HttpResponseMessage response = await callerClient.PostAsJsonAsync(
+            Route, new RegisterPushSubscriptionRequest(" shared-device-token ", "Web"));
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        PushSubscription subscription = Assert.Single(await GetSubscriptionsAsync("shared-device-token"));
+        Assert.Equal(caller.Id, subscription.AccountId);
+    }
+
     [Theory]
     [InlineData("", "Web", "Token")]
     [InlineData("token-1", "", "Platform")]
@@ -182,6 +211,18 @@ public sealed class PushSubscriptionsControllerTests(ApiFactoryFixture fixture) 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         Assert.Empty(await GetSubscriptionsAsync("token-1"));
         Assert.False(await GetIsActiveAsync(client));
+    }
+
+    [Fact]
+    public async Task Remove_PaddedOwnToken_DeletesSubscription()
+    {
+        (HttpClient client, Account caller) = await CreateAuthedClientAsync();
+        await SeedSubscriptionAsync(caller.Id, "token-1");
+
+        HttpResponseMessage response = await client.DeleteAsync(RemoveUrl(" token-1 "));
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Empty(await GetSubscriptionsAsync("token-1"));
     }
 
     [Fact]
