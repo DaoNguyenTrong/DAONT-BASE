@@ -31,7 +31,7 @@ const statePath = fileURLToPath(new URL('./.auth/state.json', import.meta.url))
 const resultsDir = fileURLToPath(new URL('./.results', import.meta.url))
 const runId = String(process.ppid)
 const apiUrl = (process.env.GUIDE_API_URL ?? 'http://localhost:7000').replace(/\/$/, '')
-const APP_SHELL = 'aside'
+const APP_SHELL = '[data-testid="app-shell"]'
 const MARK_CLASS = 'guide-capture-mark'
 
 // Not part of what the guide shows: the dev server's Vue DevTools button, and the footer's version

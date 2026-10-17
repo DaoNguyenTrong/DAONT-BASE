@@ -4,7 +4,7 @@ import { locales, test } from '../../fixtures'
 // "Tổ chức" chapter, from the owner's side of the seeded "Công ty Mẫu". Dialogs are opened for the
 // picture only: nothing is created, switched, removed or deactivated.
 const chapter = 'organizations'
-const account = '[data-testid="app-sidebar-account"]'
+const account = '[data-testid="app-header-user-menu"]'
 const owned = 'main .rounded-xl:has-text("Công ty Mẫu")'
 const members = '.n-modal [data-testid="organization-members-list"]'
 const roles = '.n-modal [data-testid="organization-roles-list"]'
@@ -28,14 +28,14 @@ async function openRoles(page: Page) {
 for (const locale of locales) {
   test(`switch [${locale}]`, async ({ page, capture }) => {
     await capture.open(locale)
-    await page.locator('[data-testid="organization-switcher"]').click()
-    await page.locator('.n-popover [data-testid="organization-switcher-manage"]').waitFor()
+    await page.locator(account).click()
+    await page.locator('.n-popover [data-testid="organization-list-manage"]').waitFor()
     await capture.annotate([
-      { selector: '[data-testid="organization-switcher"]', n: 1, at: 'top-right' },
+      { selector: account, n: 1, at: 'below' },
       { selector: '.n-popover button:has-text("Công ty Mẫu")', n: 2, at: 'after' },
-      { selector: '[data-testid="organization-switcher-manage"]', n: 3, at: 'top-right' },
+      { selector: '[data-testid="organization-list-manage"]', n: 3, at: 'top-right' },
     ])
-    await capture.blur([account])
+    await capture.blur([account, '.n-popover [role="menu"] > div:first-child'])
     await capture.shot({ locale, chapter, name: 'switch' })
   })
 

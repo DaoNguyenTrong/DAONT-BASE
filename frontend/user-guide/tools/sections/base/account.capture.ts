@@ -6,10 +6,11 @@ const chapter = 'account'
 const tab = (n: number) => `.n-modal .n-tabs-tab >> nth=${n}`
 const field = (n: number) => `.n-modal .n-tab-pane form .n-form-item >> nth=${n}`
 const primary = '.n-modal .n-tab-pane .n-button--primary-type'
-const account = '[data-testid="app-sidebar-account"]'
+const account = '[data-testid="app-header-user-menu"]'
 
 async function openProfile(page: Page, tabIndex: number) {
-  await page.locator('[data-testid="app-sidebar-account"]').click()
+  await page.locator(account).click()
+  await page.locator('[data-testid="user-menu-profile"]').click()
   await page.locator('.n-modal .n-tabs').waitFor()
   if (tabIndex > 0) await page.locator(tab(tabIndex)).click()
 }

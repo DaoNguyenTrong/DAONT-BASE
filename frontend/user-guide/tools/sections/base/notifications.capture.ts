@@ -3,7 +3,7 @@ import { locales, test } from '../../fixtures'
 // "Thông báo" chapter: the bell's panel with the seeded unread notification. Nothing is marked read.
 // The bell itself carries no mark: the header's buttons sit too close, and interface.md numbers it.
 const chapter = 'notifications'
-const account = '[data-testid="app-sidebar-account"]'
+const account = '[data-testid="app-header-user-menu"]'
 const bell = 'header .n-badge button'
 const panel = '.n-popover:has(.n-list)'
 

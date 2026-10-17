@@ -34,7 +34,8 @@ test.afterAll(async () => {
 })
 
 test('profile dialog shows active sessions including another device', async () => {
-  await page.locator('aside').getByRole('button', { name: 'Profile' }).first().click()
+  await page.locator('[data-testid="app-header-user-menu"]').click()
+  await page.locator('[data-testid="user-menu-profile"]').click()
   await expect(page.getByRole('dialog', { name: 'Profile' })).toBeVisible()
   await page.getByRole('tab', { name: 'Login sessions' }).click()
   await expect(page.getByText('This device')).toBeVisible()
