@@ -96,6 +96,4 @@ RENAME TO "Acme_api";` (and keep the old user) everywhere it exists, or start fr
 - **`SECURITY.md`** — the reporting link and email point at this template's maintainer.
 - **`.serena/project.yml`** `project_name` — tracks the folder name (`DAONT-BASE`), not the code
   name; change it only if the folder is renamed.
-- **Product process** — a fork with a product owner, PRDs and a tracker activates the workflow
-  templates in `.claude/templates/` (task tracking, PRD → dev, PO decision log); see its README.
 - **`CHANGELOG.md`** — start the fork's own history under `[Unreleased]`.
