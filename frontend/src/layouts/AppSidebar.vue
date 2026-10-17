@@ -150,7 +150,12 @@ function handleDocumentClick(event: MouseEvent) {
     layout.collapseDrawer()
   }
 }
+// Esc belongs to whatever is on top: an overlay (palette, settings panel, profile dialog) or a handler
+// that already took the key (the avatar menu, the palette's input) closes first, the drawer stays.
 function handleKeydown(event: KeyboardEvent) {
+  if (event.defaultPrevented || layout.paletteOpen || layout.settingsOpen || layout.profileOpen) {
+    return
+  }
   if (event.key === 'Escape' && layout.drawerExpanded && !layout.drawerPinned) {
     // Focus inside the panel would be dropped to the page when it closes; the logo is on the rail too.
     if (asideEl.value?.contains(document.activeElement)) homeEl.value?.focus()
@@ -221,8 +226,8 @@ onUnmounted(() => {
           type="button"
           data-testid="app-sidebar-pin"
           :aria-pressed="layout.drawerPinned"
-          :aria-label="layout.drawerPinned ? t('layout.unpinSidebar') : t('layout.pinSidebar')"
-          class="mr-3 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors"
+          :aria-label="t('layout.pinSidebar')"
+          class="mr-3 flex h-9 w-9 shrink-0 pointer-coarse:size-10 cursor-pointer items-center justify-center rounded-lg transition-colors"
           :class="layout.drawerPinned ? theme.itemActive : theme.itemIdle"
           @click="layout.setDrawerPinned(!layout.drawerPinned)"
         >

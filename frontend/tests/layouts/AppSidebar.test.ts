@@ -335,6 +335,39 @@ describe('AppSidebar', () => {
       expect(layout.drawerExpanded).toBe(false)
     })
 
+    it.each(['openPalette', 'openSettings', 'openProfile'] as const)(
+      'stays open on Escape while an overlay is on top (%s)',
+      async (openOverlay) => {
+        stubMedia()
+        const { layout } = await mountSidebar({ menuMode: 'drawer' })
+        layout.expandDrawer()
+        layout[openOverlay]()
+        await flushPromises()
+
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+        await flushPromises()
+
+        expect(layout.drawerExpanded).toBe(true)
+      },
+    )
+
+    it('stays open on an Escape another handler already took', async () => {
+      stubMedia()
+      const { layout } = await mountSidebar({ menuMode: 'drawer' })
+      layout.expandDrawer()
+      await flushPromises()
+      const takeEscape = (event: Event) => event.preventDefault()
+      document.addEventListener('keydown', takeEscape)
+
+      document.body.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      )
+      await flushPromises()
+      document.removeEventListener('keydown', takeEscape)
+
+      expect(layout.drawerExpanded).toBe(true)
+    })
+
     it('opens on keyboard focus so the pin button and panel can be reached with Tab', async () => {
       stubMedia()
       const host = document.body.appendChild(document.createElement('div'))
@@ -365,6 +398,8 @@ describe('AppSidebar', () => {
       const pin = first.wrapper.get('[data-testid="app-sidebar-pin"]')
       expect(pin.attributes('aria-pressed')).toBe('false')
       expect(pin.attributes('aria-label')).toBe(t('layout.pinSidebar'))
+      // A 40px target on touch screens (a tablet at 1024px and up).
+      expect(pin.classes()).toContain('pointer-coarse:size-10')
       await pin.trigger('click')
       await flushPromises()
 
@@ -382,9 +417,10 @@ describe('AppSidebar', () => {
       expect(reloaded.layout.drawerPinned).toBe(true)
       expect(reloadedAside.attributes('data-mode')).toBe('drawer')
       expect(reloadedAside.attributes('style')).toContain('width: 16rem')
-      expect(reloaded.wrapper.get('[data-testid="app-sidebar-pin"]').attributes('aria-label')).toBe(
-        t('layout.unpinSidebar'),
-      )
+      // One stable name; the state is in aria-pressed.
+      const reloadedPin = reloaded.wrapper.get('[data-testid="app-sidebar-pin"]')
+      expect(reloadedPin.attributes('aria-label')).toBe(t('layout.pinSidebar'))
+      expect(reloadedPin.attributes('aria-pressed')).toBe('true')
     })
   })
 })

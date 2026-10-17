@@ -29,7 +29,6 @@ const vi: LocaleSchema = {
     openSettings: 'Cài đặt giao diện',
     more: 'Thêm',
     pinSidebar: 'Ghim thanh bên',
-    unpinSidebar: 'Bỏ ghim thanh bên',
     userMenu: {
       open: 'Tài khoản',
       vietnamese: 'Tiếng Việt',
