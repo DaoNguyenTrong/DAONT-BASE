@@ -29,5 +29,21 @@ export const baseChapters: Chapter[] = [
       },
     ],
   },
+  {
+    slug: 'organizations',
+    text: { vi: 'Tổ chức', en: 'Organizations' },
+    hideable: true,
+    items: [
+      { slug: 'switch', text: { vi: 'Chuyển tổ chức', en: 'Switch organization' } },
+      { slug: 'create', text: { vi: 'Tạo tổ chức', en: 'Create an organization' } },
+      { slug: 'add-member', text: { vi: 'Thêm thành viên', en: 'Add a member' } },
+      { slug: 'manage-members', text: { vi: 'Quản lý thành viên', en: 'Manage members' } },
+      { slug: 'roles', text: { vi: 'Quản lý vai trò', en: 'Manage roles' } },
+      {
+        slug: 'deactivate',
+        text: { vi: 'Ngưng hoạt động tổ chức', en: 'Deactivate an organization' },
+      },
+    ],
+  },
   { slug: 'faq', text: { vi: 'Câu hỏi thường gặp', en: 'FAQ' } },
 ]

@@ -5,6 +5,8 @@ import { describe, expect, test } from 'bun:test'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import { Permissions } from '../../../src/lib/permissions'
+import en from '../../../src/locales/en'
+import vi from '../../../src/locales/vi'
 import { rewritePath } from '../.vitepress/paths'
 import { chapters, sidebar, srcExclude } from '../.vitepress/sidebar'
 import { permissionLabels } from '../.vitepress/theme/permission-labels'
@@ -75,6 +77,21 @@ describe('content integrity', () => {
       .map((page) => [page, parseFrontmatter(read(page)).permission] as const)
       .filter((entry): entry is readonly [string, string] => entry[1] !== undefined)
     expect(permissionProblems(Object.values(Permissions), permissionLabels, pageCodes)).toEqual([])
+  })
+
+  test('a base permission is named as the app names it', () => {
+    // The app labels Permissions.X with organizations.permissionX (OrganizationRolesDialog, RoleForm).
+    const app = { vi: vi.organizations, en: en.organizations } as const
+    const mismatches: string[] = []
+    for (const [key, code] of Object.entries(Permissions)) {
+      const localeKey = `permission${key}` as keyof typeof en.organizations
+      for (const locale of ['vi', 'en'] as const) {
+        const expected = app[locale][localeKey]
+        if (permissionLabels[code]?.[locale] !== expected)
+          mismatches.push(`${code} [${locale}]: ${permissionLabels[code]?.[locale]} ≠ ${expected}`)
+      }
+    }
+    expect(mismatches).toEqual([])
   })
 
   test('no two pages share a URL', () => {

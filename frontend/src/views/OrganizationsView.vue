@@ -141,6 +141,7 @@ onMounted(async () => {
               circle
               class="min-h-11 min-w-11"
               :aria-label="t('organizations.members')"
+              data-testid="organization-members"
               @click="openMembers(organization)"
             >
               <template #icon
@@ -153,6 +154,7 @@ onMounted(async () => {
               circle
               class="min-h-11 min-w-11"
               :aria-label="t('organizations.roles')"
+              data-testid="organization-roles"
               @click="openRoles(organization)"
             >
               <template #icon

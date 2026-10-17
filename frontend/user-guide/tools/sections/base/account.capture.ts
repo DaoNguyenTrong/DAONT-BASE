@@ -6,6 +6,7 @@ const chapter = 'account'
 const tab = (n: number) => `.n-modal .n-tabs-tab >> nth=${n}`
 const field = (n: number) => `.n-modal .n-tab-pane form .n-form-item >> nth=${n}`
 const primary = '.n-modal .n-tab-pane .n-button--primary-type'
+const account = '[data-testid="app-sidebar-account"]'
 
 async function openProfile(page: Page, tabIndex: number) {
   await page.locator('[data-testid="app-sidebar-account"]').click()
@@ -22,7 +23,11 @@ for (const locale of locales) {
       { selector: field(1), n: 2, at: 'top-right' },
       { selector: primary, n: 3, at: 'after' },
     ])
-    await capture.blur(['.n-modal input[type="email"]'])
+    await capture.blur([
+      account,
+      '.n-modal .n-tab-pane form .n-form-item:first-child input',
+      '.n-modal input[type="email"]',
+    ])
     await capture.shot({ locale, chapter, name: 'profile' })
   })
 
@@ -35,6 +40,7 @@ for (const locale of locales) {
       { selector: field(1), n: 3, at: 'top-right' },
       { selector: primary, n: 4, at: 'after' },
     ])
+    await capture.blur([account])
     await capture.shot({ locale, chapter, name: 'change-password' })
   })
 
@@ -49,6 +55,7 @@ for (const locale of locales) {
       { selector: '[data-testid="profile-sessions-list"] li button >> nth=0', n: 4, at: 'below' },
     ])
     await capture.blur([
+      account,
       '[data-testid="profile-sessions-list"] li p.font-medium',
       '[data-testid="profile-sessions-list"] li p.text-xs',
     ])
