@@ -52,6 +52,14 @@ const vi: LocaleSchema = {
       brand: 'Thương hiệu',
       transparent: 'Trong suốt',
     },
+    palette: {
+      trigger: 'Đi tới trang…',
+      placeholder: 'Nhập tên trang hoặc hành động',
+      empty: 'Không có kết quả',
+      pages: 'Trang',
+      actions: 'Hành động',
+      switchLanguage: 'Đổi ngôn ngữ',
+    },
   },
   markdownEditor: {
     split: 'Chia đôi',

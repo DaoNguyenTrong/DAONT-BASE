@@ -50,6 +50,14 @@ export interface LocaleSchema {
       brand: string
       transparent: string
     }
+    palette: {
+      trigger: string
+      placeholder: string
+      empty: string
+      pages: string
+      actions: string
+      switchLanguage: string
+    }
   }
   markdownEditor: {
     split: string
@@ -324,6 +332,14 @@ const en: LocaleSchema = {
     menuThemes: {
       brand: 'Brand',
       transparent: 'Transparent',
+    },
+    palette: {
+      trigger: 'Go to page…',
+      placeholder: 'Type a page or action',
+      empty: 'No results',
+      pages: 'Pages',
+      actions: 'Actions',
+      switchLanguage: 'Switch language',
     },
   },
   markdownEditor: {
