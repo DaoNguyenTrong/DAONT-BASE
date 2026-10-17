@@ -88,6 +88,11 @@ describe('AppearanceSettings', () => {
     const { wrapper, layout } = await render()
 
     expect(wrapper.text()).toContain(t('layout.settings.menuModeWideOnly'))
+    const noteId = wrapper
+      .get('[data-testid="appearance-mode-slim"]')
+      .attributes('aria-describedby')
+    expect(noteId).toBeTruthy()
+    expect(wrapper.get(`#${noteId}`).text()).toBe(t('layout.settings.menuModeWideOnly'))
 
     await wrapper.get('[data-testid="appearance-mode-slim"]').trigger('click')
     expect(layout.menuMode).toBe('slim')
@@ -98,5 +103,8 @@ describe('AppearanceSettings', () => {
     const { wrapper } = await render()
 
     expect(wrapper.text()).not.toContain(t('layout.settings.menuModeWideOnly'))
+    expect(
+      wrapper.get('[data-testid="appearance-mode-slim"]').attributes('aria-describedby'),
+    ).toBeUndefined()
   })
 })

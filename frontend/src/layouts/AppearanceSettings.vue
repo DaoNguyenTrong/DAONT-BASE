@@ -39,7 +39,7 @@ function resetFontSize() {
 }
 
 const segmentClass = (active: boolean) => [
-  'flex-1 rounded-md border px-3 py-1.5 text-sm transition-colors',
+  'flex-1 rounded-md border px-3 py-1.5 text-sm transition-colors pointer-coarse:min-h-10',
   active
     ? 'border-primary-600 bg-primary-600/10 text-primary-600 dark:border-primary-300 dark:text-primary-300 font-semibold'
     : 'border-surface-300 dark:border-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800',
@@ -73,7 +73,7 @@ const segmentClass = (active: boolean) => [
           :class="{ 'opacity-60': belowLg }"
         >
           <h3 class="mb-2 text-sm font-semibold">{{ t('layout.settings.menuMode') }}</h3>
-          <p v-if="belowLg" class="text-surface-500 mb-2 text-xs">
+          <p v-if="belowLg" id="appearance-mode-note" class="text-surface-500 mb-2 text-xs">
             {{ t('layout.settings.menuModeWideOnly') }}
           </p>
           <div class="grid grid-cols-2 gap-2">
@@ -83,8 +83,9 @@ const segmentClass = (active: boolean) => [
               type="button"
               :data-testid="`appearance-mode-${mode}`"
               :aria-pressed="menuMode === mode"
+              :aria-describedby="belowLg ? 'appearance-mode-note' : undefined"
               :class="[
-                'flex flex-col gap-1.5 rounded-md border p-2 text-left text-xs transition-colors',
+                'flex flex-col gap-1.5 rounded-md border p-2 text-left text-xs transition-colors pointer-coarse:min-h-10',
                 menuMode === mode
                   ? 'border-primary-600 bg-primary-600/10 dark:border-primary-300 font-semibold'
                   : 'border-surface-300 dark:border-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800',
@@ -119,6 +120,7 @@ const segmentClass = (active: boolean) => [
           <div class="flex items-center gap-2">
             <n-button
               secondary
+              class="pointer-coarse:h-10! pointer-coarse:min-w-10!"
               :disabled="!canDecrease"
               :aria-label="t('common.decreaseFontSize')"
               @click="decreaseFontSize"
@@ -130,6 +132,7 @@ const segmentClass = (active: boolean) => [
             <span class="min-w-12 text-center text-sm tabular-nums">{{ fontSize }}px</span>
             <n-button
               secondary
+              class="pointer-coarse:h-10! pointer-coarse:min-w-10!"
               :disabled="!canIncrease"
               :aria-label="t('common.increaseFontSize')"
               @click="increaseFontSize"
@@ -140,6 +143,7 @@ const segmentClass = (active: boolean) => [
             </n-button>
             <n-button
               text
+              class="pointer-coarse:h-10! pointer-coarse:min-w-10!"
               :disabled="!canReset"
               :aria-label="t('common.resetFontSize')"
               @click="resetFontSize"
