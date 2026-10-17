@@ -15,6 +15,19 @@ export function resolveChapters(
     if (!chapter) throw new Error(`Unknown base chapter "${slug}" in hiddenBaseChapters`)
     if (chapter.hideable !== true) throw new Error(`Base chapter "${slug}" is not hideable`)
   }
+  // new-page prints entries with empty labels to fill in; one left blank would ship an empty menu row.
+  for (const chapter of [...base, ...app]) {
+    const entries = [
+      [chapter.slug, chapter.text] as const,
+      ...(chapter.items ?? []).map((item) => [`${chapter.slug}/${item.slug}`, item.text] as const),
+    ]
+    for (const [path, text] of entries) {
+      for (const locale of ['vi', 'en'] as const) {
+        if (!text[locale].trim())
+          throw new Error(`Blank ${locale} label for "${path}" in the sidebar`)
+      }
+    }
+  }
   const duplicate = app.find((a) => base.some((b) => b.slug === a.slug))
   if (duplicate) throw new Error(`Duplicate chapter slug "${duplicate.slug}"`)
   return [

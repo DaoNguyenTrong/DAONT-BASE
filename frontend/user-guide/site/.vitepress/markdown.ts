@@ -57,6 +57,16 @@ export const markdown: MarkdownOptions = {
     md.renderer.rules.table_close = (tokens, idx, options, _env, self) =>
       `${self.renderToken(tokens, idx, options)}</div>`
 
+    // PermissionNote (a global theme component) goes right under the page title; it renders nothing
+    // unless the frontmatter sets `permission:`. No theme slot sits between the title and the body.
+    md.core.ruler.push('guide-permission-note', (state) => {
+      const close = state.tokens.findIndex((t) => t.type === 'heading_close' && t.tag === 'h1')
+      if (close === -1) return
+      const note = new state.Token('html_block', '', 0)
+      note.content = '<PermissionNote />\n'
+      state.tokens.splice(close + 1, 0, note)
+    })
+
     // An untitled callout on an English page gets the English title; the container renderer uses
     // whatever follows the type in `info` as the title.
     md.core.ruler.push('guide-container-labels', (state) => {

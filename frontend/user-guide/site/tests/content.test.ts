@@ -1,10 +1,11 @@
-import { expect, test } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import {
   chapterOfUrl,
   counterpart,
   extractImages,
   extractLinks,
   parseFrontmatter,
+  permissionProblems,
   resolveLink,
 } from './lib/content'
 
@@ -45,4 +46,40 @@ test('resolveLink uses the rewritten location', () => {
 test('chapterOfUrl', () => {
   expect(chapterOfUrl('/en/organizations/add-member')).toBe('organizations')
   expect(chapterOfUrl('/faq')).toBe('faq')
+})
+
+test('extractors skip HTML comments and fenced code, as VitePress renders neither as links', () => {
+  const src = [
+    '<!-- ![alt](/base/images/vi/<chương>/<tên>.jpg) [x](../a) -->',
+    '```md',
+    '![shown](/nowhere.jpg) [y](../b)',
+    '```',
+    '![real](/base/images/vi/a.jpg) [z](../c)',
+  ].join('\n')
+  expect(extractImages(src)).toEqual([{ alt: 'real', src: '/base/images/vi/a.jpg' }])
+  expect(extractLinks(src)).toEqual(['../c'])
+})
+
+test('the page template yields no image or link to check', async () => {
+  const template = await Bun.file(new URL('../src/_template.md', import.meta.url)).text()
+  expect(extractImages(template)).toEqual([])
+  expect(extractLinks(template)).toEqual([])
+})
+
+describe('permissionProblems', () => {
+  const labels = { 'a.manage': { vi: 'A', en: 'A' } }
+  test('an app permission with no page and no label is fine', () => {
+    expect(permissionProblems(['a.manage', 'orders.manage'], labels, [])).toEqual([])
+  })
+  test('a page needing an unknown or unlabelled code is reported', () => {
+    expect(
+      permissionProblems(['a.manage', 'orders.manage'], labels, [
+        ['base/x.md', 'nope'],
+        ['app/y.md', 'orders.manage'],
+      ]),
+    ).toEqual(['base/x.md: unknown permission "nope"', 'app/y.md: no label for "orders.manage"'])
+  })
+  test('a label for a code the app no longer has is reported', () => {
+    expect(permissionProblems([], labels, [])).toEqual(['label for unknown permission "a.manage"'])
+  })
 })

@@ -37,3 +37,14 @@ test('heading permalink label uses the rendered title in the page language', () 
     'aria-label="Link to section &quot;Sessions&quot;"',
   )
 })
+
+describe('permission note', () => {
+  test('is placed right under the page title, once', () => {
+    const html = render('# Thêm thành viên\n\nBody\n\n# Second', 'base/organizations/add-member.md')
+    expect(html).toMatch(/<\/h1>\s*<PermissionNote \/>\s*<p>Body<\/p>/)
+    expect(html.match(/<PermissionNote \/>/g)).toHaveLength(1)
+  })
+  test('is absent from a page without a title', () => {
+    expect(render('Body only', 'base/faq.md')).not.toContain('PermissionNote')
+  })
+})

@@ -25,6 +25,7 @@ Base (repo này) và mỗi dự án fork cùng sửa site này. Để fork kéo 
 | ------------------------------------------------------- | ---- | ---------------------------------------------------- |
 | `site/.vitepress/product.ts`                            | fork | tên sản phẩm, đơn vị phát hành, logo, chương base ẩn |
 | `site/.vitepress/sidebar.app.ts`                        | fork | chương của fork                                      |
+| `site/.vitepress/permission-labels.app.ts`              | fork | tên các quyền của fork                               |
 | `site/src/index.md`, `site/src/en/index.md`             | fork | trang chủ                                            |
 | `site/src/app/**`                                       | fork | nội dung và ảnh của fork                             |
 | `site/.vitepress/sidebar.base.ts`, `site/src/base/**`   | base | chương và nội dung của base                          |
@@ -60,7 +61,7 @@ Hai ngôn ngữ dùng **cùng slug** (tiếng Anh). Nhờ vậy nút chọn ngô
 
 Mỗi trang tác vụ theo khung của `src/_template.md`: mục đích, quyền cần có (frontmatter `permission`), trước khi bắt đầu, các bước, kết quả, sự cố thường gặp. Placeholder trong template là chữ thường hoặc comment HTML; đừng viết placeholder dạng `<chữ>`, vì markdown sẽ coi đó là thẻ HTML và trang không build được.
 
-Trang có `permission: <mã quyền>` trong frontmatter sẽ tự hiện khung "Cần quyền: …" dưới tiêu đề. Mã quyền phải có trong `frontend/src/lib/permissions.ts`; tên hiển thị nằm trong `site/.vitepress/theme/permission-labels.ts`.
+Trang có `permission: <mã quyền>` trong frontmatter sẽ tự hiện khung "Cần quyền: …" dưới tiêu đề. Mã quyền phải có trong `frontend/src/lib/permissions.ts`; tên hiển thị của quyền base nằm trong `site/.vitepress/theme/permission-labels.ts`, của quyền fork trong `site/.vitepress/permission-labels.app.ts`. App có thêm quyền mà chưa trang nào dùng thì không cần đặt tên.
 
 Callout dùng cú pháp chuẩn `::: info`, `::: tip`, `::: warning`. Tiêu đề tự đổi theo ngôn ngữ của trang (Lưu ý / Mẹo / Quan trọng, Note / Tip / Important). Viết `::: tip Tiêu đề riêng` để đặt tiêu đề khác.
 

@@ -47,6 +47,21 @@ describe('resolveChapters', () => {
       'Unknown base chapter "nope" in hiddenBaseChapters',
     )
   })
+  test('rejects a blank label in either language', () => {
+    const blankItem: Chapter[] = [
+      {
+        slug: 'orders',
+        text: t('Đơn hàng', 'Orders'),
+        items: [{ slug: 'create', text: t('', '') }],
+      },
+    ]
+    expect(() => resolveChapters(base, blankItem, [])).toThrow(
+      'Blank vi label for "orders/create" in the sidebar',
+    )
+    expect(() => resolveChapters(base, [{ slug: 'x', text: t('X', ' ') }], [])).toThrow(
+      'Blank en label for "x" in the sidebar',
+    )
+  })
   test('rejects a slug used by both trees', () => {
     expect(() => resolveChapters(base, [{ slug: 'faq', text: t('a', 'b') }], [])).toThrow(
       'Duplicate chapter slug "faq"',

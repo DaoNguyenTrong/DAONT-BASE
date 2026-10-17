@@ -44,15 +44,20 @@ export function parseFrontmatter(source: string): Record<string, string> {
   return data
 }
 
+// What VitePress renders as content: HTML comments and fenced code blocks hold examples, not links.
+function renderedText(source: string): string {
+  return source.replace(/<!--[\s\S]*?-->/g, '').replace(/^(```|~~~)[\s\S]*?^\1/gm, '')
+}
+
 export function extractImages(source: string): { alt: string; src: string }[] {
-  return [...source.matchAll(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g)].map((m) => ({
+  return [...renderedText(source).matchAll(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g)].map((m) => ({
     alt: m[1],
     src: m[2],
   }))
 }
 
 export function extractLinks(source: string): string[] {
-  return [...source.matchAll(/(?<!!)\[[^\]]*\]\(([^)\s]+)[^)]*\)/g)]
+  return [...renderedText(source).matchAll(/(?<!!)\[[^\]]*\]\(([^)\s]+)[^)]*\)/g)]
     .map((m) => m[1])
     .filter((link) => !/^([a-z][a-z0-9+.-]*:|\/\/)/i.test(link))
     .map((link) => link.split('#')[0])
@@ -67,4 +72,27 @@ export function resolveLink(page: string, link: string): string {
 
 export function chapterOfUrl(url: string): string {
   return url.replace(/^\/(en\/)?/, '').split('/')[0]
+}
+
+/**
+ * Permission codes as the guide uses them. The app may define codes no page mentions (a fork adds
+ * its own without touching the guide); only codes that pages require must be known and labelled.
+ */
+export function permissionProblems(
+  codes: string[],
+  labels: Record<string, unknown>,
+  pageCodes: (readonly [string, string])[],
+): string[] {
+  return [
+    ...pageCodes.flatMap(([page, code]) =>
+      !codes.includes(code)
+        ? [`${page}: unknown permission "${code}"`]
+        : labels[code] === undefined
+          ? [`${page}: no label for "${code}"`]
+          : [],
+    ),
+    ...Object.keys(labels)
+      .filter((code) => !codes.includes(code))
+      .map((code) => `label for unknown permission "${code}"`),
+  ]
 }

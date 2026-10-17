@@ -15,6 +15,7 @@ import {
   extractLinks,
   listPages,
   parseFrontmatter,
+  permissionProblems,
   resolveLink,
 } from './lib/content'
 
@@ -69,14 +70,11 @@ describe('content integrity', () => {
     expect(problems).toEqual([])
   })
 
-  test('every permission is a known code with labels', () => {
-    const codes: string[] = Object.values(Permissions)
-    expect(Object.keys(permissionLabels).sort()).toEqual([...codes].sort())
-    const unknown = pages
+  test('every permission a page requires is a known code with a label', () => {
+    const pageCodes = pages
       .map((page) => [page, parseFrontmatter(read(page)).permission] as const)
-      .filter(([, code]) => code !== undefined && !codes.includes(code))
-      .map(([page, code]) => `${page}: ${code}`)
-    expect(unknown).toEqual([])
+      .filter((entry): entry is readonly [string, string] => entry[1] !== undefined)
+    expect(permissionProblems(Object.values(Permissions), permissionLabels, pageCodes)).toEqual([])
   })
 
   test('no two pages share a URL', () => {

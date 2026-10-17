@@ -39,12 +39,16 @@ describe('generateBrandTokensCss', () => {
     )
   })
 
-  test('the real app stylesheet yields the WeatherPlus values', () => {
+  // Only the shape, never the values: a fork recolours the app without touching this base file.
+  test('the real app stylesheet yields every brand token', () => {
     const css = generateBrandTokensCss(appCss)
-    expect(css).toContain('--brand-violet-500: #4e3d8f;')
-    expect(css).toContain('--brand-violet-600: #5e4c9e;')
-    expect(css).toContain('--brand-leaf-400: #91bd44;')
-    expect(css).toContain('--brand-surface-950: #121527;')
+    const names = [...css.matchAll(/--brand-([\w-]+):/g)].map((m) => m[1])
+    expect(names).toHaveLength(25)
+  })
+
+  test('a fork that recolours the app still gets every brand token', () => {
+    const recoloured = appCss.replace(/#[0-9a-f]{6}\b/gi, '#010203')
+    expect(generateBrandTokensCss(recoloured)).toContain('--brand-violet-500: #010203;')
   })
 })
 

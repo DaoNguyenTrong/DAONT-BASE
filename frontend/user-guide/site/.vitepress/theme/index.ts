@@ -57,10 +57,13 @@ export default {
         'nav-bar-title-after': () => versionBadge('guide-version--title', text.versionTitle),
         'nav-bar-content-before': () => h(AppLink),
         'nav-bar-content-after': () => versionBadge('guide-version--nav', text.versionTitle),
-        'doc-before': () => h(PermissionNote),
         'home-hero-info': () => h(HeroTitle),
         'home-hero-actions-after': () => h(AppLink, { variant: 'button' }),
       })
     }
   }),
+  enhanceApp({ app }) {
+    // Inserted under each page's title by the guide-permission-note markdown rule.
+    app.component('PermissionNote', PermissionNote)
+  },
 } satisfies Theme
