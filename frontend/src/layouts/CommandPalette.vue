@@ -139,13 +139,27 @@ function onInputKeydown(event: KeyboardEvent) {
   }
 }
 
+// Plain Ctrl/⌘ K only. Shift or Alt makes it another shortcut (Ctrl Shift K is Firefox's web console),
+// a held key would re-fire it, and inside `[data-command-palette-ignore]` (the Markdown editor) the
+// browser keeps it.
 function onGlobalKeydown(event: KeyboardEvent) {
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-    event.preventDefault()
+  if (
+    !(event.ctrlKey || event.metaKey) ||
+    event.shiftKey ||
+    event.altKey ||
+    event.repeat ||
+    event.key.toLowerCase() !== 'k'
+  ) {
+    return
+  }
+  if (event.target instanceof Element && event.target.closest('[data-command-palette-ignore]')) {
+    return
+  }
 
-    if (!layout.paletteOpen) {
-      layout.openPalette()
-    }
+  event.preventDefault()
+
+  if (!layout.paletteOpen) {
+    layout.openPalette()
   }
 }
 

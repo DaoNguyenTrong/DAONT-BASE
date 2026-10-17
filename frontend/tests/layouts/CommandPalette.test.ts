@@ -14,6 +14,10 @@ import { storeIn } from '../helpers/pinia'
 const t = i18n.global.t
 const stub = { template: '<div />' }
 
+// Every wrapper is unmounted here, before the afterEach below empties <body>: the palette listens on
+// `window` and must not outlive its test.
+const mounted: { unmount: () => void }[] = []
+
 async function render() {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -54,13 +58,19 @@ async function render() {
     attachTo: document.body,
     global: { plugins: [pinia, router], stubs: { teleport: true } },
   })
+  mounted.push(wrapper)
 
   return { wrapper, router, layout: storeIn(pinia, useLayoutStore), auth: storeIn(pinia, useAuthStore) }
 }
 
-function pressK(modifier: 'ctrlKey' | 'metaKey') {
-  const event = new KeyboardEvent('keydown', { key: 'k', [modifier]: true, cancelable: true })
-  window.dispatchEvent(event)
+function pressK(modifiers: KeyboardEventInit, target: EventTarget = window) {
+  const event = new KeyboardEvent('keydown', {
+    key: 'k',
+    ...modifiers,
+    bubbles: true,
+    cancelable: true,
+  })
+  target.dispatchEvent(event)
   return event
 }
 
@@ -70,16 +80,17 @@ async function press(wrapper: Awaited<ReturnType<typeof render>>['wrapper'], key
 }
 
 describe('CommandPalette', () => {
-  const mounted: { unmount: () => void }[] = []
-
   afterEach(() => {
     mounted.splice(0).forEach((w) => w.unmount())
     document.body.innerHTML = ''
+    // Back to the default from tests/setup.ts: accept immediately.
+    setConfirmationOverrideNaive((options) => {
+      void options.accept?.()
+    })
   })
 
   async function open() {
     const result = await render()
-    mounted.push({ unmount: () => result.wrapper.unmount() })
     result.layout.openPalette()
     await flushPromises()
     return result
@@ -88,18 +99,47 @@ describe('CommandPalette', () => {
   it('opens on Ctrl K and on Meta K', async () => {
     const { layout } = await render()
 
-    expect(pressK('ctrlKey').defaultPrevented).toBe(true)
+    expect(pressK({ ctrlKey: true }).defaultPrevented).toBe(true)
     expect(layout.paletteOpen).toBe(true)
 
     layout.closePalette()
-    pressK('metaKey')
+    pressK({ metaKey: true })
+    expect(layout.paletteOpen).toBe(true)
+  })
+
+  it('leaves Ctrl Shift K and Ctrl Alt K to the browser', async () => {
+    const { layout } = await render()
+
+    expect(pressK({ ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(false)
+    expect(pressK({ ctrlKey: true, altKey: true }).defaultPrevented).toBe(false)
+    expect(layout.paletteOpen).toBe(false)
+  })
+
+  it('ignores a held-down Ctrl K', async () => {
+    const { layout } = await render()
+
+    expect(pressK({ ctrlKey: true, repeat: true }).defaultPrevented).toBe(false)
+    expect(layout.paletteOpen).toBe(false)
+  })
+
+  it('leaves Ctrl K to the browser inside an element marked data-command-palette-ignore', async () => {
+    const { layout } = await render()
+    const editor = document.body.appendChild(document.createElement('div'))
+    editor.setAttribute('data-command-palette-ignore', '')
+    const textarea = editor.appendChild(document.createElement('textarea'))
+
+    expect(pressK({ ctrlKey: true }, textarea).defaultPrevented).toBe(false)
+    expect(layout.paletteOpen).toBe(false)
+
+    // Anywhere else it still opens.
+    expect(pressK({ ctrlKey: true }, document.body).defaultPrevented).toBe(true)
     expect(layout.paletteOpen).toBe(true)
   })
 
   it('does not stack a second dialog when Ctrl K is pressed while open', async () => {
     const { wrapper } = await open()
 
-    pressK('ctrlKey')
+    pressK({ ctrlKey: true })
     await flushPromises()
 
     expect(wrapper.findAll('.n-modal')).toHaveLength(1)
@@ -110,7 +150,7 @@ describe('CommandPalette', () => {
     const { wrapper, layout } = await render()
 
     wrapper.unmount()
-    pressK('ctrlKey')
+    pressK({ ctrlKey: true })
 
     expect(layout.paletteOpen).toBe(false)
   })
@@ -222,8 +262,5 @@ describe('CommandPalette', () => {
 
     expect(override).toHaveBeenCalledOnce()
     expect(override.mock.calls[0]![0].header).toBe(t('auth.logout'))
-    setConfirmationOverrideNaive((options) => {
-      void options.accept?.()
-    })
   })
 })
