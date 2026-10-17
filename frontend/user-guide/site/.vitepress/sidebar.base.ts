@@ -15,5 +15,19 @@ export const baseChapters: Chapter[] = [
       { slug: 'interface', text: { vi: 'Làm quen giao diện', en: 'Find your way around' } },
     ],
   },
+  {
+    slug: 'account',
+    text: { vi: 'Tài khoản', en: 'Your account' },
+    hideable: true,
+    items: [
+      { slug: 'profile', text: { vi: 'Cập nhật hồ sơ', en: 'Update your profile' } },
+      { slug: 'change-password', text: { vi: 'Đổi mật khẩu', en: 'Change your password' } },
+      { slug: 'sessions', text: { vi: 'Phiên đăng nhập', en: 'Manage your sessions' } },
+      {
+        slug: 'push-notifications',
+        text: { vi: 'Thông báo đẩy', en: 'Push notifications' },
+      },
+    ],
+  },
   { slug: 'faq', text: { vi: 'Câu hỏi thường gặp', en: 'FAQ' } },
 ]
