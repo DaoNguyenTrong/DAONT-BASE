@@ -30,6 +30,8 @@ pre-commit:
         - "frontend/src/**/*.{ts,vue,js,cjs,mjs,json,css,scss,md}"
         - "frontend/e2e/*.ts"
         - "frontend/e2e/**/*.ts"
+        - "frontend/user-guide/tools/*.ts"
+        - "frontend/user-guide/tools/**/*.ts"
       run: bunx prettier --write {staged_files}
       stage_fixed: true
     # The user guide is its own package: run from its folder so bunx picks up its pinned prettier.
