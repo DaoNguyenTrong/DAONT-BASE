@@ -146,6 +146,10 @@ describe('markPosition', () => {
   it('sits just under the element, centred', () => {
     expect(markPosition(box, 'below')).toEqual({ x: 186, y: 96, size: 28 })
   })
+
+  it('sits just left of the element, centred', () => {
+    expect(markPosition(box, 'before')).toEqual({ x: 64, y: 56, size: 28 })
+  })
 })
 
 describe('markFits', () => {

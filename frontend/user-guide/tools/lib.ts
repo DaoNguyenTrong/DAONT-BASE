@@ -89,19 +89,22 @@ export function missingPreconditions(d: PreconditionData): string[] {
 }
 
 export type Box = { x: number; y: number; width: number; height: number }
-export type MarkPlacement = 'top-left' | 'top-right' | 'after' | 'below'
+export type MarkPlacement = 'top-left' | 'top-right' | 'before' | 'after' | 'below'
 export type Mark = { x: number; y: number; size: number }
 
 const MARK_SIZE = 28
 
 /**
  * Where a numbered mark goes: inside the element's top-left corner, inside its top-right corner
- * (keeps a control at the left edge visible), just right of it (a short label), or just under it
- * (a small icon button).
+ * (keeps a control at the left edge visible), just left or right of it (a short label, or a control
+ * hemmed in on one side), or just under it (a small icon button).
  */
 export function markPosition(box: Box, at: MarkPlacement): Mark {
   if (at === 'below') {
     return { x: box.x + (box.width - MARK_SIZE) / 2, y: box.y + box.height + 6, size: MARK_SIZE }
+  }
+  if (at === 'before') {
+    return { x: box.x - MARK_SIZE - 8, y: box.y + (box.height - MARK_SIZE) / 2, size: MARK_SIZE }
   }
   if (at === 'after') {
     return { x: box.x + box.width + 8, y: box.y + (box.height - MARK_SIZE) / 2, size: MARK_SIZE }

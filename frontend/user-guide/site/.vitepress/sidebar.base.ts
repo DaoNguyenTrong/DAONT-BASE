@@ -45,5 +45,7 @@ export const baseChapters: Chapter[] = [
       },
     ],
   },
+  { slug: 'notifications', text: { vi: 'Thông báo', en: 'Notifications' }, hideable: true },
   { slug: 'faq', text: { vi: 'Câu hỏi thường gặp', en: 'FAQ' } },
+  { slug: 'glossary', text: { vi: 'Thuật ngữ', en: 'Glossary' } },
 ]
