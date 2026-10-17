@@ -124,6 +124,7 @@ bun run --cwd frontend/user-guide/site test       # unit tests + content integri
 bun run --cwd frontend/user-guide/site build      # fails on dead links
 bun run --cwd frontend/user-guide/site format     # prettier, using frontend/.prettierrc.json
 bun run --cwd frontend/user-guide/site new-page <chapter>/<page> [--app]   # both language stubs from src/_template.md
+bun run --cwd frontend guide:capture              # screenshots from the running app into site/src/*/images (needs user-guide/tools/.env + seeded data)
 frontend/docker/verify-guide-access.sh            # Docker: builds the web image, checks private/public access with curl (SKIP_BUILD=1 reuses it)
 ```
 
