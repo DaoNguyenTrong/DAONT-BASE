@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import i18n from '@/plugins/i18n'
-import ProfileDialog from '@/components/ProfileDialog.vue'
 import UserMenu from '@/layouts/UserMenu.vue'
 import { setConfirmationOverrideNaive } from '@/lib/confirmation-override'
 import { renderComponent } from '../helpers/render'
@@ -13,15 +12,29 @@ function render(
   account: Record<string, unknown>,
   organizationName: string | null = null,
   props: { tone?: 'default' | 'on-brand' } = {},
+  attachTo?: HTMLElement,
 ) {
   return renderComponent(UserMenu, {
     props,
+    attachTo,
     initialState: {
       auth: { account, organizationName },
       organizations: { loaded: true, myOrganizations: [] },
     },
-    global: { stubs: { teleport: true, ProfileDialog: true } },
+    global: { stubs: { teleport: true } },
   })
+}
+
+// Keyboard checks need a connected tree: focus only lands on attached elements.
+function renderAttached() {
+  return render({ id: '1', name: 'Jane Doe', username: 'jane' }, null, {}, document.body)
+}
+
+async function pressKey(key: string) {
+  document.activeElement!.dispatchEvent(
+    new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+  )
+  await flushPromises()
 }
 
 async function openMenu(wrapper: Awaited<ReturnType<typeof render>>['wrapper']) {
@@ -130,14 +143,107 @@ describe('UserMenu', () => {
     expect(storeIn(pinia, useLocaleStore).currentLocale).toBe('en')
   })
 
-  it('opens the profile dialog', async () => {
+  it('sets layout.profileOpen from the profile item', async () => {
     const { wrapper, pinia } = await render({ id: '1', name: 'Jane Doe', username: 'jane' })
     await openMenu(wrapper)
-    expect(wrapper.getComponent(ProfileDialog).props('visible')).toBe(false)
+    expect(storeIn(pinia, useLayoutStore).profileOpen).toBe(false)
 
     await wrapper.get('[data-testid="user-menu-profile"]').trigger('click')
 
     expect(storeIn(pinia, useLayoutStore).profileOpen).toBe(true)
-    expect(wrapper.getComponent(ProfileDialog).props('visible')).toBe(true)
+  })
+
+  describe('keyboard', () => {
+    it('announces the menu on the trigger and flips aria-expanded', async () => {
+      const { wrapper } = await renderAttached()
+      const trigger = wrapper.get('[data-testid="app-header-user-menu"]')
+      expect(trigger.attributes('aria-haspopup')).toBe('menu')
+      expect(trigger.attributes('aria-expanded')).toBe('false')
+
+      await openMenu(wrapper)
+
+      expect(trigger.attributes('aria-expanded')).toBe('true')
+    })
+
+    it('moves focus to the first item when the menu opens', async () => {
+      const { wrapper } = await renderAttached()
+
+      await openMenu(wrapper)
+
+      const items = wrapper.get('[role="menu"]').findAll('[role^="menuitem"]')
+      expect(document.activeElement).toBe(items[0]!.element)
+      expect(items[0]!.text()).toContain(t('organizations.personalWorkspace'))
+    })
+
+    it('moves focus between the items with the arrow, Home and End keys', async () => {
+      const { wrapper } = await renderAttached()
+      await openMenu(wrapper)
+      const items = wrapper
+        .get('[role="menu"]')
+        .findAll('[role^="menuitem"]')
+        .map((item) => item.element)
+      const logout = wrapper.get('[data-testid="user-menu-logout"]').element
+
+      await pressKey('ArrowDown')
+      expect(document.activeElement).toBe(items[1])
+
+      await pressKey('ArrowUp')
+      await pressKey('ArrowUp')
+      expect(document.activeElement).toBe(logout)
+
+      await pressKey('ArrowDown')
+      expect(document.activeElement).toBe(items[0])
+
+      await pressKey('End')
+      expect(document.activeElement).toBe(logout)
+      await pressKey('Home')
+      expect(document.activeElement).toBe(items[0])
+    })
+
+    it('marks the organization rows as menu items, the current one checked', async () => {
+      const { wrapper } = await renderAttached()
+      await openMenu(wrapper)
+
+      const list = wrapper.get('[data-testid="organization-list"]')
+      const personal = list.get('[role="menuitemradio"]')
+      expect(personal.attributes('aria-checked')).toBe('true')
+      expect(list.get('[data-testid="organization-list-manage"]').attributes('role')).toBe(
+        'menuitem',
+      )
+    })
+
+    it('closes on Escape and returns focus to the trigger', async () => {
+      const { wrapper } = await renderAttached()
+      await openMenu(wrapper)
+      const trigger = wrapper.get('[data-testid="app-header-user-menu"]')
+
+      await pressKey('Escape')
+
+      expect(trigger.attributes('aria-expanded')).toBe('false')
+      expect(document.activeElement).toBe(trigger.element)
+    })
+
+    it('returns focus to the trigger when an item closes the menu', async () => {
+      const { wrapper } = await renderAttached()
+      await openMenu(wrapper)
+      const profile = wrapper.get('[data-testid="user-menu-profile"]')
+      ;(profile.element as HTMLElement).focus()
+
+      await profile.trigger('click')
+      await flushPromises()
+
+      expect(document.activeElement).toBe(wrapper.get('[data-testid="app-header-user-menu"]').element)
+    })
+
+    it('closes on Tab and hands focus back to the trigger', async () => {
+      const { wrapper } = await renderAttached()
+      await openMenu(wrapper)
+      const trigger = wrapper.get('[data-testid="app-header-user-menu"]')
+
+      await pressKey('Tab')
+
+      expect(trigger.attributes('aria-expanded')).toBe('false')
+      expect(document.activeElement).toBe(trigger.element)
+    })
   })
 })

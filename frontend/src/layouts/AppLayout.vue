@@ -63,8 +63,13 @@ onUnmounted(() => {
       <AppFooter />
     </div>
 
-    <!-- Overlays opened from the header (⚙, "Go to…", Ctrl K); mounted once for the whole shell. -->
+    <!--
+      Overlays opened from the header (⚙, "Go to…", Ctrl K, the avatar menu); mounted once for the whole
+      shell. The profile dialog lives here, not in the avatar menu: horizontal mode swaps the top bar and
+      the header at lg, which unmounts that menu and would drop the dialog's unsaved form.
+    -->
     <AppearanceSettings />
     <CommandPalette />
+    <ProfileDialog v-model:visible="layout.profileOpen" />
   </div>
 </template>

@@ -47,6 +47,7 @@ onMounted(() => {
 })
 </script>
 
+<!-- Its rows are menu items: render it inside a `role="menu"` container (the avatar menu). -->
 <template>
   <div
     class="flex max-h-80 min-w-52 flex-col gap-0.5 overflow-y-auto"
@@ -54,6 +55,8 @@ onMounted(() => {
   >
     <button
       type="button"
+      role="menuitemradio"
+      :aria-checked="auth.organizationId === null"
       class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-100 dark:hover:bg-surface-800"
       @click="switchTo(null)"
     >
@@ -68,6 +71,8 @@ onMounted(() => {
       v-for="organization in organizationsStore.myOrganizations"
       :key="organization.id"
       type="button"
+      role="menuitemradio"
+      :aria-checked="auth.organizationId === organization.id"
       class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-100 dark:hover:bg-surface-800"
       @click="switchTo(organization.id)"
     >
@@ -82,6 +87,7 @@ onMounted(() => {
 
     <button
       type="button"
+      role="menuitem"
       class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-100 dark:hover:bg-surface-800"
       data-testid="organization-list-manage"
       @click="manageOrganizations"

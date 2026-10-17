@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import { defineComponent, onUnmounted } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { BELOW_LG_QUERY } from '@/lib/responsive'
 import { renderComponent } from '../helpers/render'
@@ -8,21 +9,44 @@ import i18n from '@/plugins/i18n'
 
 const t = i18n.global.t
 
-// The real panel and palette are covered by their own tests; the palette also listens on `window`.
+const profileUnmounted = vi.fn()
+const ProfileDialogStub = defineComponent({
+  props: { visible: Boolean },
+  setup() {
+    onUnmounted(profileUnmounted)
+  },
+  template: '<div data-testid="profile-stub" :data-visible="visible" />',
+})
+
+// The real panel, palette and dialog are covered by their own tests; the palette also listens on `window`.
 const overlayStubs = {
   AppearanceSettings: { template: '<div data-testid="settings-stub" />' },
   CommandPalette: { template: '<div data-testid="palette-stub" />' },
+  ProfileDialog: ProfileDialogStub,
 }
 
-function stubBelowLg(matches: boolean) {
+type Listener = (event: { matches: boolean }) => void
+
+// Returns a setter that moves the viewport across `lg`, notifying every `useMediaQuery(BELOW_LG_QUERY)`.
+function stubBelowLg(initial: boolean) {
+  let matches = initial
+  const listeners = new Set<Listener>()
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => ({
-      matches: query === BELOW_LG_QUERY ? matches : false,
-      addEventListener: () => {},
-      removeEventListener: () => {},
+      get matches() {
+        return query === BELOW_LG_QUERY ? matches : false
+      },
+      addEventListener: (_: string, listener: Listener) => {
+        if (query === BELOW_LG_QUERY) listeners.add(listener)
+      },
+      removeEventListener: (_: string, listener: Listener) => listeners.delete(listener),
     })),
   )
+  return (next: boolean) => {
+    matches = next
+    listeners.forEach((listener) => listener({ matches: next }))
+  }
 }
 
 // The real sidebar stays mounted (it owns the mobile drawer), so "no sidebar" is checked against it.
@@ -52,6 +76,12 @@ async function renderHorizontal() {
 }
 
 describe('AppLayout', () => {
+  // Cleared before, not after: the previous test's wrapper is unmounted by tests/setup.ts after this
+  // file's own afterEach hooks have run.
+  beforeEach(() => {
+    profileUnmounted.mockClear()
+  })
+
   afterEach(() => {
     vi.unstubAllGlobals()
   })
@@ -92,8 +122,8 @@ describe('AppLayout', () => {
     expect(html.indexOf('<main')).toBeLessThan(html.indexOf('marker-footer'))
   })
 
-  it('mounts the settings panel and the palette once', async () => {
-    const { wrapper } = await renderComponent(AppLayout, {
+  it('mounts the settings panel, the palette and the profile dialog once', async () => {
+    const { wrapper, pinia } = await renderComponent(AppLayout, {
       global: {
         stubs: { ...overlayStubs, AppSidebar: true, AppHeader: true, AppFooter: true },
       },
@@ -101,6 +131,30 @@ describe('AppLayout', () => {
 
     expect(wrapper.findAll('[data-testid="settings-stub"]')).toHaveLength(1)
     expect(wrapper.findAll('[data-testid="palette-stub"]')).toHaveLength(1)
+    expect(wrapper.findAll('[data-testid="profile-stub"]')).toHaveLength(1)
+
+    storeIn(pinia, useLayoutStore).openProfile()
+    await flushPromises()
+    expect(wrapper.get('[data-testid="profile-stub"]').attributes('data-visible')).toBe('true')
+  })
+
+  it('keeps the open profile dialog mounted when horizontal mode crosses lg', async () => {
+    const setBelowLg = stubBelowLg(false)
+    const { wrapper, pinia } = await renderHorizontal()
+    storeIn(pinia, useLayoutStore).openProfile()
+    await flushPromises()
+
+    // The top bar gives way to the header (and back), which unmounts the avatar menu inside it.
+    setBelowLg(true)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="header-stub"]').exists()).toBe(true)
+    setBelowLg(false)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="app-top-menu"]').exists()).toBe(true)
+
+    expect(profileUnmounted).not.toHaveBeenCalled()
+    expect(wrapper.findAll('[data-testid="profile-stub"]')).toHaveLength(1)
+    expect(wrapper.get('[data-testid="profile-stub"]').attributes('data-visible')).toBe('true')
   })
 
   it('scrolls the main area back to the top on a path change, not on a query change', async () => {
