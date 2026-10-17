@@ -7,6 +7,10 @@ describe('Permissions', () => {
       OrganizationManage: 'organizations.manage',
       OrganizationMembersManage: 'organizations.members.manage',
       OrganizationRolesManage: 'organizations.roles.manage',
+      FilesManage: 'files.manage',
+      ApiKeysManage: 'apikeys.manage',
+      AuditLogsView: 'auditlogs.view',
+      SettingsManage: 'settings.manage',
     })
   })
 

@@ -224,6 +224,10 @@ export interface LocaleSchema {
     permissionOrganizationManage: string
     permissionOrganizationMembersManage: string
     permissionOrganizationRolesManage: string
+    permissionFilesManage: string
+    permissionApiKeysManage: string
+    permissionAuditLogsView: string
+    permissionSettingsManage: string
   }
   notifications: {
     title: string
@@ -481,6 +485,10 @@ const en: LocaleSchema = {
     permissionOrganizationManage: 'Manage organization',
     permissionOrganizationMembersManage: 'Manage members',
     permissionOrganizationRolesManage: 'Manage roles',
+    permissionFilesManage: 'Manage files',
+    permissionApiKeysManage: 'Manage API keys',
+    permissionAuditLogsView: 'View audit logs',
+    permissionSettingsManage: 'Manage settings',
   },
   notifications: {
     title: 'Notifications',
