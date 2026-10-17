@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using StarterKit.API.Common;
 using StarterKit.Application.Resources;
+using StarterKit.Application.Common.Authorization;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Services.Auth;
 using StarterKit.Domain.Exceptions;
@@ -172,6 +173,14 @@ public sealed class AuthController(
 
         return NoContent();
     }
+
+    /// <summary>Returns 204 when the request carries a signed-in user's access token (cookie or Bearer header), 401 otherwise.</summary>
+    /// <remarks>nginx calls this as the `auth_request` subrequest that guards the user guide at `/guide/`. It accepts only the JWT scheme: an API key belongs to an integration, not a person, so it does not open the guide.</remarks>
+    [Authorize(Policy = AuthorizationPolicies.SignedInUser)]
+    [HttpGet("check")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public IActionResult Check() => NoContent();
 
     /// <summary>Lists the active sessions (refresh tokens) for the currently authenticated account.</summary>
     [Authorize]

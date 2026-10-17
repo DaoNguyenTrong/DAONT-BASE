@@ -1168,6 +1168,53 @@
         }
       }
     },
+    "/api/auth/check": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Returns 204 when the request carries a signed-in user's access token (cookie or Bearer header), 401 otherwise.",
+        "description": "nginx calls this as the `auth_request` subrequest that guards the user guide at `/guide/`. It accepts only the JWT scheme: an API key belongs to an integration, not a person, so it does not open the guide.",
+        "operationId": "Auth_Check",
+        "parameters": [
+          {
+            "name": "X-TimeZone",
+            "in": "header",
+            "description": "IANA timezone identifier used to format date/time values. Examples: Asia/Ho_Chi_Minh, UTC, America/New_York.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Asia/Ho_Chi_Minh"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/sessions": {
       "get": {
         "tags": [

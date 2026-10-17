@@ -456,6 +456,94 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    // Check (nginx auth_request for /guide/)
+
+    [Fact]
+    public async Task Check_AccessTokenCookie_ReturnsNoContent()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        Account account;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            account = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "check-cookie", email: "check-cookie@example.com");
+        }
+
+        HttpResponseMessage response = await client.SendAsync(CheckRequest($"access_token={AuthTestHelper.MintAccessToken(account)}"));
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Check_BearerToken_ReturnsNoContent()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        Account account;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            account = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "check-bearer", email: "check-bearer@example.com");
+        }
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(account));
+
+        HttpResponseMessage response = await client.GetAsync("/api/auth/check");
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Check_Unauthenticated_ReturnsUnauthorized()
+    {
+        HttpClient client = fixture.CreateTestClient();
+
+        HttpResponseMessage response = await client.GetAsync("/api/auth/check");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    // An API key belongs to an integration, not a person: it must not open the user guide even though the
+    // default policy accepts it everywhere else.
+    [Fact]
+    public async Task Check_ApiKeyOnly_ReturnsUnauthorized()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        string rawKey;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            Guid organizationId = (await AuthTestHelper.SeedOrganizationAsync(context)).Id;
+            (_, rawKey) = await AuthTestHelper.SeedActiveApiKeyAsync(context, organizationId, "check-api-key");
+        }
+        client.DefaultRequestHeaders.Add("X-Api-Key", rawKey);
+
+        HttpResponseMessage response = await client.GetAsync("/api/auth/check");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    // nginx's subrequest forwards only the browser's cookie, never the app's X-TimeZone header.
+    [Fact]
+    public async Task Check_WithoutTimeZoneHeader_StillAuthenticatesViaCookie()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        client.DefaultRequestHeaders.Remove("X-TimeZone");
+        Account account;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            account = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "check-no-tz", email: "check-no-tz@example.com");
+        }
+
+        HttpResponseMessage withCookie = await client.SendAsync(CheckRequest($"access_token={AuthTestHelper.MintAccessToken(account)}"));
+        HttpResponseMessage withoutCookie = await client.GetAsync("/api/auth/check");
+
+        Assert.Equal(HttpStatusCode.NoContent, withCookie.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, withoutCookie.StatusCode);
+    }
+
+    private static HttpRequestMessage CheckRequest(string cookie)
+    {
+        HttpRequestMessage request = new(HttpMethod.Get, "/api/auth/check");
+        request.Headers.Add("Cookie", cookie);
+        return request;
+    }
+
     // GetSessions / RevokeSession / RevokeOtherSessions
 
     [Fact]
