@@ -8,6 +8,7 @@ import ProfileDialog from '@/components/ProfileDialog.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSidebarStore } from '@/stores/sidebar-store'
 import en from '@/locales/en'
+import i18n from '@/plugins/i18n'
 
 const stub = { template: '<div />' }
 
@@ -72,7 +73,7 @@ describe('AppSidebar', () => {
     expect(wrapper.text()).toContain('Jane Doe')
   })
 
-  it('falls back to username, then "User", when the account has no name', async () => {
+  it('falls back to username, then the localized "User", when the account has no name', async () => {
     const { wrapper: withUsername } = await mountSidebar({
       auth: { account: { id: '1', name: null, username: 'jane' } },
     })
@@ -81,7 +82,7 @@ describe('AppSidebar', () => {
     const { wrapper: withNeither } = await mountSidebar({
       auth: { account: { id: '1', name: null, username: null } },
     })
-    expect(withNeither.text()).toContain('User')
+    expect(withNeither.text()).toContain(i18n.global.t('common.user'))
   })
 
   it('opens the profile dialog and closes the mobile drawer when the profile button is clicked', async () => {
@@ -89,7 +90,7 @@ describe('AppSidebar', () => {
     const sidebar = useSidebarStore()
     sidebar.openMobile()
 
-    await wrapper.get('button[aria-label="Profile"]').trigger('click')
+    await wrapper.get(`button[aria-label="${i18n.global.t('nav.profile')}"]`).trigger('click')
 
     expect(sidebar.mobileOpen).toBe(false)
     expect(wrapper.getComponent(ProfileDialog).props('visible')).toBe(true)
@@ -115,7 +116,7 @@ describe('AppSidebar', () => {
     const sidebar = useSidebarStore()
     sidebar.openMobile()
 
-    await wrapper.get('button[aria-label="Logout"]').trigger('click')
+    await wrapper.get(`button[aria-label="${i18n.global.t('auth.logout')}"]`).trigger('click')
     await flushPromises()
 
     expect(logoutSpy).toHaveBeenCalled()

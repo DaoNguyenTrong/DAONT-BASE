@@ -166,7 +166,7 @@ const profileVisible = ref(false)
             <p
               class="truncate text-sm font-medium text-white hover:text-white/70 dark:text-surface-200 dark:hover:text-primary-200"
             >
-              {{ auth.account?.name || auth.account?.username || 'User' }}
+              {{ auth.account?.name || auth.account?.username || t('common.user') }}
             </p>
           </button>
           <n-tooltip trigger="hover" placement="top">
@@ -242,7 +242,7 @@ const profileVisible = ref(false)
                 <p
                   class="truncate text-sm font-medium text-white hover:text-white/70 dark:text-surface-200 dark:hover:text-primary-200"
                 >
-                  {{ auth.account?.name || auth.account?.username || 'User' }}
+                  {{ auth.account?.name || auth.account?.username || t('common.user') }}
                 </p>
               </button>
               <n-button

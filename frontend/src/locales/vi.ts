@@ -21,6 +21,15 @@ const vi: LocaleSchema = {
     sortDefault: 'Mặc định',
     sortAscending: 'Tăng dần',
     sortDescending: 'Giảm dần',
+    yes: 'Có',
+    no: 'Không',
+    user: 'Người dùng',
+  },
+  markdownEditor: {
+    split: 'Chia đôi',
+    editor: 'Soạn thảo',
+    preview: 'Xem trước',
+    emptyPreview: 'Chưa có nội dung',
   },
   errors: {
     requestFailed: 'Yêu cầu thất bại',

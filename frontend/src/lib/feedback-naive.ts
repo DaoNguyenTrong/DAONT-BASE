@@ -41,8 +41,9 @@ export function requestConfirmationNaive(options: ConfirmationOptionsNaive) {
   const dialogOptions: DialogOptions = {
     title: options.header,
     content: options.message,
-    positiveText: options.acceptLabel ?? 'Yes',
-    negativeText: options.rejectLabel ?? 'No',
+    // Resolved per call, so the labels follow the locale active when the dialog opens.
+    positiveText: options.acceptLabel ?? i18n.global.t('common.yes'),
+    negativeText: options.rejectLabel ?? i18n.global.t('common.no'),
     onPositiveClick: () => {
       void options.accept?.()
     },
