@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { Home, Menu2 } from '@vicons/tabler'
+import { Help, Home, Menu2 } from '@vicons/tabler'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const sidebar = useSidebarStore()
+const localeStore = useLocaleStore()
+
+// Served by nginx next to the app (frontend/user-guide); Vietnamese is the guide's root locale.
+const userGuideHref = computed(() =>
+  localeStore.currentLocale === 'en' ? '/guide/en/' : '/guide/',
+)
 
 function handleToggle() {
   if (window.innerWidth >= 1024) {
@@ -65,6 +71,26 @@ function navigateTo(routeName: string, event: MouseEvent) {
     </n-breadcrumb>
 
     <div class="flex-1" />
+
+    <n-tooltip trigger="hover" placement="bottom">
+      <template #trigger>
+        <n-button
+          tag="a"
+          :href="userGuideHref"
+          target="_blank"
+          rel="noopener"
+          :aria-label="t('nav.userGuide')"
+          data-testid="app-header-user-guide"
+          text
+          class="h-9 w-9 shrink-0 max-lg:h-11! max-lg:w-11! lg:h-8 lg:w-8"
+        >
+          <template #icon
+            ><n-icon><Help /></n-icon
+          ></template>
+        </n-button>
+      </template>
+      {{ t('nav.userGuide') }}
+    </n-tooltip>
 
     <!-- On phones the bell goes rightmost, so its panel (anchored to the bell's right edge) has the whole
          viewport width to open into instead of running off the left edge. -->

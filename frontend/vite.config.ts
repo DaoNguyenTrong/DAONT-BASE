@@ -80,6 +80,11 @@ export default defineConfig(({ mode }) => {
           '**/public/**',
         ],
       },
+      // The header's "?" link opens /guide/ on the app's origin, as nginx serves it in production. Run
+      // `bun run --cwd frontend/user-guide/site dev` alongside to follow it; dev has no session gate.
+      proxy: {
+        '/guide': { target: 'http://localhost:5174', ws: true },
+      },
     },
     define: {
       __APP_VERSION__: JSON.stringify(resolveAppVersion()),

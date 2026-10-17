@@ -130,6 +130,7 @@ const vi: LocaleSchema = {
     toggleSidebar: 'Đóng/mở thanh bên',
     collapseSidebar: 'Thu gọn thanh bên',
     expandSidebar: 'Mở rộng thanh bên',
+    userGuide: 'Hướng dẫn sử dụng',
   },
   guideAuth: {
     opening: 'Đang mở hướng dẫn sử dụng…',

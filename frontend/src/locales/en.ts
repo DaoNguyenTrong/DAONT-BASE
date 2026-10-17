@@ -119,6 +119,7 @@ export interface LocaleSchema {
     toggleSidebar: string
     collapseSidebar: string
     expandSidebar: string
+    userGuide: string
   }
   guideAuth: {
     opening: string
@@ -372,6 +373,7 @@ const en: LocaleSchema = {
     toggleSidebar: 'Toggle sidebar',
     collapseSidebar: 'Collapse sidebar',
     expandSidebar: 'Expand sidebar',
+    userGuide: 'User guide',
   },
   guideAuth: {
     opening: 'Opening the user guide…',
