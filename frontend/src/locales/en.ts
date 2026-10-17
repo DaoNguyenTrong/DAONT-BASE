@@ -25,6 +25,8 @@ export interface LocaleSchema {
   }
   layout: {
     openSettings: string
+    pinSidebar: string
+    unpinSidebar: string
     userMenu: {
       open: string
       vietnamese: string
@@ -307,6 +309,8 @@ const en: LocaleSchema = {
   },
   layout: {
     openSettings: 'Appearance settings',
+    pinSidebar: 'Pin sidebar',
+    unpinSidebar: 'Unpin sidebar',
     userMenu: {
       open: 'Account',
       vietnamese: 'Tiếng Việt',

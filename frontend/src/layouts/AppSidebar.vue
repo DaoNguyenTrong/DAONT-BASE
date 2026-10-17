@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Pin } from '@vicons/tabler'
 import { BELOW_LG_QUERY } from '@/lib/responsive'
 import AppSidebarNav from './AppSidebarNav.vue'
 import { sidebarThemeClasses } from './sidebar-theme'
@@ -13,12 +14,20 @@ const belowLg = useMediaQuery(BELOW_LG_QUERY)
 
 const theme = computed(() => sidebarThemeClasses(layout.menuTheme, isDark.value))
 
-// `isRail` covers slim, slim+ and the unpinned drawer (the drawer's hover panel comes later); every other
-// mode, horizontal included until its top bar exists, shows the full sidebar.
+const isTouch = useMediaQuery('(hover: none)')
+
+// The unpinned drawer is a rail until it expands; an expanded one keeps its rail width in the layout and
+// lays a full panel over the content (the rail beneath is covered, the page never shifts).
+const isDrawer = computed(() => layout.menuMode === 'drawer')
+const overlay = computed(() => isDrawer.value && layout.isRail && layout.drawerExpanded)
+
+// `isRail` covers slim, slim+ and the unpinned drawer; every other mode, horizontal included until its top
+// bar exists, shows the full sidebar. An expanded drawer shows the full menu too.
 const railVariant = computed(() =>
-  layout.isRail ? (layout.menuMode === 'slim-plus' ? 'slim-plus' : 'slim') : null,
+  layout.isRail && !overlay.value ? (layout.menuMode === 'slim-plus' ? 'slim-plus' : 'slim') : null,
 )
 const width = computed(() => (layout.isRail ? layout.railWidth : '16rem'))
+const showPin = computed(() => isDrawer.value && !railVariant.value)
 
 // Only the static sidebar can be switched off (the header's ☰); a flag left over from it never hides another mode.
 const visible = computed(() => !(layout.menuMode === 'static' && layout.staticInactive))
@@ -52,14 +61,75 @@ const drawerThemeOverrides = computed(() =>
 )
 
 // The drawer exists only below lg; a window widened past it must not leave it open behind the desktop menu.
+// An expanded drawer panel is a desktop overlay too, so crossing the breakpoint either way resets it.
 watch(belowLg, (below) => {
   if (!below) layout.closeMobile()
+  layout.collapseDrawer()
 })
+
+// Hover devices open the drawer by entering the rail and close it by leaving the panel. Touch screens
+// fire synthetic mouse events on tap, so they are ignored there in favour of the taps below.
+function handleRailEnter() {
+  if (isDrawer.value && layout.isRail && !isTouch.value) layout.expandDrawer()
+}
+function handlePanelLeave() {
+  if (!isTouch.value) layout.collapseDrawer()
+}
+
+// A tap on the rail's empty area (the nav itself, not one of its entries) expands the drawer; a tap on an
+// entry navigates or opens its flyout as usual.
+function handleRailTap(event: MouseEvent) {
+  if (
+    isDrawer.value &&
+    railVariant.value &&
+    isTouch.value &&
+    event.target === event.currentTarget
+  ) {
+    layout.expandDrawer()
+  }
+}
+
+function handleHomeClick() {
+  if (isDrawer.value && railVariant.value && isTouch.value) {
+    layout.expandDrawer()
+    return
+  }
+  goHome()
+}
 
 function goHome() {
   layout.closeMobile()
   router.push(useHomeRoute())
 }
+
+// Choosing a page on a touch screen puts the panel away again.
+const route = useRoute()
+watch(
+  () => route.path,
+  () => {
+    if (isTouch.value) layout.collapseDrawer()
+  },
+)
+
+const panelEl = ref<HTMLElement | null>(null)
+function handleDocumentClick(event: MouseEvent) {
+  if (overlay.value && panelEl.value && !panelEl.value.contains(event.target as Node)) {
+    layout.collapseDrawer()
+  }
+}
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && layout.drawerExpanded && !layout.drawerPinned) {
+    layout.collapseDrawer()
+  }
+}
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
+  window.addEventListener('keydown', handleKeydown)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick)
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>
@@ -69,36 +139,66 @@ function goHome() {
     data-testid="app-sidebar"
     :data-mode="layout.menuMode"
     :data-theme="layout.menuTheme"
-    class="hidden shrink-0 flex-col transition-[width] duration-300 ease-in-out lg:flex"
+    class="relative hidden shrink-0 flex-col transition-[width] duration-300 ease-in-out lg:flex"
     :class="[theme.surface, layout.menuTheme === 'brand' && ['border-r', theme.divider]]"
     :style="{ width }"
+    @mouseenter="handleRailEnter"
   >
-    <button
-      type="button"
-      data-testid="app-sidebar-home"
-      class="flex h-16 w-full shrink-0 cursor-pointer items-center justify-center transition-colors"
-      :class="[
-        railVariant ? 'px-2' : 'px-4',
-        theme.itemIdle,
-        layout.menuTheme === 'brand' && ['border-b', theme.divider],
-      ]"
-      @click="goHome"
+    <!-- The same column serves the rail, the pinned/static sidebar and the drawer's overlay panel. -->
+    <div
+      ref="panelEl"
+      class="flex min-h-0 flex-1 flex-col"
+      :class="
+        overlay && [
+          'absolute inset-y-0 left-0 z-20 w-64 flex-none shadow-xl',
+          theme.surface,
+          layout.menuTheme === 'brand' && ['border-r', theme.divider],
+        ]
+      "
+      :data-testid="overlay ? 'app-sidebar-panel' : undefined"
+      @mouseleave="overlay && handlePanelLeave()"
     >
-      <img
-        v-if="railVariant"
-        :alt="t('app.name')"
-        class="h-9 w-9 shrink-0 object-cover"
-        src="/weatherplus-mark.webp"
-      />
-      <img v-else :alt="t('app.name')" class="h-9 shrink-0" :src="sidebarWordmarkSrc" />
-    </button>
+      <div
+        class="flex h-16 shrink-0 items-center"
+        :class="layout.menuTheme === 'brand' && ['border-b', theme.divider]"
+      >
+        <button
+          type="button"
+          data-testid="app-sidebar-home"
+          class="flex h-full min-w-0 flex-1 cursor-pointer items-center justify-center transition-colors"
+          :class="[railVariant ? 'px-2' : 'px-4', theme.itemIdle]"
+          @click="handleHomeClick"
+        >
+          <img
+            v-if="railVariant"
+            :alt="t('app.name')"
+            class="h-9 w-9 shrink-0 object-cover"
+            src="/weatherplus-mark.webp"
+          />
+          <img v-else :alt="t('app.name')" class="h-9 shrink-0" :src="sidebarWordmarkSrc" />
+        </button>
+        <button
+          v-if="showPin"
+          type="button"
+          data-testid="app-sidebar-pin"
+          :aria-pressed="layout.drawerPinned"
+          :aria-label="layout.drawerPinned ? t('layout.unpinSidebar') : t('layout.pinSidebar')"
+          class="mr-3 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors"
+          :class="layout.drawerPinned ? theme.itemActive : theme.itemIdle"
+          @click="layout.setDrawerPinned(!layout.drawerPinned)"
+        >
+          <n-icon :component="Pin" class="text-base!" />
+        </button>
+      </div>
 
-    <AppSidebarNav
-      :entries="menuEntries"
-      :variant="railVariant ?? 'panel'"
-      class="flex-1 overflow-y-auto py-3"
-      :class="railVariant ? 'px-2' : 'px-3'"
-    />
+      <AppSidebarNav
+        :entries="menuEntries"
+        :variant="railVariant ?? 'panel'"
+        class="flex-1 overflow-y-auto py-3"
+        :class="railVariant ? 'px-2' : 'px-3'"
+        @click="handleRailTap"
+      />
+    </div>
   </aside>
 
   <!-- Mobile drawer (below lg, every mode) -->
