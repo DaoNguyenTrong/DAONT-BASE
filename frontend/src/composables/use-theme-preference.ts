@@ -1,15 +1,22 @@
 import type { ThemePreference } from '@/lib/theme'
 
+const preference = ref<ThemePreference>(getThemeSetting())
 const isDark = ref(getThemePreference() === 'dark')
+
+watchSystemTheme((theme) => {
+  isDark.value = theme === 'dark'
+})
 
 function toggle() {
   isDark.value = toggleThemePreference() === 'dark'
+  preference.value = getThemeSetting()
 }
 
-function setPreference(theme: ThemePreference) {
-  isDark.value = setThemePreference(theme) === 'dark'
+function setPreference(next: ThemePreference) {
+  isDark.value = setThemePreference(next) === 'dark'
+  preference.value = next
 }
 
 export function useThemePreference() {
-  return { isDark, toggle, setPreference }
+  return { isDark, preference, toggle, setPreference }
 }
