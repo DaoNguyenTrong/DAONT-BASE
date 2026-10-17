@@ -35,8 +35,14 @@ function requireEnv(name: string): string {
 export type Capture = {
   /** Switches the app's language the way the app stores it, then reloads. */
   useLocale(locale: Locale): Promise<void>
-  /** Numbered violet marks at each element's top-left corner; a missing element fails the test. */
-  annotate(items: { selector: string; n: number }[]): Promise<void>
+  /**
+   * Numbered violet marks, by default inside each element's top-left corner; `top-right` keeps a
+   * control at the left edge visible, `after` sits just right of a short element such as a label.
+   * A missing element fails the test.
+   */
+  annotate(
+    items: { selector: string; n: number; at?: 'top-left' | 'top-right' | 'after' }[],
+  ): Promise<void>
   /** Blurs private data (email, IP, device names); a missing element fails the test. */
   blur(selectors: string[]): Promise<void>
   /** Writes site/src/<tree>/images/<locale>/<chapter>/<name>.jpg, then removes marks and blur. */
@@ -116,6 +122,15 @@ export const test = base.extend<{ capture: Capture }, { session: BrowserContext 
   // sign-in and refresh is aborted, and the test fails listing what was attempted.
   page: async ({ session }, use) => {
     const page = await session.newPage()
+    // The dev server's Vue DevTools button is not part of the app.
+    await page.addInitScript(() =>
+      document.addEventListener('DOMContentLoaded', () => {
+        const style = document.createElement('style')
+        style.textContent =
+          '#__vue-devtools-container__, .vue-devtools__anchor { display: none !important; }'
+        document.head.appendChild(style)
+      }),
+    )
     const blocked: string[] = []
     await page.route('**/api/**', (route) => {
       const request = route.request()
@@ -136,6 +151,16 @@ export const test = base.extend<{ capture: Capture }, { session: BrowserContext 
   },
 })
 
+const MARK_SIZE = 28
+
+function markPosition(
+  box: { x: number; y: number; width: number; height: number },
+  at: 'top-left' | 'top-right' | 'after',
+): { x: number; y: number } {
+  if (at === 'after') return { x: box.x + box.width + 8, y: box.y + (box.height - MARK_SIZE) / 2 }
+  return { x: at === 'top-right' ? box.x + box.width - MARK_SIZE - 4 : box.x + 4, y: box.y + 4 }
+}
+
 function createCapture(page: Page): Capture {
   return {
     async useLocale(locale) {
@@ -146,7 +171,7 @@ function createCapture(page: Page): Capture {
     },
 
     async annotate(items) {
-      for (const { selector, n } of items) {
+      for (const { selector, n, at = 'top-left' } of items) {
         const target = page.locator(selector).first()
         await expect(target, `annotation ${n}: ${selector}`).toBeVisible()
         const box = await target.boundingBox()
@@ -173,7 +198,11 @@ function createCapture(page: Page): Capture {
             })
             document.body.appendChild(mark)
           },
-          { x: box.x + 4, y: box.y + 4, n, cls: MARK_CLASS },
+          {
+            ...markPosition(box, at),
+            n,
+            cls: MARK_CLASS,
+          },
         )
       }
     },

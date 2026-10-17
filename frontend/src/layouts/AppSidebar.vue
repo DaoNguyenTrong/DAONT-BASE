@@ -161,6 +161,7 @@ const profileVisible = ref(false)
             v-if="!sidebar.isMinimal"
             type="button"
             class="flex-1 cursor-pointer overflow-hidden text-left"
+            data-testid="app-sidebar-account"
             @click="viewProfile()"
           >
             <p
