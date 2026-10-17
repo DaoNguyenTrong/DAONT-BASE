@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Building, Check, ChevronDown, Loader, Settings } from '@vicons/tabler'
+import { Building, ChevronDown } from '@vicons/tabler'
 import { BELOW_LG_QUERY } from '@/lib/responsive'
 
 const props = defineProps<{
@@ -7,11 +7,8 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const router = useRouter()
 const auth = useAuthStore()
-const organizationsStore = useOrganizationsStore()
 const sidebar = useSidebarStore()
-const { switchOrganization } = useOrganizationSwitch()
 
 const showMenu = ref(false)
 
@@ -19,42 +16,13 @@ const showMenu = ref(false)
 // the right runs off the screen — open it upward there; beside the desktop sidebar keep `right-start`.
 const belowLg = useMediaQuery(BELOW_LG_QUERY)
 const menuPlacement = computed(() => (belowLg.value ? 'top-start' : 'right-end'))
-const switchingTo = ref<string | null>(null)
 
 const currentLabel = computed(() => auth.organizationName ?? t('organizations.personalWorkspace'))
 
-async function switchTo(organizationId: string | null) {
-  if (switchingTo.value !== null || organizationId === auth.organizationId) {
-    showMenu.value = false
-    return
-  }
-  switchingTo.value = organizationId ?? 'personal'
-  try {
-    // Ends in a full page reload on success — no success toast, it wouldn't survive the reload.
-    await switchOrganization(organizationId)
-  } catch (error) {
-    if (error instanceof ApiError) {
-      showErrorMessage(error.problem.title, error.problem.detail ?? t('errors.requestFailed'))
-    } else {
-      showErrorMessage(t('errors.requestFailed'))
-    }
-  } finally {
-    switchingTo.value = null
-    showMenu.value = false
-  }
-}
-
-function manageOrganizations() {
+function onDone() {
   showMenu.value = false
   sidebar.closeMobile()
-  router.push({ name: 'organizations' })
 }
-
-watch(showMenu, (open) => {
-  if (open && !organizationsStore.loaded) {
-    void organizationsStore.fetchMine()
-  }
-})
 </script>
 
 <template>
@@ -100,44 +68,6 @@ watch(showMenu, (open) => {
       </div>
     </template>
 
-    <div class="flex max-h-80 min-w-52 flex-col gap-0.5 overflow-y-auto">
-      <button
-        type="button"
-        class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-100 dark:hover:bg-surface-800"
-        @click="switchTo(null)"
-      >
-        <n-icon class="shrink-0"
-          ><Loader v-if="switchingTo === 'personal'" class="animate-spin" /><Check
-            v-else-if="auth.organizationId === null"
-        /></n-icon>
-        <span class="min-w-0 flex-1 truncate">{{ t('organizations.personalWorkspace') }}</span>
-      </button>
-
-      <button
-        v-for="organization in organizationsStore.myOrganizations"
-        :key="organization.id"
-        type="button"
-        class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-100 dark:hover:bg-surface-800"
-        @click="switchTo(organization.id)"
-      >
-        <n-icon class="shrink-0">
-          <Loader v-if="switchingTo === organization.id" class="animate-spin" />
-          <Check v-else-if="auth.organizationId === organization.id" />
-        </n-icon>
-        <span class="min-w-0 flex-1 truncate">{{ organization.name }}</span>
-      </button>
-
-      <n-divider class="my-1!" />
-
-      <button
-        type="button"
-        class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-100 dark:hover:bg-surface-800"
-        data-testid="organization-switcher-manage"
-        @click="manageOrganizations"
-      >
-        <n-icon class="shrink-0"><Settings /></n-icon>
-        <span>{{ t('organizations.manage') }}</span>
-      </button>
-    </div>
+    <OrganizationList @done="onDone" />
   </n-popover>
 </template>

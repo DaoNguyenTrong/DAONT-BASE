@@ -23,6 +23,13 @@ export interface LocaleSchema {
     no: string
     user: string
   }
+  layout: {
+    userMenu: {
+      open: string
+      vietnamese: string
+      english: string
+    }
+  }
   markdownEditor: {
     split: string
     editor: string
@@ -269,6 +276,13 @@ const en: LocaleSchema = {
     yes: 'Yes',
     no: 'No',
     user: 'User',
+  },
+  layout: {
+    userMenu: {
+      open: 'Account',
+      vietnamese: 'Tiếng Việt',
+      english: 'English',
+    },
   },
   markdownEditor: {
     split: 'Split',

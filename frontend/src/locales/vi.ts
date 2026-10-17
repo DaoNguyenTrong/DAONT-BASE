@@ -25,6 +25,13 @@ const vi: LocaleSchema = {
     no: 'Không',
     user: 'Người dùng',
   },
+  layout: {
+    userMenu: {
+      open: 'Tài khoản',
+      vietnamese: 'Tiếng Việt',
+      english: 'English',
+    },
+  },
   markdownEditor: {
     split: 'Chia đôi',
     editor: 'Soạn thảo',
