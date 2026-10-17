@@ -10,7 +10,11 @@ const router = useRouter()
 const route = useRoute()
 const sidebar = useSidebarStore()
 const auth = useAuthStore()
-const sidebarMenu = useSidebarMenu()
+const menuEntries = useSidebarMenu()
+// Groups render flat until the grouped sidebar lands; the visible menu is unchanged.
+const sidebarMenu = computed(() =>
+  menuEntries.value.flatMap((entry) => (entry.kind === 'group' ? entry.items : [entry])),
+)
 const { isDark } = useThemePreference()
 
 // Sidebar background is always dark-family (purple in light mode, navy in
