@@ -1,5 +1,7 @@
 import type { RouteMeta, RouteRecordRaw, Router } from 'vue-router'
-import type { SidebarMenuItem } from '@/layouts/sidebar-menu'
+import { MENU_GROUPS } from '@/layouts/menu-groups'
+import type { MenuGroup } from '@/layouts/menu-groups'
+import type { SidebarMenuEntry, SidebarMenuItem } from '@/layouts/sidebar-menu'
 
 type SidebarRouteMeta = NonNullable<RouteMeta['sidebar']>
 
@@ -45,7 +47,7 @@ function toSidebarItem(
     return null
   }
 
-  const children = buildSidebarMenu(route.children ?? [], hasPermission)
+  const children = buildSidebarItems(route.children ?? [], hasPermission)
 
   if (children.length > 0) {
     return {
@@ -66,7 +68,7 @@ function toSidebarItem(
   }
 }
 
-function buildSidebarMenu(
+function buildSidebarItems(
   routes: readonly RouteRecordRaw[],
   hasPermission: (code: string) => boolean,
 ): SidebarMenuItem[] {
@@ -82,7 +84,66 @@ function buildSidebarMenu(
   )
 }
 
-export function useSidebarMenu() {
+export function buildMenuEntries(
+  routes: readonly RouteRecordRaw[],
+  hasPermission: (code: string) => boolean,
+  groups: readonly MenuGroup[],
+): SidebarMenuEntry[] {
+  const knownGroups = new Map(groups.map((group) => [group.id, group]))
+  const grouped = new Map<string, SidebarMenuItem[]>()
+  const ranked: { order: number; entry: SidebarMenuEntry }[] = []
+
+  const visible = routes
+    .filter((route) => Boolean(route.meta?.sidebar))
+    .filter((route) => !route.meta?.permission || hasPermission(route.meta.permission))
+    .slice()
+    .sort(bySidebarOrder)
+
+  for (const route of visible) {
+    const item = toSidebarItem(route, hasPermission)
+
+    if (!item) {
+      continue
+    }
+
+    const groupId = (route.meta?.sidebar as SidebarRouteMeta).group
+
+    if (groupId && knownGroups.has(groupId)) {
+      grouped.set(groupId, [...(grouped.get(groupId) ?? []), item])
+      continue
+    }
+
+    if (groupId && import.meta.env.DEV) {
+      console.warn(`[sidebar] Unknown menu group "${groupId}"; showing the item ungrouped.`)
+    }
+
+    ranked.push({
+      order: route.meta?.sidebar?.order ?? 0,
+      entry: { ...item, kind: 'item' },
+    })
+  }
+
+  for (const group of groups) {
+    const items = grouped.get(group.id)
+
+    if (items?.length) {
+      ranked.push({
+        order: group.order,
+        entry: {
+          kind: 'group',
+          id: group.id,
+          labelKey: group.labelKey,
+          icon: group.icon,
+          items,
+        },
+      })
+    }
+  }
+
+  return ranked.sort((a, b) => a.order - b.order).map(({ entry }) => entry)
+}
+
+export function useSidebarMenu(groups: readonly MenuGroup[] = MENU_GROUPS) {
   const router = useRouter()
   const auth = useAuthStore()
   const version = getRouterVersion(router)
@@ -92,6 +153,6 @@ export function useSidebarMenu() {
 
     const layoutRoute = router.options.routes.find((route) => route.path === '/')
 
-    return buildSidebarMenu(layoutRoute?.children ?? [], auth.hasPermission)
+    return buildMenuEntries(layoutRoute?.children ?? [], auth.hasPermission, groups)
   })
 }

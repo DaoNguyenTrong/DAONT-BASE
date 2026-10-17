@@ -14,7 +14,7 @@ Thông báo đẩy giúp bạn biết có việc mới, ví dụ được thêm 
 
 ## Các bước
 
-1. Ở chân thanh bên trái, bấm vào tên của bạn để mở **Hồ sơ cá nhân**.
+1. Ở góc trên phải, bấm vào ảnh đại diện của bạn rồi chọn **Hồ sơ cá nhân**.
 2. Chọn tab **Thông báo đẩy**.
 3. Gạt công tắc **Thông báo đẩy** sang bật.
 4. Khi trình duyệt hỏi có cho phép trang gửi thông báo không, chọn **Cho phép**.

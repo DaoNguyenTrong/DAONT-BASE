@@ -36,7 +36,9 @@ const renderedMarkdown = computed(() => {
 </script>
 
 <template>
+  <!-- data-command-palette-ignore: Ctrl K stays the browser's while typing here (CommandPalette). -->
   <div
+    data-command-palette-ignore
     class="overflow-hidden rounded-xl border border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900"
   >
     <!-- Toolbar -->

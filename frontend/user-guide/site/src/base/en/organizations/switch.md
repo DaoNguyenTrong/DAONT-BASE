@@ -7,21 +7,21 @@ description: 'Choose the organization to work in, or go back to your personal wo
 
 You can belong to several organizations. At any moment you work in one of them, or in your **Personal workspace** (no organization). The data and permissions you see belong to the one selected.
 
-## Switch from the sidebar
+## Switch from the account menu
 
-1. At the bottom of the left sidebar, click where you are working now (for example **Personal workspace**).
-2. In the menu, choose the organization to switch to. The current one has a check mark.
+1. At the top right, click your avatar. The places you can work in (**Personal workspace** and your organizations) are listed at the top of the menu.
+2. Choose the organization to switch to. The current one has a check mark.
 
 <figure>
 
-![The organization menu at the bottom of the sidebar](/base/images/en/organizations/switch.jpg)
+![The account menu with the list of organizations](/base/images/en/organizations/switch.jpg)
 
 <figcaption>The organization menu</figcaption>
 </figure>
 
 | #   | Element                                                    |
 | --- | ---------------------------------------------------------- |
-| 1   | Where you are working; click to open the menu              |
+| 1   | Your avatar; click to open the menu                        |
 | 2   | An organization you are a member of                        |
 | 3   | **Manage organizations**: opens the **Organizations** page |
 
@@ -49,4 +49,4 @@ Under each name are the organization's slug and **Your role** in it.
 
 ## Result
 
-The page reloads in the new organization. Its name appears at the bottom of the sidebar.
+The page reloads in the new organization. Its name appears next to your avatar at the top right (on small screens, open the account menu to see it).

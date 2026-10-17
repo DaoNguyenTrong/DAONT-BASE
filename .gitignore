@@ -4,6 +4,9 @@ node_modules/
 # Playwright MCP scratch snapshots/logs
 .playwright-mcp/
 
+# Superpowers scratch (brainstorm mockups, subagent-driven-development workspaces)
+/.superpowers/
+
 # lock files — bun is the only package manager here; bun.lock IS tracked so the Dockerfile's and
 # CI's `bun install --frozen-lockfile` actually pin dependency versions (forks inherit it and update
 # it like any other file). Other managers' lockfiles are ignored to avoid accidental drift.

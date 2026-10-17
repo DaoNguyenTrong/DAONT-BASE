@@ -1,44 +1,55 @@
 <script setup lang="ts">
-import { Logout, User } from '@vicons/tabler'
-import type { SidebarMenuItem } from './sidebar-menu'
-import AppSidebarItem from './AppSidebarItem.vue'
-import ProfileDialog from '@/components/ProfileDialog.vue'
-import OrganizationSwitcher from '@/components/OrganizationSwitcher.vue'
+import { Pin } from '@vicons/tabler'
+import { BELOW_LG_QUERY } from '@/lib/responsive'
+import AppSidebarNav from './AppSidebarNav.vue'
+import { sidebarThemeClasses } from './sidebar-theme'
 
 const { t } = useI18n()
 const router = useRouter()
-const route = useRoute()
-const sidebar = useSidebarStore()
-const auth = useAuthStore()
-const sidebarMenu = useSidebarMenu()
+const layout = useLayoutStore()
+const menuEntries = useSidebarMenu()
 const { isDark } = useThemePreference()
+const { wordmarkSrc } = useBrandWordmark()
+const belowLg = useMediaQuery(BELOW_LG_QUERY)
 
-// Sidebar background is always dark-family (purple in light mode, navy in
-// dark mode — see AppSidebar's aside class), so it always needs the
-// white-text wordmark regardless of overall theme, unlike every other
-// wordmark usage in the app which still follows isDark.
-const sidebarWordmarkSrc = '/weatherplus-wordmark-dark.webp'
+const theme = computed(() => sidebarThemeClasses(layout.menuTheme, isDark.value))
 
-// Scoped to just the sidebar (desktop aside + mobile drawer, wrapped below —
-// deliberately NOT ProfileDialog, which sits on a white modal regardless of
-// theme and needs the normal errorColor) via Naive UI's local theme-overrides
-// pattern, rather than the global Drawer/popoverColor/errorColor tokens,
-// which are shared by every popover/dropdown/destructive-action app-wide.
-const sidebarThemeOverrides = computed(() =>
-  isDark.value
-    ? undefined
-    : {
-        common: {
-          // Naive UI's default errorColor (#d03050) is a mid-tone red that
-          // reads at ~1.4:1 contrast against the #5e4c9e sidebar — barely
-          // visible ("chìm"). Lightened to a pale rose that still clears
-          // WCAG AA (~5:1) against the sidebar without losing the
-          // destructive-action red hue.
-          errorColor: '#fecdd3',
-          errorColorHover: '#ffe4e6',
-          errorColorPressed: '#fda4af',
-          errorColorSuppl: '#fecdd3',
-        },
+const isTouch = useMediaQuery('(hover: none)')
+
+// The unpinned drawer is a rail until it expands; an expanded one keeps its rail width in the layout and
+// lays a full panel over the content (the rail beneath is covered, the page never shifts).
+const isDrawer = computed(() => layout.menuMode === 'drawer')
+const overlay = computed(() => isDrawer.value && layout.isRail && layout.drawerExpanded)
+
+// `isRail` covers slim, slim+ and the unpinned drawer; static and the pinned drawer show the full sidebar.
+// An expanded drawer shows the full menu too.
+const railVariant = computed(() =>
+  layout.isRail && !overlay.value ? (layout.menuMode === 'slim-plus' ? 'slim-plus' : 'slim') : null,
+)
+const width = computed(() => (layout.isRail ? layout.railWidth : '16rem'))
+const showPin = computed(() => isDrawer.value && !railVariant.value)
+
+// Only the static sidebar can be switched off (the header's ☰); a flag left over from it never hides another mode.
+// Horizontal has no sidebar at all (its menu is the top bar), only the mobile drawer below.
+const visible = computed(
+  () =>
+    layout.menuMode !== 'horizontal' && !(layout.menuMode === 'static' && layout.staticInactive),
+)
+
+// The wordmark's text color is baked into the image: the white-text file for the purple brand menu and
+// for any dark surface, the theme-aware one for the transparent menu in light mode.
+const sidebarWordmarkSrc = computed(() =>
+  layout.menuTheme === 'brand' || isDark.value
+    ? '/weatherplus-wordmark-dark.webp'
+    : wordmarkSrc.value,
+)
+
+// The mobile drawer turns purple only for the brand menu in light mode; otherwise it keeps the theme's
+// default drawer color. Scoped to the drawer via Naive UI's local theme-overrides rather than the global
+// Drawer tokens, which every other drawer in the app shares.
+const drawerThemeOverrides = computed(() =>
+  layout.menuTheme === 'brand' && !isDark.value
+    ? {
         Drawer: {
           color: '#5e4c9e',
           textColor: '#ffffff',
@@ -49,218 +60,219 @@ const sidebarThemeOverrides = computed(() =>
           headerBorderBottom: '1px solid rgba(255, 255, 255, 0.12)',
           footerBorderTop: '1px solid rgba(255, 255, 255, 0.12)',
         },
-      },
+      }
+    : undefined,
 )
 
-function isActive(item: SidebarMenuItem): boolean {
-  if (item.routeName) {
-    return route.name === item.routeName
+// The drawer exists only below lg; a window widened past it must not leave it open behind the desktop menu.
+// An expanded drawer panel is a desktop overlay too, so crossing the breakpoint either way resets it.
+watch(belowLg, (below) => {
+  if (!below) layout.closeMobile()
+  layout.collapseDrawer()
+})
+
+// Hover devices open the drawer by entering the rail and close it by leaving the panel. Touch screens
+// fire synthetic mouse events on tap, so they are ignored there in favour of the taps below.
+function handleRailEnter() {
+  if (isDrawer.value && layout.isRail && !isTouch.value) layout.expandDrawer()
+}
+function handlePanelLeave() {
+  if (!isTouch.value) layout.collapseDrawer()
+}
+
+// Keyboard: tabbing into the rail opens the drawer so the pin button and the menu are reachable. A touch
+// tap focuses the entry it hits, which must not expand (a leaf tap navigates), so on touch screens only
+// keyboard-driven focus counts. The entry under focus is replaced by its panel twin, so focus moves to the
+// logo button, which stays mounted.
+function isKeyboardFocus(target: EventTarget | null) {
+  if (!isTouch.value) return true
+  try {
+    return target instanceof Element && target.matches(':focus-visible')
+  } catch {
+    return true
   }
-  return false
+}
+function handleFocusIn(event: FocusEvent) {
+  if (!isDrawer.value || !layout.isRail || belowLg.value || !isKeyboardFocus(event.target)) return
+  if (!layout.drawerExpanded) {
+    layout.expandDrawer()
+    if (event.target !== homeEl.value) homeEl.value?.focus()
+  }
+}
+// Focus leaving the sidebar for another element puts the panel away; focus lost to nowhere does not.
+function handleFocusOut(event: FocusEvent) {
+  const next = event.relatedTarget
+  if (overlay.value && next instanceof Node && !asideEl.value?.contains(next)) {
+    layout.collapseDrawer()
+  }
+}
+
+// A tap on the rail's empty area (the nav itself, not one of its entries) expands the drawer; a tap on an
+// entry navigates or opens its flyout as usual.
+function handleRailTap(event: MouseEvent) {
+  if (
+    isDrawer.value &&
+    railVariant.value &&
+    isTouch.value &&
+    event.target === event.currentTarget
+  ) {
+    layout.expandDrawer()
+  }
+}
+
+function handleHomeClick() {
+  if (isDrawer.value && railVariant.value && isTouch.value) {
+    layout.expandDrawer()
+    return
+  }
+  goHome()
 }
 
 function goHome() {
-  sidebar.closeMobile()
+  layout.closeMobile()
   router.push(useHomeRoute())
 }
 
-function handleLogout() {
-  requestConfirmationNaive({
-    message: t('auth.logoutConfirmMessage'),
-    header: t('auth.logout'),
-    acceptLabel: t('common.confirm'),
-    rejectLabel: t('common.cancel'),
-    accept: async () => {
-      try {
-        // Ends in a full page reload to login (see the auth store's logout).
-        await useAuthStore().logout()
-      } finally {
-        sidebar.closeMobile()
-      }
-    },
-  })
-}
+// Choosing a page on a touch screen puts the panel away again.
+const route = useRoute()
+watch(
+  () => route.path,
+  () => {
+    if (isTouch.value) layout.collapseDrawer()
+  },
+)
 
-const viewProfile = () => {
-  profileVisible.value = true
-  sidebar.closeMobile()
+const panelEl = ref<HTMLElement | null>(null)
+const asideEl = ref<HTMLElement | null>(null)
+const homeEl = ref<HTMLElement | null>(null)
+function handleDocumentClick(event: MouseEvent) {
+  if (overlay.value && panelEl.value && !panelEl.value.contains(event.target as Node)) {
+    layout.collapseDrawer()
+  }
 }
-
-const profileVisible = ref(false)
+// Esc belongs to whatever is on top: an overlay (palette, settings panel, profile dialog) or a handler
+// that already took the key (the avatar menu, the palette's input) closes first, the drawer stays.
+// Whether an overlay was open is read in the capture phase: naive-ui's drawer and modal close themselves
+// from their own window-level listener, which doesn't prevent the key and may run before this one.
+let overlayOnTop = false
+function recordOverlay() {
+  overlayOnTop = layout.paletteOpen || layout.settingsOpen || layout.profileOpen
+}
+function handleKeydown(event: KeyboardEvent) {
+  if (event.defaultPrevented || overlayOnTop) {
+    return
+  }
+  if (event.key === 'Escape' && layout.drawerExpanded && !layout.drawerPinned) {
+    // Focus inside the panel would be dropped to the page when it closes; the logo is on the rail too.
+    if (asideEl.value?.contains(document.activeElement)) homeEl.value?.focus()
+    layout.collapseDrawer()
+  }
+}
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
+  window.addEventListener('keydown', recordOverlay, true)
+  window.addEventListener('keydown', handleKeydown)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick)
+  window.removeEventListener('keydown', recordOverlay, true)
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>
   <!-- Desktop sidebar -->
-  <n-config-provider abstract :theme-overrides="sidebarThemeOverrides">
-    <aside
-      class="hidden shrink-0 flex-col border-r border-white/10 bg-primary-600 transition-[width] duration-300 ease-in-out dark:border-surface-800 dark:bg-surface-900 lg:flex"
-      :style="{ width: sidebar.sidebarWidth }"
+  <aside
+    v-if="visible"
+    data-testid="app-sidebar"
+    :data-mode="layout.menuMode"
+    :data-theme="layout.menuTheme"
+    class="relative hidden shrink-0 flex-col transition-[width] duration-300 ease-in-out lg:flex"
+    :class="[theme.surface, layout.menuTheme === 'brand' && ['border-r', theme.divider]]"
+    :style="{ width }"
+    ref="asideEl"
+    @mouseenter="handleRailEnter"
+    @focusin="handleFocusIn"
+    @focusout="handleFocusOut"
+  >
+    <!-- The same column serves the rail, the pinned/static sidebar and the drawer's overlay panel. -->
+    <div
+      ref="panelEl"
+      class="flex min-h-0 flex-1 flex-col"
+      :class="
+        overlay && [
+          'absolute inset-y-0 left-0 z-20 w-64 flex-none shadow-xl',
+          theme.surface,
+          layout.menuTheme === 'brand' && ['border-r', theme.divider],
+        ]
+      "
+      :data-testid="overlay ? 'app-sidebar-panel' : undefined"
+      @mouseleave="overlay && handlePanelLeave()"
     >
-      <!-- Logo area -->
-      <button
-        type="button"
-        class="flex h-16 w-full cursor-pointer items-center justify-center border-b border-white/10 text-left transition-colors hover:bg-white/10 dark:border-surface-800 dark:hover:bg-surface-800"
-        :class="sidebar.isMinimal ? 'justify-center' : 'gap-3'"
-        @click="goHome"
+      <div
+        class="flex h-16 shrink-0 items-center"
+        :class="layout.menuTheme === 'brand' && ['border-b', theme.divider]"
       >
-        <img
-          v-if="sidebar.isMinimal"
-          :alt="t('app.name')"
-          class="h-9 w-9 object-cover shrink-0"
-          src="/weatherplus-mark.webp"
-        />
-        <img v-else :alt="t('app.name')" class="h-9 shrink-0" :src="sidebarWordmarkSrc" />
-      </button>
-
-      <!-- Navigation -->
-      <nav class="flex-1 overflow-y-auto px-3 py-3">
-        <AppSidebarItem
-          v-for="item in sidebarMenu"
-          :key="item.labelKey"
-          :item="item"
-          :depth="0"
-          :minimal="sidebar.isMinimal"
-        />
-      </nav>
-
-      <!-- Organization switcher -->
-      <div class="px-3 pb-1" :class="sidebar.isMinimal ? 'flex justify-center' : ''">
-        <OrganizationSwitcher :minimal="sidebar.isMinimal" />
-      </div>
-
-      <!-- User section -->
-      <div class="p-3">
-        <div
-          class="border-t border-white/10 dark:border-surface-700 flex items-center p-3 pb-0 transition-all duration-300"
-          :class="sidebar.isMinimal ? 'flex-col gap-3' : 'flex-row gap-3'"
+        <button
+          ref="homeEl"
+          type="button"
+          data-testid="app-sidebar-home"
+          class="flex h-full min-w-0 flex-1 cursor-pointer items-center justify-center transition-colors"
+          :class="[railVariant ? 'px-2' : 'px-4', theme.itemIdle]"
+          @click="handleHomeClick"
         >
-          <n-tooltip v-if="sidebar.isMinimal" trigger="hover" placement="right">
-            <template #trigger>
-              <button
-                type="button"
-                :aria-label="t('nav.profile')"
-                class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 dark:bg-surface-600 dark:hover:bg-primary-400/20"
-                @click="viewProfile()"
-              >
-                <n-icon class="text-sm text-white/80 dark:text-surface-300"><User /></n-icon>
-              </button>
-            </template>
-            {{ t('nav.profile') }}
-          </n-tooltip>
-          <button
-            v-else
-            type="button"
-            :aria-label="t('nav.profile')"
-            class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 dark:bg-surface-600 dark:hover:bg-primary-400/20"
-            @click="viewProfile()"
-          >
-            <n-icon class="text-sm text-white/80 dark:text-surface-300"><User /></n-icon>
-          </button>
-
-          <button
-            v-if="!sidebar.isMinimal"
-            type="button"
-            class="flex-1 cursor-pointer overflow-hidden text-left"
-            data-testid="app-sidebar-account"
-            @click="viewProfile()"
-          >
-            <p
-              class="truncate text-sm font-medium text-white hover:text-white/70 dark:text-surface-200 dark:hover:text-primary-200"
-            >
-              {{ auth.account?.name || auth.account?.username || t('common.user') }}
-            </p>
-          </button>
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <n-button
-                type="error"
-                ghost
-                :aria-label="t('auth.logout')"
-                class="cursor-pointer"
-                data-testid="app-sidebar-logout"
-                @click="handleLogout"
-              >
-                <template #icon
-                  ><n-icon class="text-sm"><Logout /></n-icon
-                ></template>
-              </n-button>
-            </template>
-            {{ t('auth.logout') }}
-          </n-tooltip>
-        </div>
+          <img
+            v-if="railVariant"
+            :alt="t('app.name')"
+            class="h-9 w-9 shrink-0 object-cover"
+            src="/weatherplus-mark.webp"
+          />
+          <img v-else :alt="t('app.name')" class="h-9 shrink-0" :src="sidebarWordmarkSrc" />
+        </button>
+        <button
+          v-if="showPin"
+          type="button"
+          data-testid="app-sidebar-pin"
+          :aria-pressed="layout.drawerPinned"
+          :aria-label="t('layout.pinSidebar')"
+          class="mr-3 flex h-9 w-9 shrink-0 pointer-coarse:size-10 cursor-pointer items-center justify-center rounded-lg transition-colors"
+          :class="layout.drawerPinned ? theme.itemActive : theme.itemIdle"
+          @click="layout.setDrawerPinned(!layout.drawerPinned)"
+        >
+          <n-icon :component="Pin" class="text-base!" />
+        </button>
       </div>
-    </aside>
-  </n-config-provider>
 
-  <ProfileDialog v-model:visible="profileVisible" />
+      <AppSidebarNav
+        :entries="menuEntries"
+        :variant="railVariant ?? 'panel'"
+        class="flex-1 overflow-y-auto py-3"
+        :class="railVariant ? 'px-2' : 'px-3'"
+        @click="handleRailTap"
+      />
+    </div>
+  </aside>
 
-  <!-- Mobile sidebar -->
-  <n-config-provider abstract :theme-overrides="sidebarThemeOverrides">
-    <n-drawer v-model:show="sidebar.mobileOpen" placement="left" :width="280" class="lg:hidden!">
+  <!-- Mobile drawer (below lg, every mode) -->
+  <n-config-provider abstract :theme-overrides="drawerThemeOverrides">
+    <n-drawer v-model:show="layout.mobileOpen" placement="left" :width="280" class="lg:hidden!">
       <n-drawer-content>
         <template #header>
           <button
             type="button"
-            class="flex w-full cursor-pointer items-center gap-3 text-left"
+            class="flex w-full cursor-pointer items-center text-left"
             @click="goHome"
           >
             <img :alt="t('app.name')" class="h-8 w-auto shrink-0" :src="sidebarWordmarkSrc" />
           </button>
         </template>
 
-        <nav class="px-1 py-2">
-          <AppSidebarItem
-            v-for="item in sidebarMenu"
-            :key="item.labelKey"
-            :item="item"
-            :depth="0"
-            :mobile="true"
-          />
-        </nav>
-
-        <template #footer>
-          <!-- Naive's drawer footer is a right-aligned flex row: without one column wrapper the switcher and the
-               account row sit side by side and the switcher is pushed off the drawer's left edge. -->
-          <div class="flex w-full flex-col">
-            <div class="border-t border-white/10 px-4 py-2 dark:border-surface-800">
-              <OrganizationSwitcher />
-            </div>
-            <div
-              class="flex w-full items-center gap-2 border-t border-white/10 px-4 py-3 dark:border-surface-800"
-            >
-              <button
-                type="button"
-                :aria-label="t('nav.profile')"
-                class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 dark:bg-surface-600 dark:hover:bg-primary-400/20"
-                @click="viewProfile()"
-              >
-                <n-icon class="text-sm text-white/80 dark:text-surface-300"><User /></n-icon>
-              </button>
-              <button
-                type="button"
-                class="flex-1 cursor-pointer overflow-hidden text-left"
-                @click="viewProfile()"
-              >
-                <p
-                  class="truncate text-sm font-medium text-white hover:text-white/70 dark:text-surface-200 dark:hover:text-primary-200"
-                >
-                  {{ auth.account?.name || auth.account?.username || t('common.user') }}
-                </p>
-              </button>
-              <n-button
-                type="error"
-                text
-                :aria-label="t('auth.logout')"
-                class="h-8 w-8 cursor-pointer"
-                @click="handleLogout"
-              >
-                <template #icon
-                  ><n-icon class="text-sm"><Logout /></n-icon
-                ></template>
-              </n-button>
-            </div>
-          </div>
-        </template>
+        <AppSidebarNav
+          data-testid="app-sidebar-mobile"
+          :entries="menuEntries"
+          mobile
+          class="px-1 py-2"
+        />
       </n-drawer-content>
     </n-drawer>
   </n-config-provider>

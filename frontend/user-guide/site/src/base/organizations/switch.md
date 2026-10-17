@@ -7,21 +7,21 @@ description: 'Chọn tổ chức bạn muốn làm việc, hoặc quay về khô
 
 Bạn có thể thuộc nhiều tổ chức. Mỗi lúc bạn làm việc trong một tổ chức, hoặc trong **Không gian cá nhân** (không thuộc tổ chức nào). Dữ liệu và quyền bạn thấy là của nơi đang chọn.
 
-## Chuyển bằng thanh bên
+## Chuyển bằng menu tài khoản
 
-1. Ở chân thanh bên trái, bấm vào tên nơi đang làm việc (ví dụ **Không gian cá nhân**).
-2. Trong menu, chọn tổ chức cần chuyển tới. Nơi đang dùng có dấu tích.
+1. Ở góc trên phải, bấm vào ảnh đại diện của bạn. Danh sách nơi làm việc (**Không gian cá nhân** và các tổ chức) hiện ở đầu menu.
+2. Chọn tổ chức cần chuyển tới. Nơi đang dùng có dấu tích.
 
 <figure>
 
-![Menu chuyển tổ chức ở chân thanh bên](/base/images/vi/organizations/switch.jpg)
+![Menu tài khoản với danh sách tổ chức](/base/images/vi/organizations/switch.jpg)
 
 <figcaption>Menu chuyển tổ chức</figcaption>
 </figure>
 
 | #   | Thành phần                                |
 | --- | ----------------------------------------- |
-| 1   | Nơi đang làm việc; bấm để mở menu         |
+| 1   | Ảnh đại diện; bấm để mở menu              |
 | 2   | Một tổ chức bạn là thành viên             |
 | 3   | **Quản lý tổ chức**: mở trang **Tổ chức** |
 
@@ -49,4 +49,4 @@ Dưới tên mỗi tổ chức là định danh của nó và **Vai trò của b
 
 ## Kết quả
 
-Trang tải lại và mở trong tổ chức mới. Tên tổ chức hiện ở chân thanh bên.
+Trang tải lại và mở trong tổ chức mới. Tên tổ chức hiện cạnh ảnh đại diện ở góc trên phải (trên màn hình nhỏ, mở menu tài khoản để xem).

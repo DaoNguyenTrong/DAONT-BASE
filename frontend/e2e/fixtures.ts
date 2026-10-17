@@ -17,7 +17,8 @@ export async function login(page: Page, username: string, password: string) {
 }
 
 export async function logout(page: Page) {
-  await page.locator('aside').getByRole('button', { name: 'Logout' }).click()
+  await page.locator('[data-testid="app-header-user-menu"]').click()
+  await page.locator('[data-testid="user-menu-logout"]').click()
   // Naive UI's dialog.warning() renders role="dialog" (hardcoded in the
   // library, no alertdialog option). .last() defends against another dialog
   // already being open when this shared helper runs.

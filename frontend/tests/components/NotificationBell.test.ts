@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
+import { NButton } from 'naive-ui'
 import NotificationBell from '@/components/NotificationBell.vue'
 import { renderComponent } from '../helpers/render'
 import { server } from '../../tests/helpers/msw/server'
@@ -50,6 +51,19 @@ describe('NotificationBell', () => {
     })
 
     expect(wrapper.text().includes('5')).toBe(badgeShown)
+  })
+
+  it('turns the bell icon white on the brand menu bar only', async () => {
+    server.use(http.get('*/api/notifications', emptyList))
+    const brand = await renderComponent(NotificationBell, {
+      props: { tone: 'on-brand' },
+      global: { stubs: { teleport: true } },
+    })
+    expect(brand.wrapper.getComponent(NButton).props('color')).toBe('#ffffff')
+    brand.wrapper.unmount()
+
+    const plain = await renderComponent(NotificationBell, { global: { stubs: { teleport: true } } })
+    expect(plain.wrapper.getComponent(NButton).props('color')).toBeUndefined()
   })
 
   it('shows the empty state when the list has no notifications', async () => {
