@@ -1,8 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import AppLayout from '@/layouts/AppLayout.vue'
+import { BELOW_LG_QUERY } from '@/lib/responsive'
 import { renderComponent } from '../helpers/render'
 import { storeIn } from '../helpers/pinia'
+import i18n from '@/plugins/i18n'
+
+const t = i18n.global.t
 
 // The real panel and palette are covered by their own tests; the palette also listens on `window`.
 const overlayStubs = {
@@ -10,7 +14,48 @@ const overlayStubs = {
   CommandPalette: { template: '<div data-testid="palette-stub" />' },
 }
 
+function stubBelowLg(matches: boolean) {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: query === BELOW_LG_QUERY ? matches : false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })),
+  )
+}
+
+// The real sidebar stays mounted (it owns the mobile drawer), so "no sidebar" is checked against it.
+const horizontalStubs = {
+  ...overlayStubs,
+  AppTopMenu: { template: '<div data-testid="app-top-menu" />' },
+  AppHeader: { template: '<div data-testid="header-stub" />' },
+  AppFooter: true,
+  teleport: true,
+}
+
+async function renderHorizontal() {
+  const rendered = await renderComponent(AppLayout, {
+    initialState: { layout: { menuMode: 'horizontal' } },
+    global: { stubs: horizontalStubs },
+  })
+  // The page title comes from the deepest route that declares a breadcrumb.
+  rendered.router.addRoute({
+    path: '/reports',
+    name: 'reports',
+    component: { template: '<div data-testid="page" />' },
+    meta: { breadcrumbKey: 'nav.organizations' },
+  })
+  await rendered.router.push('/reports')
+  await flushPromises()
+  return rendered
+}
+
 describe('AppLayout', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('renders the sidebar, header, footer, and the matched route view', async () => {
     const { wrapper } = await renderComponent(AppLayout, {
       global: {
@@ -92,5 +137,34 @@ describe('AppLayout', () => {
 
     expect(notifications.stopPolling).toHaveBeenCalledTimes(1)
     expect(notifications.disconnectRealtime).toHaveBeenCalledTimes(1)
+  })
+
+  it('lays out the top menu and page title in horizontal mode on desktop', async () => {
+    stubBelowLg(false)
+    const { wrapper } = await renderHorizontal()
+
+    expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="header-stub"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="app-top-menu"]').exists()).toBe(true)
+
+    const main = wrapper.get('main')
+    expect(main.get('[data-testid="app-header-title"]').text()).toBe(t('nav.organizations'))
+    // The title row comes before the page.
+    expect(main.html().indexOf('app-header-title')).toBeLessThan(
+      main.html().indexOf('data-testid="page"'),
+    )
+  })
+
+  it('keeps the header bar and the mobile drawer below lg in horizontal mode', async () => {
+    stubBelowLg(true)
+    const { wrapper, pinia } = await renderHorizontal()
+
+    expect(wrapper.find('[data-testid="app-top-menu"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="header-stub"]').exists()).toBe(true)
+    expect(wrapper.get('main').find('[data-testid="app-header-title"]').exists()).toBe(false)
+
+    storeIn(pinia, useLayoutStore).openMobile()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="app-sidebar-mobile"]').exists()).toBe(true)
   })
 })

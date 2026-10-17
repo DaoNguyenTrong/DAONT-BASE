@@ -21,8 +21,8 @@ const isTouch = useMediaQuery('(hover: none)')
 const isDrawer = computed(() => layout.menuMode === 'drawer')
 const overlay = computed(() => isDrawer.value && layout.isRail && layout.drawerExpanded)
 
-// `isRail` covers slim, slim+ and the unpinned drawer; every other mode, horizontal included until its top
-// bar exists, shows the full sidebar. An expanded drawer shows the full menu too.
+// `isRail` covers slim, slim+ and the unpinned drawer; static and the pinned drawer show the full sidebar.
+// An expanded drawer shows the full menu too.
 const railVariant = computed(() =>
   layout.isRail && !overlay.value ? (layout.menuMode === 'slim-plus' ? 'slim-plus' : 'slim') : null,
 )
@@ -30,7 +30,11 @@ const width = computed(() => (layout.isRail ? layout.railWidth : '16rem'))
 const showPin = computed(() => isDrawer.value && !railVariant.value)
 
 // Only the static sidebar can be switched off (the header's ☰); a flag left over from it never hides another mode.
-const visible = computed(() => !(layout.menuMode === 'static' && layout.staticInactive))
+// Horizontal has no sidebar at all (its menu is the top bar), only the mobile drawer below.
+const visible = computed(
+  () =>
+    layout.menuMode !== 'horizontal' && !(layout.menuMode === 'static' && layout.staticInactive),
+)
 
 // The wordmark's text color is baked into the image: the white-text file for the purple brand menu and
 // for any dark surface, the theme-aware one for the transparent menu in light mode.

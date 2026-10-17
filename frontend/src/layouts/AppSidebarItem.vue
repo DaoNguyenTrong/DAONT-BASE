@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { h } from 'vue'
-import { NIcon, type DropdownGroupOption, type DropdownOption } from 'naive-ui'
+import type { DropdownGroupOption } from 'naive-ui'
 import { ChevronDown, ChevronRight } from '@vicons/tabler'
+import { menuDropdownOptions } from './menu-dropdown'
 import { containsRoute, type SidebarMenuItem } from './sidebar-menu'
 import { sidebarThemeClasses } from './sidebar-theme'
 
@@ -46,22 +46,13 @@ const railClass = computed(() =>
     : 'mb-1 flex min-h-10 w-full items-center justify-center rounded-lg py-2 transition-colors',
 )
 
-function toDropdownOptions(items: SidebarMenuItem[]): DropdownOption[] {
-  return items.map((child) => ({
-    label: t(child.labelKey),
-    key: child.routeName ?? child.labelKey,
-    icon: () => h(NIcon, null, { default: () => h(child.icon) }),
-    children: child.items?.length ? toDropdownOptions(child.items) : undefined,
-  }))
-}
-
 // The flyout leads with the entry's own name as a header row.
 const flyoutOptions = computed<DropdownGroupOption[]>(() => [
   {
     type: 'group',
     key: `group:${props.item.labelKey}`,
     label: label.value,
-    children: toDropdownOptions(props.item.items ?? []),
+    children: menuDropdownOptions(props.item.items ?? [], t),
   },
 ])
 

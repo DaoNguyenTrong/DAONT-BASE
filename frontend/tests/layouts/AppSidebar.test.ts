@@ -139,16 +139,23 @@ describe('AppSidebar', () => {
     }
   })
 
-  it('renders the drawer mode as a rail and the horizontal mode as a full sidebar until they are built', async () => {
-    const drawer = await mountSidebar({ menuMode: 'drawer' })
-    const drawerAside = drawer.wrapper.get('[data-testid="app-sidebar"]')
-    expect(drawerAside.attributes('data-mode')).toBe('drawer')
-    expect(drawerAside.attributes('style')).toContain('width: 4rem')
+  it('renders the drawer mode as a rail', async () => {
+    const { wrapper } = await mountSidebar({ menuMode: 'drawer' })
 
-    const horizontal = await mountSidebar({ menuMode: 'horizontal' })
-    const horizontalAside = horizontal.wrapper.get('[data-testid="app-sidebar"]')
-    expect(horizontalAside.attributes('data-mode')).toBe('horizontal')
-    expect(horizontalAside.attributes('style')).toContain('width: 16rem')
+    const aside = wrapper.get('[data-testid="app-sidebar"]')
+    expect(aside.attributes('data-mode')).toBe('drawer')
+    expect(aside.attributes('style')).toContain('width: 4rem')
+  })
+
+  it('has no desktop sidebar in horizontal mode but keeps the mobile drawer', async () => {
+    stubMedia({ belowLg: true })
+    const { wrapper, layout } = await mountSidebar({ menuMode: 'horizontal' })
+
+    expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(false)
+
+    layout.openMobile()
+    await flushPromises()
+    expect(wrapper.get('[data-testid="app-sidebar-mobile"]').text()).toContain(t('nav.home'))
   })
 
   it('hides the static sidebar when toggled off', async () => {

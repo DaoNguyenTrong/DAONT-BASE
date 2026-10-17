@@ -25,6 +25,7 @@ export interface LocaleSchema {
   }
   layout: {
     openSettings: string
+    more: string
     pinSidebar: string
     unpinSidebar: string
     userMenu: {
@@ -309,6 +310,7 @@ const en: LocaleSchema = {
   },
   layout: {
     openSettings: 'Appearance settings',
+    more: 'More',
     pinSidebar: 'Pin sidebar',
     unpinSidebar: 'Unpin sidebar',
     userMenu: {
