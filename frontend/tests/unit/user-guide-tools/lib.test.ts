@@ -1,6 +1,13 @@
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   imagePath,
+  markFits,
+  markPosition,
+  readSessionFailure,
+  recordSessionFailure,
   isAllowedApiRequest,
   missingPreconditions,
   parseLocales,
@@ -118,5 +125,60 @@ describe('missingPreconditions', () => {
 
     expect(missing).toHaveLength(1)
     expect(missing[0]).toMatch(/member/i)
+  })
+})
+
+describe('markPosition', () => {
+  const box = { x: 100, y: 50, width: 200, height: 40 }
+
+  it('sits inside the top-left corner by default', () => {
+    expect(markPosition(box, 'top-left')).toEqual({ x: 104, y: 54, size: 28 })
+  })
+
+  it('sits inside the top-right corner', () => {
+    expect(markPosition(box, 'top-right')).toEqual({ x: 268, y: 54, size: 28 })
+  })
+
+  it('sits just right of the element, centred', () => {
+    expect(markPosition(box, 'after')).toEqual({ x: 308, y: 56, size: 28 })
+  })
+})
+
+describe('markFits', () => {
+  const area = { x: 0, y: 0, width: 1440, height: 900 }
+
+  it('accepts a mark inside the shot', () => {
+    expect(markFits({ x: 10, y: 10, size: 28 }, area)).toBe(true)
+  })
+
+  // A target below the fold passes toBeVisible() yet its mark would be cut off the image.
+  it('rejects a mark outside the shot', () => {
+    expect(markFits({ x: 10, y: 1200, size: 28 }, area)).toBe(false)
+    expect(markFits({ x: 1430, y: 10, size: 28 }, area)).toBe(false)
+  })
+
+  it('measures against a clipped area', () => {
+    const clip = { x: 300, y: 200, width: 400, height: 300 }
+    expect(markFits({ x: 320, y: 220, size: 28 }, clip)).toBe(true)
+    expect(markFits({ x: 100, y: 220, size: 28 }, clip)).toBe(false)
+  })
+})
+
+describe('session failure marker', () => {
+  // Playwright restarts a worker after a worker fixture fails; the next one must not sign in again.
+  it('hands the first failure to later workers of the same run', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'guide-capture-'))
+
+    recordSessionFailure(dir, 'run-1', 'Wrong password')
+
+    expect(readSessionFailure(dir, 'run-1')).toBe('Wrong password')
+  })
+
+  it('does not leak into another run', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'guide-capture-'))
+
+    recordSessionFailure(dir, 'run-1', 'Wrong password')
+
+    expect(readSessionFailure(dir, 'run-2')).toBeNull()
   })
 })

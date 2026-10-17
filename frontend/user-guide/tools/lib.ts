@@ -1,6 +1,9 @@
 // The capture tool's rules, free of Playwright so the frontend's vitest can load them
 // (tests/unit/user-guide-tools/lib.test.ts).
 
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 export type Locale = 'vi' | 'en'
 export type Tree = 'base' | 'app'
 
@@ -83,4 +86,47 @@ export function missingPreconditions(d: PreconditionData): string[] {
   if (d.unreadNotifications < 1) missing.push('The account needs an unread notification')
   if (d.sessions < 2) missing.push(`The account needs 2+ signed-in sessions (has ${d.sessions})`)
   return missing
+}
+
+export type Box = { x: number; y: number; width: number; height: number }
+export type MarkPlacement = 'top-left' | 'top-right' | 'after'
+export type Mark = { x: number; y: number; size: number }
+
+const MARK_SIZE = 28
+
+/**
+ * Where a numbered mark goes: inside the element's top-left corner, inside its top-right corner
+ * (keeps a control at the left edge visible), or just right of it (a short label).
+ */
+export function markPosition(box: Box, at: MarkPlacement): Mark {
+  if (at === 'after') {
+    return { x: box.x + box.width + 8, y: box.y + (box.height - MARK_SIZE) / 2, size: MARK_SIZE }
+  }
+  const x = at === 'top-right' ? box.x + box.width - MARK_SIZE - 4 : box.x + 4
+  return { x, y: box.y + 4, size: MARK_SIZE }
+}
+
+/** Whether a mark lies wholly inside the shot (the viewport, or the clipped area). */
+export function markFits(mark: Mark, area: Box): boolean {
+  return (
+    mark.x >= area.x &&
+    mark.y >= area.y &&
+    mark.x + mark.size <= area.x + area.width &&
+    mark.y + mark.size <= area.y + area.height
+  )
+}
+
+// Playwright starts a fresh worker after a worker fixture fails, and that worker runs the fixture
+// again: a wrong password would sign in (and fail) once per test until the account locks. The first
+// failure is written down for the run, and later workers fail on it without signing in.
+const failureFile = (dir: string, runId: string) => join(dir, `session-failed-${runId}.txt`)
+
+export function recordSessionFailure(dir: string, runId: string, message: string): void {
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(failureFile(dir, runId), message)
+}
+
+export function readSessionFailure(dir: string, runId: string): string | null {
+  const file = failureFile(dir, runId)
+  return existsSync(file) ? readFileSync(file, 'utf8') : null
 }

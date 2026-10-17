@@ -70,7 +70,7 @@ Callout dùng cú pháp chuẩn `::: info`, `::: tip`, `::: warning`. Tiêu đ�
 ## Ảnh
 
 - Đặt ở `src/<base|app>/images/<vi|en>/<chương>/<tên>.<đuôi>`, mỗi ngôn ngữ giao diện một bộ ảnh.
-- Tham chiếu bằng đường dẫn tuyệt đối tính từ `src/`, ví dụ `![Màn hình chính](/base/images/vi/getting-started/overview.webp)`. Đường dẫn không phụ thuộc trang nằm sâu bao nhiêu cấp.
+- Tham chiếu bằng đường dẫn tuyệt đối tính từ `src/`, ví dụ `![Màn hình chính](/base/images/vi/getting-started/overview.jpg)`. Đường dẫn không phụ thuộc trang nằm sâu bao nhiêu cấp.
 - Ảnh có chú thích viết bằng `<figure>`, ảnh markdown, rồi `<figcaption>`.
 
 ## Chụp ảnh
@@ -97,7 +97,11 @@ Dùng dữ liệu mẫu, không dùng dữ liệu thật của khách hàng. T�
 
 **Công cụ không ghi gì vào hệ thống:** mọi request tới `/api/` khác `GET` đều bị huỷ, trừ đăng nhập và làm mới phiên. Section nào lỡ bấm lưu, xoá hay "đánh dấu đã đọc" sẽ đỏ kèm danh sách request bị chặn. Hộp thoại chỉ mở để chụp rồi đóng, không bấm nút xác nhận.
 
-**Một phiên cho cả lần chạy:** backend đổi refresh token sau mỗi lần làm mới, và dùng lại token cũ sẽ thu hồi cả phiên. Vì vậy công cụ dùng một browser context duy nhất, lưu phiên vào `tools/.auth/state.json` (gitignored) và chỉ đăng nhập lại khi phiên đã hết. Nhờ vậy số phiên trong ảnh "Phiên đăng nhập" không tăng sau mỗi lần chụp.
+**Một phiên cho cả lần chạy:** backend đổi refresh token sau mỗi lần làm mới, và dùng lại token cũ sẽ thu hồi cả phiên. Vì vậy công cụ dùng một browser context duy nhất, lưu phiên vào `tools/.auth/state.json` (gitignored) và chỉ đăng nhập lại khi phiên đã hết. Nhờ vậy số phiên trong ảnh "Phiên đăng nhập" không tăng sau mỗi lần chụp. Đăng nhập thất bại hoặc thiếu dữ liệu thì cả lần chạy dừng sau test đầu, không thử đăng nhập lại ở từng test (sai mật khẩu nhiều lần sẽ khoá tài khoản).
+
+Mỗi test tải app một lần, mỗi lần tải làm mới phiên một lần, và API chỉ cho 60 lần làm mới mỗi phút từ một địa chỉ IP (`RateLimiterSettings:RefreshPermitLimit`). Chụp nhiều hơn khoảng 50 ảnh mỗi phút thì nâng giới hạn này trên hệ thống dùng để chụp.
+
+Version và giờ build ở footer được ẩn khi chụp, để ảnh không đổi sau mỗi lần build.
 
 Viết một section:
 
@@ -105,9 +109,8 @@ Viết một section:
 import { locales, test } from '../../fixtures'
 
 for (const locale of locales) {
-  test(`overview [${locale}]`, async ({ page, capture }) => {
-    await page.goto('/')
-    await capture.useLocale(locale)
+  test(`overview [${locale}]`, async ({ capture }) => {
+    await capture.open(locale)
     await capture.annotate([
       { selector: 'aside nav', n: 1, at: 'top-right' },
       { selector: 'header .n-breadcrumb', n: 2, at: 'after' },
@@ -118,8 +121,9 @@ for (const locale of locales) {
 }
 ```
 
-- `annotate`: số tròn tím ở góc trên trái phần tử. `at: 'top-right'` đặt số ở góc trên phải, `at: 'after'` đặt ngay bên phải phần tử. Selector không tìm thấy thì test đỏ, để ảnh không lặng lẽ thiếu chú thích khi giao diện đổi. Số phải khớp bảng `# / Thành phần` của trang.
-- `blur`: làm mờ dữ liệu riêng tư (tên, email, IP, thiết bị).
+- `open(locale, path?)`: mở app ở ngôn ngữ cần chụp, mỗi test chỉ tải app một lần.
+- `annotate`: số tròn tím ở góc trên trái phần tử. `at: 'top-right'` đặt số ở góc trên phải, `at: 'after'` đặt ngay bên phải phần tử. Selector không tìm thấy, hoặc số rơi ra ngoài ảnh, thì test đỏ, để ảnh không lặng lẽ thiếu chú thích khi giao diện đổi. Số phải khớp bảng `# / Thành phần` của trang.
+- `blur`: selector CSS của dữ liệu riêng tư (tên, email, IP, thiết bị) cần làm mờ trong ảnh kế tiếp.
 - `shot`: ghi `site/src/<base|app>/images/<locale>/<chương>/<tên>.jpg`. Thêm `tree: 'app'` cho chương của fork, `clip: '<selector>'` để chỉ chụp một vùng.
 
 ## Ẩn một chương của base
