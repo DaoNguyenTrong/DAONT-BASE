@@ -8,7 +8,7 @@ import '@fontsource/roboto/700.css'
 import './brand-tokens.generated.css'
 import './brand.css'
 import './custom.css'
-import { createAuthGuard } from './auth-guard'
+import { createAuthGuard, reloadThroughServer } from './auth-guard'
 import AppLink from './components/AppLink.vue'
 import HeroTitle from './components/HeroTitle.vue'
 import PermissionNote from './components/PermissionNote.vue'
@@ -76,9 +76,7 @@ export default {
           fetch('/api/auth/check', { credentials: 'same-origin', cache: 'no-store' }).then(
             (r) => r.status,
           ),
-        navigate: (to) => {
-          window.location.href = to
-        },
+        navigate: (to) => reloadThroughServer(to, window.location),
       })
     }
   },

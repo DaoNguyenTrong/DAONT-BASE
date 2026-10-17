@@ -37,3 +37,13 @@ export function createAuthGuard(deps: GuardDeps): (to: string) => Promise<boolea
     }
   }
 }
+
+/**
+ * The guard's `navigate`. By the time the guard runs, VitePress has already put the target in the
+ * address bar (pushState, or the browser on Back), and assigning the current URL again is no load
+ * when it carries a #fragment — only a scroll. Replacing it with the fragment-less URL always loads
+ * it from nginx; nginx's redirect drops the fragment anyway.
+ */
+export function reloadThroughServer(to: string, location: Pick<Location, 'replace'>): void {
+  location.replace(to.split('#')[0] ?? to)
+}

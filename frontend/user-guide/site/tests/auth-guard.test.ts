@@ -1,5 +1,9 @@
 import { describe, expect, mock, test } from 'bun:test'
-import { createAuthGuard, type GuardDeps } from '../.vitepress/theme/auth-guard'
+import {
+  createAuthGuard,
+  reloadThroughServer,
+  type GuardDeps,
+} from '../.vitepress/theme/auth-guard'
 
 function setup(overrides: Partial<GuardDeps> = {}) {
   const deps = {
@@ -89,5 +93,25 @@ describe('createAuthGuard', () => {
     await guard('/guide/en/faq')
 
     expect(deps.mode).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('reloadThroughServer', () => {
+  // VitePress has already pushed the target URL; assigning that same URL with a #fragment is only a
+  // scroll, not a load — the reader would stay on the old page with the new URL.
+  test('drops the fragment so the browser really loads the page', () => {
+    const replace = mock((_url: string) => {})
+
+    reloadThroughServer('/guide/faq#where-to-start', { replace })
+
+    expect(replace).toHaveBeenCalledWith('/guide/faq')
+  })
+
+  test('loads a target without a fragment as is', () => {
+    const replace = mock((_url: string) => {})
+
+    reloadThroughServer('/guide/faq?x=1', { replace })
+
+    expect(replace).toHaveBeenCalledWith('/guide/faq?x=1')
   })
 })

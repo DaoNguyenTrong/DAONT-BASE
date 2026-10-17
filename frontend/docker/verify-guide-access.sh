@@ -35,6 +35,8 @@ server {
   listen 8080;
   location = /api/auth/check {
     if (\$http_cookie ~ "access_token=good") { return 204; }
+    # Accepts any API key, so a 302 below proves nginx strips the header before asking.
+    if (\$http_x_api_key != "") { return 204; }
     return 401;
   }
   location / { return 404; }
@@ -108,7 +110,7 @@ check "private: encoded CRLF stays encoded in Location" "/#/guide-auth?next=/gui
 check "private: encoded CRLF adds no header line" "" "$(grep -i '^set-cookie' <<<"$crlf" || true)"
 check "private: app still served" 200 "$(code "$p/")"
 contains "private: app shell" '<div id="app"' "$(curl -s "$p/")"
-check "private: API reached only by cookie-less X-Api-Key -> 302" 302 "$(code -H 'X-Api-Key: good' "$p/guide/faq")"
+check "private: X-Api-Key is stripped before the auth request -> 302" 302 "$(code -H 'X-Api-Key: good' "$p/guide/faq")"
 
 u="http://127.0.0.1:$public"
 check "public: no session -> 200" 200 "$(code "$u/guide/faq")"
@@ -119,6 +121,12 @@ i="http://127.0.0.1:$invalid"
 check "invalid GUIDE_PUBLIC: stays private" private "$(curl -s "$i/guide/_mode")"
 check "invalid GUIDE_PUBLIC: no session -> 302" 302 "$(code "$i/guide/faq")"
 contains "invalid GUIDE_PUBLIC: warning logged" "GUIDE_PUBLIC=abc" "$(docker logs "$run_id-invalid" 2>&1)"
+
+# A hung API (accepts the connection, never answers) must not hold every guide request for a minute.
+docker pause "$api" >/dev/null
+check "private: API hung -> error page within 15s" 500 \
+  "$(code --max-time 15 -H 'Cookie: access_token=good' "$p/guide/faq")"
+docker unpause "$api" >/dev/null
 
 # Last: the API goes away. The guide must fail closed (an error page), never serve content.
 docker stop "$api" >/dev/null
