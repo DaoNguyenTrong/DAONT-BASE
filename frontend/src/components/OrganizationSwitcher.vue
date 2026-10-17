@@ -18,7 +18,7 @@ const showMenu = ref(false)
 // Below `lg` the switcher only sits at the foot of the 280px mobile drawer, where a 240px menu opening to
 // the right runs off the screen — open it upward there; beside the desktop sidebar keep `right-start`.
 const belowLg = useMediaQuery(BELOW_LG_QUERY)
-const menuPlacement = computed(() => (belowLg.value ? 'top-start' : 'right-start'))
+const menuPlacement = computed(() => (belowLg.value ? 'top-start' : 'right-end'))
 const switchingTo = ref<string | null>(null)
 
 const currentLabel = computed(() => auth.organizationName ?? t('organizations.personalWorkspace'))
@@ -68,7 +68,7 @@ watch(showMenu, (open) => {
         detached to the sidebar's top-left corner. Wrapping both modes in one
         <div> gives VTarget a real box to measure and anchor to.
       -->
-      <div :class="props.minimal ? 'inline-flex' : 'block'">
+      <div :class="props.minimal ? 'inline-flex' : 'block'" data-testid="organization-switcher">
         <n-tooltip v-if="props.minimal" trigger="hover" placement="right">
           <template #trigger>
             <button
@@ -132,6 +132,7 @@ watch(showMenu, (open) => {
       <button
         type="button"
         class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-100 dark:hover:bg-surface-800"
+        data-testid="organization-switcher-manage"
         @click="manageOrganizations"
       >
         <n-icon class="shrink-0"><Settings /></n-icon>

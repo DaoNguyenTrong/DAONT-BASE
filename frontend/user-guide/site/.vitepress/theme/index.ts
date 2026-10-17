@@ -11,6 +11,7 @@ import './custom.css'
 import { createAuthGuard, reloadThroughServer } from './auth-guard'
 import AppLink from './components/AppLink.vue'
 import HeroTitle from './components/HeroTitle.vue'
+import HomeQuickStart from './components/HomeQuickStart.vue'
 import PermissionNote from './components/PermissionNote.vue'
 import { useSidebarAccordion } from './sidebar-accordion'
 import { localeOf } from '../paths'
@@ -60,6 +61,7 @@ export default {
         'nav-bar-content-after': () => versionBadge('guide-version--nav', text.versionTitle),
         'home-hero-info': () => h(HeroTitle),
         'home-hero-actions-after': () => h(AppLink, { variant: 'button' }),
+        'home-features-after': () => h(HomeQuickStart),
       })
     }
   }),

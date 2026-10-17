@@ -24,10 +24,12 @@ describe('OrganizationSwitcher', () => {
     expect(wrapper.findComponent(NPopover).props('placement')).toBe('top-start')
   })
 
-  it('opens beside the desktop sidebar', async () => {
+  // On desktop the switcher sits at the foot of the sidebar too: a menu hanging down from it would run
+  // off the bottom of the screen and hide its last item (Manage organizations), so it grows upward.
+  it('opens beside the desktop sidebar, growing upward', async () => {
     stubBelowLg(false)
     const { wrapper } = await renderComponent(OrganizationSwitcher)
 
-    expect(wrapper.findComponent(NPopover).props('placement')).toBe('right-start')
+    expect(wrapper.findComponent(NPopover).props('placement')).toBe('right-end')
   })
 })

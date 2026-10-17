@@ -177,6 +177,7 @@ const profileVisible = ref(false)
                 ghost
                 :aria-label="t('auth.logout')"
                 class="cursor-pointer"
+                data-testid="app-sidebar-logout"
                 @click="handleLogout"
               >
                 <template #icon

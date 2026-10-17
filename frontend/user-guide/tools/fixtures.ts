@@ -51,24 +51,30 @@ function requireEnv(name: string): string {
 export type Capture = {
   /**
    * Opens a page of the app in the given language — set before the app loads, so each test loads
-   * the app once (every load refreshes the session, and refreshes are rate-limited).
+   * the app once (every load refreshes the session, and refreshes are rate-limited). `ready` is
+   * what to wait for: the app shell by default, a form on the signed-out screens.
    */
-  open(locale: Locale, path?: string): Promise<void>
+  open(locale: Locale, path?: string, ready?: string): Promise<void>
   /**
    * Numbered violet marks, drawn by `shot`: by default inside each element's top-left corner;
    * `top-right` keeps a control at the left edge visible, `after` sits just right of a short element
-   * such as a label. A missing element, or a mark outside the shot, fails the test.
+   * such as a label, `below` under a small icon button. A missing element, or a mark outside the
+   * shot, fails the test.
    */
   annotate(items: { selector: string; n: number; at?: MarkPlacement }[]): Promise<void>
   /** CSS selectors of private data (names, email, IP, devices) to blur in the next shot. */
   blur(selectors: string[]): Promise<void>
-  /** Writes site/src/<tree>/images/<locale>/<chapter>/<name>.jpg, then removes marks and blur. */
+  /**
+   * Writes site/src/<tree>/images/<locale>/<chapter>/<name>.jpg, then removes marks and blur.
+   * `clip` shoots one element only, grown by `pad` pixels on each side (room for marks around it).
+   */
   shot(o: {
     tree?: Tree
     locale: Locale
     chapter: string
     name: string
     clip?: string
+    pad?: number
   }): Promise<void>
 }
 
@@ -131,7 +137,7 @@ async function saveState(context: BrowserContext): Promise<void> {
 }
 
 export const test = base.extend<
-  { blockedWrites: string[]; capture: Capture },
+  { blockedWrites: string[]; capture: Capture; guest: { page: Page; capture: Capture } },
   { session: BrowserContext }
 >({
   // One context for the whole run, restored from and saved back to .auth/state.json. Every refresh
@@ -178,48 +184,84 @@ export const test = base.extend<
     await use([])
   },
 
-  // A page of the shared context that can't change the system it photographs: any API write but
-  // sign-in and refresh is aborted (on the context, so popups are covered too), and the test fails
-  // listing what was attempted.
+  // A page of the shared context that can't change the system it photographs (guardedPage).
   page: async ({ session, blockedWrites }, use) => {
-    const guard = (route: Route) => {
-      const request = route.request()
-      if (isAllowedApiRequest(request.method(), request.url())) return route.continue()
-      blockedWrites.push(`${request.method()} ${request.url()}`)
-      return route.abort('blockedbyclient')
-    }
-    await session.route('**/api/**', guard)
-    const page = await session.newPage()
-    await page.addInitScript((css) => {
-      document.addEventListener('DOMContentLoaded', () => {
-        const style = document.createElement('style')
-        style.textContent = css
-        document.head.appendChild(style)
-      })
-    }, CAPTURE_CSS)
-    try {
-      await use(page)
-      expect(blockedWrites, 'A capture section must not write to the API').toEqual([])
-    } finally {
-      await page.close()
-      await session.unroute('**/api/**', guard)
-    }
+    await guardedPage(session, blockedWrites, use)
   },
 
   capture: async ({ page, blockedWrites }, use) => {
     await use(createCapture(page, blockedWrites))
   },
+
+  // A signed-out visitor, for the sign-in and register screens: its own context without the stored
+  // session (a signed-in user is sent away from those screens), guarded the same way.
+  guest: async ({ browser, blockedWrites }, use, testInfo) => {
+    const context = await browser.newContext({ ...testInfo.project.use, serviceWorkers: 'block' })
+    try {
+      await guardedPage(context, blockedWrites, (page) =>
+        use({ page, capture: createCapture(page, blockedWrites) }),
+      )
+    } finally {
+      await context.close()
+    }
+  },
 })
+
+/**
+ * A page that can't change the system it photographs: any API write but sign-in and refresh is
+ * aborted (on the context, so popups are covered too), and the test fails listing what was attempted.
+ */
+async function guardedPage(
+  context: BrowserContext,
+  blockedWrites: string[],
+  use: (page: Page) => Promise<void>,
+): Promise<void> {
+  const guard = (route: Route) => {
+    const request = route.request()
+    if (isAllowedApiRequest(request.method(), request.url())) return route.continue()
+    blockedWrites.push(`${request.method()} ${request.url()}`)
+    return route.abort('blockedbyclient')
+  }
+  await context.route('**/api/**', guard)
+  const page = await context.newPage()
+  await page.addInitScript((css) => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const style = document.createElement('style')
+      style.textContent = css
+      document.head.appendChild(style)
+    })
+  }, CAPTURE_CSS)
+  try {
+    await use(page)
+    expect(blockedWrites, 'A capture section must not write to the API').toEqual([])
+  } finally {
+    await page.close()
+    await context.unroute('**/api/**', guard)
+  }
+}
+
+/** The element's box once it stops moving — dialogs and popovers animate in. */
+async function stableBox(page: Page, selector: string): Promise<Box | null> {
+  const target = page.locator(selector).first()
+  let last = await target.boundingBox()
+  for (let i = 0; i < 20; i++) {
+    await page.waitForTimeout(50)
+    const next = await target.boundingBox()
+    if (last && next && JSON.stringify(last) === JSON.stringify(next)) return next
+    last = next
+  }
+  return last
+}
 
 function createCapture(page: Page, blockedWrites: string[]): Capture {
   let marks: { selector: string; n: number; at: MarkPlacement }[] = []
   let blurred: string[] = []
 
   return {
-    async open(locale, path = '/') {
+    async open(locale, path = '/', ready = APP_SHELL) {
       await page.addInitScript((l) => window.localStorage.setItem('app-locale', l), locale)
       await page.goto(path)
-      await page.locator(APP_SHELL).waitFor()
+      await page.locator(ready).first().waitFor()
     },
 
     async annotate(items) {
@@ -236,7 +278,7 @@ function createCapture(page: Page, blockedWrites: string[]): Capture {
       }
     },
 
-    async shot({ tree = 'base', locale, chapter, name, clip }) {
+    async shot({ tree = 'base', locale, chapter, name, clip, pad = 0 }) {
       // Don't overwrite a committed image from a test that is going to fail anyway.
       expect(blockedWrites, 'A capture section must not write to the API').toEqual([])
       const path = imagePath({ siteSrc, tree, locale, chapter, name })
@@ -246,9 +288,17 @@ function createCapture(page: Page, blockedWrites: string[]): Capture {
       if (clip) {
         const target = page.locator(clip).first()
         await target.scrollIntoViewIfNeeded()
-        const box = await target.boundingBox()
-        if (!box) throw new Error(`clip: ${clip} has no box`)
-        area = box
+        const box = await stableBox(page, clip)
+        const size = page.viewportSize()
+        if (!box || !size) throw new Error(`clip: ${clip} has no box`)
+        const x = Math.max(0, box.x - pad)
+        const y = Math.max(0, box.y - pad)
+        area = {
+          x,
+          y,
+          width: Math.min(size.width, box.x + box.width + pad) - x,
+          height: Math.min(size.height, box.y + box.height + pad) - y,
+        }
       } else {
         const size = page.viewportSize()
         if (!size) throw new Error('The page has no viewport size')
@@ -263,7 +313,7 @@ function createCapture(page: Page, blockedWrites: string[]): Capture {
         : null
 
       for (const { selector, n, at } of marks) {
-        const box = await page.locator(selector).first().boundingBox()
+        const box = await stableBox(page, selector)
         if (!box) throw new Error(`annotation ${n}: ${selector} has no box`)
         const mark = markPosition(box, at)
         if (!markFits(mark, area)) {

@@ -238,6 +238,10 @@ const vi: LocaleSchema = {
     permissionOrganizationManage: 'Quản lý tổ chức',
     permissionOrganizationMembersManage: 'Quản lý thành viên',
     permissionOrganizationRolesManage: 'Quản lý vai trò',
+    permissionFilesManage: 'Quản lý tệp',
+    permissionApiKeysManage: 'Quản lý khoá API',
+    permissionAuditLogsView: 'Xem nhật ký hoạt động',
+    permissionSettingsManage: 'Quản lý cài đặt',
   },
   notifications: {
     title: 'Thông báo',

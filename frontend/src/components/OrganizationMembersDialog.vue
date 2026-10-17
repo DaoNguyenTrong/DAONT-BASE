@@ -192,7 +192,7 @@ watch(visible, (open) => {
     </n-alert>
 
     <template v-else>
-      <ul v-if="members.length > 0" class="mt-1 space-y-2">
+      <ul v-if="members.length > 0" data-testid="organization-members-list" class="mt-1 space-y-2">
         <li
           v-for="member in members"
           :key="member.accountId"
@@ -273,6 +273,7 @@ watch(visible, (open) => {
           ghost
           class="min-h-11 w-full"
           :loading="deactivating"
+          data-testid="organization-deactivate"
           @click="confirmDeactivate"
         >
           {{ t('organizations.deactivate') }}
