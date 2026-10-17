@@ -130,6 +130,11 @@ const vi: LocaleSchema = {
     toggleSidebar: 'Đóng/mở thanh bên',
     collapseSidebar: 'Thu gọn thanh bên',
     expandSidebar: 'Mở rộng thanh bên',
+    userGuide: 'Hướng dẫn sử dụng',
+  },
+  guideAuth: {
+    opening: 'Đang mở hướng dẫn sử dụng…',
+    failed: 'Không mở được hướng dẫn sử dụng. Hãy thử lại sau.',
   },
   profile: {
     title: 'Hồ sơ cá nhân',

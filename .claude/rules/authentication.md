@@ -18,7 +18,11 @@ account has equal access to all APIs; add authorization as your specific applica
 ## Headers
 
 - `X-TimeZone` — required. IANA timezone identifier (e.g. `Asia/Ho_Chi_Minh`). Missing/invalid → 400
-  (`UserTimeZoneMiddleware`).
+  (`UserTimeZoneMiddleware`). Exempt: `/api/health` and `/api/auth/check` (nginx's `auth_request` for the
+  user guide forwards only the cookie).
+
+`GET /api/auth/check` (policy `AuthorizationPolicies.SignedInUser`) accepts only a user's JWT — an API key
+gets 401 there, unlike every other `[Authorize]` endpoint.
 
 ## Temporary lockout
 

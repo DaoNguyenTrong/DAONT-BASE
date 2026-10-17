@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppHeader from '@/layouts/AppHeader.vue'
 import { useSidebarStore } from '@/stores/sidebar-store'
 import en from '@/locales/en'
+import i18n from '@/plugins/i18n'
 
 const stub = { template: '<div />' }
 
@@ -103,5 +104,29 @@ describe('AppHeader', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('home')
+  })
+
+  it('links to the user guide in a new tab', async () => {
+    const { wrapper } = await mountHeader()
+
+    const link = wrapper.get('[data-testid="app-header-user-guide"]')
+    expect(link.element.tagName).toBe('A')
+    expect(link.attributes('href')).toBe('/guide/en/')
+    expect(link.attributes('target')).toBe('_blank')
+    expect(link.attributes('rel')).toContain('noopener')
+    expect(link.attributes('aria-label')).toBe(en.nav.userGuide)
+  })
+
+  it('opens the Vietnamese guide when the app is in Vietnamese', async () => {
+    i18n.global.locale.value = 'vi'
+    try {
+      const { wrapper } = await mountHeader()
+
+      expect(wrapper.get('[data-testid="app-header-user-guide"]').attributes('href')).toBe(
+        '/guide/',
+      )
+    } finally {
+      i18n.global.locale.value = 'en'
+    }
   })
 })

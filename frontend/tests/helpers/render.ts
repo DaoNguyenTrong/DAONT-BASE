@@ -45,6 +45,12 @@ export async function renderComponent<C extends Component>(
         meta: { guestOnly: true },
       },
       { path: '/verify-email', name: 'verify-email', component: { template: '<div />' } },
+      {
+        path: '/guide-auth',
+        name: 'guide-auth',
+        component: { template: '<div />' },
+        meta: { requiresAuth: true },
+      },
     ],
   })
 

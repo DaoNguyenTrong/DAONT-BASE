@@ -8,6 +8,7 @@ import '@fontsource/roboto/700.css'
 import './brand-tokens.generated.css'
 import './brand.css'
 import './custom.css'
+import { createAuthGuard, reloadThroughServer } from './auth-guard'
 import AppLink from './components/AppLink.vue'
 import HeroTitle from './components/HeroTitle.vue'
 import PermissionNote from './components/PermissionNote.vue'
@@ -62,8 +63,21 @@ export default {
       })
     }
   }),
-  enhanceApp({ app }) {
+  enhanceApp({ app, router }) {
     // Inserted under each page's title by the guide-permission-note markdown rule.
     app.component('PermissionNote', PermissionNote)
+    // onBeforePageLoad, not onBeforeRouteChange: the Back button loads pages without the latter.
+    // The dev server has no nginx in front of it, so no gate either.
+    if (!import.meta.env.SSR && !import.meta.env.DEV) {
+      router.onBeforePageLoad = createAuthGuard({
+        mode: () =>
+          fetch(withBase('/_mode'), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')),
+        check: () =>
+          fetch('/api/auth/check', { credentials: 'same-origin', cache: 'no-store' }).then(
+            (r) => r.status,
+          ),
+        navigate: (to) => reloadThroughServer(to, window.location),
+      })
+    }
   },
 } satisfies Theme

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { safeRedirectTarget } from '@/lib/safe-redirect'
+import { GUIDE_HOME, safeGuideTarget, safeRedirectTarget } from '@/lib/safe-redirect'
 
 describe('safeRedirectTarget', () => {
   it('returns app-internal root-relative paths unchanged', () => {
@@ -28,5 +28,35 @@ describe('safeRedirectTarget', () => {
     for (const value of values) {
       expect(safeRedirectTarget(value)).toBeNull()
     }
+  })
+})
+
+describe('safeGuideTarget', () => {
+  it('returns guide paths unchanged', () => {
+    for (const value of ['/guide', '/guide/', '/guide/organizations/add-member', '/guide/en/faq']) {
+      expect(safeGuideTarget(value)).toBe(value)
+    }
+  })
+
+  it.each([
+    ['undefined', undefined],
+    ['null', null],
+    ['an array', ['/guide/x']],
+    ['a number', 42],
+    ['an app path', '/organizations'],
+    ['a look-alike prefix', '/guidex'],
+    ['the root', '/'],
+    ['an absolute URL', 'https://evil.example/guide/'],
+    ['a protocol-relative URL', '//evil.example'],
+    ['a double slash inside the guide', '/guide//evil.example'],
+    ['a backslash', '/guide/\\evil'],
+    ['a traversal', '/guide/../organizations'],
+    ['an encoded traversal', '/guide/%2E%2e/organizations'],
+    ['a raw CRLF', '/guide/a\r\nSet-Cookie: x'],
+    ['an encoded CRLF', '/guide/%0d%0aSet-Cookie:x'],
+    ['an encoded LF in upper case', '/guide/%0A'],
+    ['an encoded NUL', '/guide/%00'],
+  ])('falls back to the guide home for %s', (_, value) => {
+    expect(safeGuideTarget(value)).toBe(GUIDE_HOME)
   })
 })

@@ -78,6 +78,14 @@ const router = createRouter({
       component: () => import('@/views/VerifyEmailView.vue'),
     },
     {
+      // nginx sends a reader of the private user guide here when their session cookie is missing or
+      // expired; the guard routes them through login, then the view sends them back to the guide.
+      path: '/guide-auth',
+      name: 'guide-auth',
+      component: () => import('@/views/GuideAuthView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),

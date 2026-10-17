@@ -188,6 +188,9 @@ Deploy notes:
   Size Redis so it doesn't fill up: at `maxmemory` it rejects writes, so invalidations fail (logged)
   and stale entries live until their TTL. A Redis outage only slows requests down — the cache falls
   back to the database and logs it.
+- **User guide at `/guide/`** is private by default: nginx asks the API whether the reader is signed
+  in, which needs the API on the same origin (`VITE_API_BASE_URL` empty). Set `GUIDE_PUBLIC=true` in
+  `.env.prod` to open it to everyone — see [frontend/user-guide/README.md](frontend/user-guide/README.md).
 - **Secrets stay out of images.** `appsettings*.json` and `.env*` are excluded from the Docker build
   context (`.dockerignore`); only the bind-mounted copy is read at runtime.
 

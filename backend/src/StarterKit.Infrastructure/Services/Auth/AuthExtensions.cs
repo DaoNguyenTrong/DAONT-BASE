@@ -101,6 +101,12 @@ internal static class AuthExtensions
             options.AddPolicy(
                 AuthorizationPolicies.ActiveOrganizationMember,
                 policy => policy.AddRequirements(new ActiveOrganizationMembershipRequirement()));
+
+            options.AddPolicy(
+                AuthorizationPolicies.SignedInUser,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme));
         });
 
         return services;

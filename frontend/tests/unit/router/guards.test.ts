@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveGuardRedirect } from '@/router'
+import router, { resolveGuardRedirect } from '@/router'
 
 function route(
   meta: { requiresAuth?: boolean; guestOnly?: boolean; permission?: string },
@@ -60,11 +60,7 @@ describe('resolveGuardRedirect', () => {
   })
 
   it('redirects to home when guestOnly and already authenticated', () => {
-    const result = resolveGuardRedirect(
-      route({ guestOnly: true }),
-      signedIn(),
-      online,
-    )
+    const result = resolveGuardRedirect(route({ guestOnly: true }), signedIn(), online)
 
     expect(result).toEqual({ name: 'home' })
   })
@@ -90,21 +86,13 @@ describe('resolveGuardRedirect', () => {
   })
 
   it('allows access to a requiresAuth route when authenticated', () => {
-    const result = resolveGuardRedirect(
-      route({ requiresAuth: true }),
-      signedIn(),
-      online,
-    )
+    const result = resolveGuardRedirect(route({ requiresAuth: true }), signedIn(), online)
 
     expect(result).toBeUndefined()
   })
 
   it('allows access to a guestOnly route when not authenticated', () => {
-    const result = resolveGuardRedirect(
-      route({ guestOnly: true }),
-      signedOut,
-      online,
-    )
+    const result = resolveGuardRedirect(route({ guestOnly: true }), signedOut, online)
 
     expect(result).toBeUndefined()
   })
@@ -115,22 +103,21 @@ describe('resolveGuardRedirect', () => {
   })
 
   it('does not redirect to login during an API outage even on a requiresAuth route', () => {
-    const result = resolveGuardRedirect(
-      route({ requiresAuth: true }),
-      signedOut,
-      { isDown: true },
-    )
+    const result = resolveGuardRedirect(route({ requiresAuth: true }), signedOut, { isDown: true })
 
     expect(result).toBeUndefined()
   })
 
   it('does not redirect away from a guestOnly route during an API outage', () => {
-    const result = resolveGuardRedirect(
-      route({ guestOnly: true }),
-      signedIn(),
-      { isDown: true },
-    )
+    const result = resolveGuardRedirect(route({ guestOnly: true }), signedIn(), { isDown: true })
 
     expect(result).toBeUndefined()
+  })
+})
+
+describe('routes', () => {
+  // nginx sends a reader without a session here; the guard must route them through login first.
+  it('requires a session for the guide hand-off route', () => {
+    expect(router.resolve('/guide-auth').meta.requiresAuth).toBe(true)
   })
 })

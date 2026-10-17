@@ -124,7 +124,10 @@ bun run --cwd frontend/user-guide/site test       # unit tests + content integri
 bun run --cwd frontend/user-guide/site build      # fails on dead links
 bun run --cwd frontend/user-guide/site format     # prettier, using frontend/.prettierrc.json
 bun run --cwd frontend/user-guide/site new-page <chapter>/<page> [--app]   # both language stubs from src/_template.md
+frontend/docker/verify-guide-access.sh            # Docker: builds the web image, checks private/public access with curl (SKIP_BUILD=1 reuses it)
 ```
+
+Run the site's `dev` next to `bun run --cwd frontend dev` to follow the app header's "?" link: the app's dev server proxies `/guide` to port 5174 (no session check in dev). In the image, nginx serves the build at `/guide/`, private unless `GUIDE_PUBLIC=true` — see `frontend/user-guide/README.md` § Triển khai.
 
 ### Frontend test conventions
 

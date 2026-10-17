@@ -11,4 +11,11 @@ public static class AuthorizationPolicies
 
     /// <summary>Any active member of the caller's active organization (JWT <c>org_id</c> claim).</summary>
     public const string ActiveOrganizationMember = "ActiveOrganizationMember";
+
+    /// <summary>
+    /// A signed-in person (JWT from the header or the <c>access_token</c> cookie) — never an API key.
+    /// <c>[Authorize(AuthenticationSchemes = ...)]</c> can't express this: ASP.NET Core adds the default
+    /// policy's schemes (JWT and API key) to it.
+    /// </summary>
+    public const string SignedInUser = "SignedInUser";
 }
