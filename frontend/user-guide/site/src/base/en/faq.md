@@ -29,6 +29,6 @@ After too many wrong passwords in a row, the app pauses sign-in to protect your 
 
 Those buttons appear only when your system has Google or Microsoft sign-in turned on. If you don't see them, sign in with your username and password, or ask your support team.
 
-## Why does reopening this guide send me through the app?
+## Why does the guide send me through the app and back while I read?
 
-The guide shares the app's sign-in session. If you haven't used the app for a while (15 minutes by default), the session needs refreshing: the browser passes through the app and brings you straight back to the page you were reading. If the session has fully expired, the app asks you to [sign in](./getting-started/sign-in) again first.
+The guide shares the app's sign-in session, which needs refreshing regularly (every 15 minutes by default). The app does this while it is open; if you are only reading the guide, the next page you open passes through the app to refresh the session and brings you straight back to the page you were reading. If the session has fully expired, the app asks you to [sign in](./getting-started/sign-in) again first.

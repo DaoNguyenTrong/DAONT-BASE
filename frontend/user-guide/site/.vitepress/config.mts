@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import { filterHomeFrontmatter, type HomeFrontmatter } from './home'
 import { markdown } from './markdown'
 import { rewrites } from './paths'
 import { product } from './product'
@@ -21,6 +22,15 @@ export default defineConfig({
   rewrites,
   srcExclude,
   markdown,
+  // A hidden base chapter is not built: drop the home cards and quick-start steps pointing into it.
+  transformPageData(pageData) {
+    if (pageData.frontmatter.layout === 'home') {
+      pageData.frontmatter = filterHomeFrontmatter(
+        pageData.frontmatter as HomeFrontmatter,
+        product.hiddenBaseChapters,
+      )
+    }
+  },
   themeConfig: {
     // The brand block (theme slot nav-bar-title-before) replaces the site title.
     siteTitle: false,

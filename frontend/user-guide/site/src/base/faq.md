@@ -29,6 +29,6 @@ Sau nhiều lần nhập sai mật khẩu liên tiếp, ứng dụng tạm khoá
 
 Các nút này chỉ hiện khi hệ thống của bạn đã bật đăng nhập bằng Google hoặc Microsoft. Nếu không thấy, hãy đăng nhập bằng tên đăng nhập và mật khẩu, hoặc hỏi bộ phận hỗ trợ.
 
-## Vì sao mở lại tài liệu này thì tôi bị chuyển qua ứng dụng?
+## Vì sao đang đọc tài liệu thì tôi bị chuyển qua ứng dụng rồi quay lại?
 
-Tài liệu dùng chung phiên đăng nhập với ứng dụng. Nếu bạn không dùng ứng dụng một lúc (mặc định 15 phút), phiên cần được làm mới: trình duyệt ghé qua ứng dụng rồi tự đưa bạn về đúng trang đang đọc. Nếu phiên đã hết hạn hẳn, ứng dụng yêu cầu bạn [đăng nhập](./getting-started/sign-in) lại trước.
+Tài liệu dùng chung phiên đăng nhập với ứng dụng, và phiên cần được làm mới định kỳ (mặc định 15 phút một lần). Ứng dụng tự làm việc này khi đang mở; nếu bạn chỉ đọc tài liệu, lần chuyển trang kế tiếp sẽ ghé qua ứng dụng để làm mới phiên rồi tự đưa bạn về đúng trang đang đọc. Nếu phiên đã hết hạn hẳn, ứng dụng yêu cầu bạn [đăng nhập](./getting-started/sign-in) lại trước.

@@ -84,6 +84,14 @@
   margin-left: 16px;
 }
 
+/* A phone has no room for the badge next to the brand, the search button and the menu (the bar
+   scrolled sideways); the footer still shows the version. */
+@media (max-width: 479px) {
+  .guide-version--title {
+    display: none;
+  }
+}
+
 @media (min-width: 960px) {
   .guide-version--title {
     display: none;
@@ -550,5 +558,137 @@
 @media (min-width: 960px) {
   .guide-hero-title {
     font-size: 52px;
+  }
+}
+
+/* Home feature cards: violet-100 border, a slight lift and a violet-300 border on hover. */
+.VPHome .VPFeature {
+  border: 1px solid var(--brand-violet-100);
+  transition:
+    border-color 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.VPHome .VPFeature .icon {
+  color: var(--brand-violet-600);
+}
+
+.VPHome .VPFeature .icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.VPHome .VPFeature.link:hover {
+  border-color: var(--brand-violet-300);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgb(76 29 149 / 0.08);
+}
+
+.dark .VPHome .VPFeature {
+  border-color: var(--vp-c-divider);
+}
+
+.dark .VPHome .VPFeature .icon {
+  color: var(--brand-violet-300);
+}
+
+/* Quick start (HomeQuickStart.vue): three numbered steps joined by a line, one column on phones. */
+.guide-quick-start {
+  max-width: 1152px;
+  margin: 48px auto 0;
+  padding: 0 24px 64px;
+}
+
+.guide-quick-start__title {
+  margin-bottom: 24px;
+  color: var(--guide-heading);
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.guide-quick-start__steps {
+  display: grid;
+  gap: 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-quick-start__step {
+  position: relative;
+  text-align: center;
+}
+
+.guide-quick-start__number {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: var(--brand-violet-600);
+  color: #fff;
+  font-weight: 700;
+}
+
+.guide-quick-start__link {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.guide-quick-start__image {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top left;
+  border: 1px solid var(--brand-violet-100);
+  border-radius: 12px;
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
+}
+
+.guide-quick-start__link:hover .guide-quick-start__image {
+  border-color: var(--brand-violet-300);
+  transform: translateY(-2px);
+}
+
+.guide-quick-start__name {
+  margin-top: 6px;
+  color: var(--vp-c-brand-1);
+  font-size: 16px;
+}
+
+.guide-quick-start__details {
+  color: var(--vp-c-text-2);
+  font-size: 14px;
+}
+
+.dark .guide-quick-start__image {
+  border-color: var(--vp-c-divider);
+}
+
+@media (min-width: 768px) {
+  .guide-quick-start__steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* The line joining the numbers, drawn from each step's number to the next one's. */
+  .guide-quick-start__step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: calc(50% + 18px);
+    width: calc(100% + 32px - 36px);
+    height: 2px;
+    background: var(--brand-violet-100);
   }
 }
