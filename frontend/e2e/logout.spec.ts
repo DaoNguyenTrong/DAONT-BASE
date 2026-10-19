@@ -9,6 +9,8 @@ test('logout returns to login and protected routes redirect afterwards', async (
 
   await logout(page)
 
-  await page.goto('#/')
-  await expect(page).toHaveURL(/#\/login$/)
+  await page.evaluate(() => {
+    window.location.hash = '#/'
+  })
+  await expect(page).toHaveURL(/#\/login(\?|$)/)
 })

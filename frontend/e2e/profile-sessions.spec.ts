@@ -37,18 +37,21 @@ test('profile dialog shows active sessions including another device', async () =
   await page.locator('[data-testid="app-header-user-menu"]').click()
   await page.locator('[data-testid="user-menu-profile"]').click()
   await expect(page.getByRole('dialog', { name: 'Profile' })).toBeVisible()
-  await page.getByRole('tab', { name: 'Login sessions' }).click()
+  await page
+    .getByRole('dialog', { name: 'Profile' })
+    .getByText('Active sessions', { exact: true })
+    .click()
   await expect(page.getByText('This device')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Sign out other devices' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Sign out of other devices' })).toBeVisible()
 })
 
 test('revoke other devices leaves current session signed in', async () => {
-  await page.getByRole('button', { name: 'Sign out other devices' }).click()
+  await page.getByRole('button', { name: 'Sign out of other devices' }).click()
   // Naive UI's dialog.warning() renders role="dialog" (hardcoded in the
   // library, no alertdialog option). .last() targets the confirm popup,
   // which mounts after (and on top of) the still-open profile dialog.
   await page.getByRole('dialog').last().getByRole('button', { name: 'Confirm' }).click()
-  await expect(page.getByText('Other devices signed out')).toBeVisible()
+  await expect(page.getByText('Signed out of other devices')).toBeVisible()
   await expect(page.getByText('This device')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Sign out other devices' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Sign out of other devices' })).toHaveCount(0)
 })

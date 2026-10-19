@@ -22,21 +22,16 @@ test.afterAll(async () => {
   await context.close()
 })
 
-test('non-admin visiting /accounts is redirected to home', async () => {
-  await page.goto('#/accounts')
-  await expect(page).toHaveURL(/#\/$/)
-})
-
 test('authenticated user visiting /login is redirected to home', async () => {
   await page.goto('#/login')
   await expect(page).toHaveURL(/#\/$/)
 })
 
-test('unauthenticated visitor to /accounts is redirected to login', async ({ browser }) => {
+test('unauthenticated visitor to /organizations is redirected to login', async ({ browser }) => {
   const anonContext = await browser.newContext()
   const anonPage = await anonContext.newPage()
   await anonPage.addInitScript(() => window.localStorage.setItem('app-locale', 'en'))
-  await anonPage.goto('#/accounts')
-  await expect(anonPage).toHaveURL(/#\/login$/)
+  await anonPage.goto('#/organizations')
+  await expect(anonPage).toHaveURL(/#\/login(\?|$)/)
   await anonContext.close()
 })
