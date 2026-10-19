@@ -10,11 +10,24 @@ Three top-level trees, each with its own stack and rule surface:
 | ----------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `backend/`  | .NET 10, Clean Architecture (Domain → Application → Infrastructure → API)                                | `architecture.md`, `code-conventions.md`, `authentication.md`, `commands.md` |
 | `frontend/` | Vue 3 + Vite + TypeScript, Pinia, naive-ui, vue-i18n, Tailwind                                           | `frontend-conventions.md`, `commands.md`                                     |
-| `shared/`   | `docs/` (architecture & API docs), `openapi/` (contract exported from `backend`, consumed by `frontend`) | `api-contract.md`                                                            |
+| `shared/`   | `openapi/` (contract exported from `backend`, consumed by `frontend`)                                   | `api-contract.md`                                                            |
 
 `shared/openapi/` is the reason this is a monorepo rather than two separate repos: the backend's OpenAPI export is meant to be the single source of truth the frontend generates its client/types from (see `.claude/decisions.md` — "Monorepo: backend/frontend/shared, overriding..."). Codegen is wired up: `orval` regenerates `frontend/src/api/generated/**` (gitignored) from the committed `openapi.json` on every `bun install` — see `api-contract.md` for the regenerate workflow.
 
 CodeGraph is indexed repo-wide (backend + frontend) and is the tool for cross-file impact-check on both sides. Serena's symbol-navigation LSP covers `backend/` (C#), plus `frontend/` TypeScript and Vue for read-only symbol lookup — but its caller-search/rename tools (`find_referencing_symbols`, `rename_symbol`) are reliable for `backend/` (C#) only; see `serena.md` for why.
+
+## Common Commands
+
+```bash
+backend/scripts/test.sh                          # backend tests
+bun run --cwd frontend test:run                  # frontend unit tests
+bun run --cwd frontend build-only                # writes src/typings/ — required before type-check
+bun run --cwd frontend type-check
+scripts/test-gate.sh                             # full local gate before push (no coverage)
+```
+
+Full list (build, dev, codegen, migrations, OpenAPI export): `.claude/rules/commands.md`.
+CI workflows and git hooks (Lefthook): `.claude/reference/ci-and-git-hooks.md`.
 
 ## Agent Workflow
 
@@ -103,19 +116,3 @@ If the superpowers plugin is installed, its skills yield to this file. Where a s
 Record only decisions that affect **system design** in `.claude/decisions.md` — architecture, module/layer boundaries, API or data contracts, security posture, or other cross-cutting structural choices that carry a real trade-off, an external constraint, a rejected alternative, or would be costly to re-derive later. Out of scope: visual/branding/UI styling, copy/content wording, and one-off bug fixes — even ones that took real investigation — unless the fix itself changed a structural/contract/security decision. Skip routine decisions — following an existing pattern, a standard CRUD addition, a mechanical rename — even if you had to think about them briefly; those add noise without future value. Write only the **why** — the reasoning and rejected alternative — never "what was done" or "how" (that's git log/diff's job; don't restate file names, method names, or a narrative of the change), and only when the why isn't obvious from reading the code. Title format: `### YYYY-MM-DD — <decision>`. Write every entry (title and body) in English, whatever language the conversation is in. Newest entry at top — prepend new entries directly below the header note, do not append at the bottom. Keep each entry under ~80 words (excluding heading).
 
 **Gate:** never write to `.claude/decisions.md` without asking first. Draft the proposed entry, show it to the user, and wait for explicit confirmation before prepending it.
-
-## Rule Index
-
-All rule files in `.claude/rules/` are auto-loaded. This table documents when each is most relevant.
-
-| File                      | Read when                                                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `api-contract.md`         | Changing API endpoints/DTOs that the frontend consumes                                                                    |
-| `architecture.md`         | Understanding backend layer responsibilities or boundaries                                                                |
-| `authentication.md`       | Adding endpoints, headers, or role-based access                                                                           |
-| `code-conventions.md`     | Writing C# — naming, EF Core patterns, Mapperly                                                                           |
-| `commands.md`             | Building/running/testing the backend or the frontend                                                                      |
-| `frontend-conventions.md` | Writing Vue/TypeScript — components, stores, api client patterns                                                          |
-| `localization.md`         | Adding or editing user-facing messages (backend and/or frontend)                                                          |
-| `testing.md`              | Writing or changing tests; deciding which layer a change must be tested at                                                |
-| `serena.md`               | Using Serena symbol navigation tools — read-only lookup works backend + frontend, caller-search/rename is backend C# only |
