@@ -133,3 +133,6 @@ appsettings.Staging.json
 
 # local file storage (Storage:BasePath, default "uploads" under the API's content root)
 **/uploads/
+
+# Verification output: stack logs, screenshots and reports from scripts/dev-up.sh and scripts/verify/
+verify-output/

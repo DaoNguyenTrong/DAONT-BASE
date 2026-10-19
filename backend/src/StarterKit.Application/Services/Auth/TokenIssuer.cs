@@ -32,7 +32,9 @@ internal sealed class TokenIssuer(
         Guid? familyId,
         CancellationToken cancellationToken)
     {
-        string accessToken = jwtTokenService.GenerateAccessToken(account, organizationId);
+        // A rotated token stays in its login's family, so the family is the session; a new login starts a new one.
+        Guid sessionId = familyId is { } existingFamily && existingFamily != Guid.Empty ? existingFamily : Guid.NewGuid();
+        string accessToken = jwtTokenService.GenerateAccessToken(account, organizationId, sessionId);
         string refreshToken = jwtTokenService.GenerateRefreshToken();
         DateTime accessTokenExpiry = DateTime.UtcNow.AddMinutes(jwtSettings.AccessTokenExpiryMinutes);
         DateTime refreshTokenExpiry = DateTime.UtcNow.AddDays(jwtSettings.RefreshTokenExpiryDays);
@@ -46,7 +48,7 @@ internal sealed class TokenIssuer(
             isPersistent,
             loginAt,
             organizationId,
-            familyId));
+            sessionId));
 
         await unitOfWork.Repository<RefreshToken, long>().AddAsync(token, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

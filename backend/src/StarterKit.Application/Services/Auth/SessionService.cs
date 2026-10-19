@@ -15,9 +15,7 @@ public sealed class SessionService(
         CancellationToken cancellationToken)
     {
         Guid accountId = GetCurrentAccountId();
-        string? currentTokenHash = string.IsNullOrWhiteSpace(currentRefreshToken)
-            ? null
-            : TokenHash.Compute(currentRefreshToken);
+        Guid? currentSessionId = await ResolveCurrentSessionIdAsync(accountId, currentRefreshToken, cancellationToken);
 
         IReadOnlyList<RefreshToken> tokens = await unitOfWork.Repository<RefreshToken, long>()
             .ListAsync(token => token.AccountId == accountId, cancellationToken);
@@ -30,7 +28,7 @@ public sealed class SessionService(
                 token.DeviceInfo,
                 token.IpAddress,
                 token.IsPersistent,
-                currentTokenHash is not null && token.TokenHash == currentTokenHash,
+                token.FamilyId == currentSessionId,
                 token.LoginAt,
                 token.CreatedAt,
                 token.ExpiresAt))
@@ -57,9 +55,10 @@ public sealed class SessionService(
     public async Task RevokeOtherSessionsAsync(string? currentRefreshToken, CancellationToken cancellationToken)
     {
         Guid accountId = GetCurrentAccountId();
-        string? currentTokenHash = string.IsNullOrWhiteSpace(currentRefreshToken)
-            ? null
-            : TokenHash.Compute(currentRefreshToken);
+
+        // Without a session to keep, "every other session" would be every session, the caller's included.
+        Guid currentSessionId = await ResolveCurrentSessionIdAsync(accountId, currentRefreshToken, cancellationToken)
+            ?? throw new DomainException(DomainMessages.CurrentSessionUnidentified);
 
         IRepository<RefreshToken, long> repository = unitOfWork.Repository<RefreshToken, long>();
         IReadOnlyList<RefreshToken> tokens = await repository
@@ -67,7 +66,7 @@ public sealed class SessionService(
 
         foreach (RefreshToken token in tokens)
         {
-            if (token.IsActive && token.TokenHash != currentTokenHash)
+            if (token.IsActive && token.FamilyId != currentSessionId)
             {
                 token.Revoke();
                 repository.Update(token);
@@ -75,6 +74,30 @@ public sealed class SessionService(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    // The access token names the session it was issued for. A request without one (a token minted before sessions were
+    // named) is matched by its refresh cookie, which the browser sends with every request.
+    private async Task<Guid?> ResolveCurrentSessionIdAsync(
+        Guid accountId,
+        string? currentRefreshToken,
+        CancellationToken cancellationToken)
+    {
+        if (currentUserService.SessionId is { } sessionId)
+        {
+            return sessionId;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentRefreshToken))
+        {
+            return null;
+        }
+
+        string tokenHash = TokenHash.Compute(currentRefreshToken);
+        RefreshToken? cookieToken = await unitOfWork.Repository<RefreshToken, long>()
+            .FirstOrDefaultAsync(token => token.AccountId == accountId && token.TokenHash == tokenHash, cancellationToken);
+
+        return cookieToken?.FamilyId;
     }
 
     private Guid GetCurrentAccountId()

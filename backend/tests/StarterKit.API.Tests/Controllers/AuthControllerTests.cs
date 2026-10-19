@@ -615,6 +615,79 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
         Assert.NotNull(tokens.Single(t => t.TokenHash == ComputeSha256("other-session")).RevokedAt);
     }
 
+    // A Bearer-only client has no refresh cookie: the session it signed in with is the one its access token names.
+    [Fact]
+    public async Task RevokeOtherSessions_BearerOnly_KeepsTheSessionTheAccessTokenNames()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        Guid currentFamily = Guid.NewGuid();
+        Account owner;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            owner = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "bearer-revoke-user", email: "bearer-revoke@example.com");
+            context.RefreshTokens.AddRange(
+                RefreshToken.Create(new RefreshTokenParams(owner.Id, ComputeSha256("bearer-current"), DateTime.UtcNow.AddDays(1), null, null, false, DateTime.UtcNow, FamilyId: currentFamily)),
+                RefreshToken.Create(new RefreshTokenParams(owner.Id, ComputeSha256("bearer-other"), DateTime.UtcNow.AddDays(1), null, null, false, DateTime.UtcNow)));
+            await context.SaveChangesAsync();
+        }
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessTokenForSession(owner, currentFamily));
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/sessions/revoke-others", new { });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        await using AppDbContext verifyContext = CreateDbContext();
+        List<RefreshToken> tokens = await verifyContext.RefreshTokens.Where(t => t.AccountId == owner.Id).ToListAsync();
+        Assert.Null(tokens.Single(t => t.TokenHash == ComputeSha256("bearer-current")).RevokedAt);
+        Assert.NotNull(tokens.Single(t => t.TokenHash == ComputeSha256("bearer-other")).RevokedAt);
+    }
+
+    [Fact]
+    public async Task GetSessions_BearerOnly_MarksTheSessionTheAccessTokenNamesAsCurrent()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        Guid currentFamily = Guid.NewGuid();
+        Account owner;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            owner = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "bearer-list-user", email: "bearer-list@example.com");
+            context.RefreshTokens.AddRange(
+                RefreshToken.Create(new RefreshTokenParams(owner.Id, ComputeSha256("bearer-list-current"), DateTime.UtcNow.AddDays(1), null, null, false, DateTime.UtcNow, FamilyId: currentFamily)),
+                RefreshToken.Create(new RefreshTokenParams(owner.Id, ComputeSha256("bearer-list-other"), DateTime.UtcNow.AddDays(1), null, null, false, DateTime.UtcNow)));
+            await context.SaveChangesAsync();
+        }
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessTokenForSession(owner, currentFamily));
+
+        HttpResponseMessage response = await client.GetAsync("/api/auth/sessions");
+
+        List<SessionDto>? sessions = await response.Content.ReadJsonAsync<List<SessionDto>>();
+        Assert.Equal(2, sessions!.Count);
+        Assert.Single(sessions, s => s.IsCurrent);
+    }
+
+    // A token minted without a session claim and no refresh cookie names no session. Revoking "the others" then
+    // would revoke every session, the caller's included, so the request is refused and nothing is touched.
+    [Fact]
+    public async Task RevokeOtherSessions_NoIdentifiableSession_ReturnsBadRequestAndRevokesNothing()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        Account owner;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            owner = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "no-session-user", email: "no-session@example.com");
+            context.RefreshTokens.Add(
+                RefreshToken.Create(new RefreshTokenParams(owner.Id, ComputeSha256("no-session-token"), DateTime.UtcNow.AddDays(1), null, null, false, DateTime.UtcNow)));
+            await context.SaveChangesAsync();
+        }
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(owner));
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/sessions/revoke-others", new { });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await using AppDbContext verifyContext = CreateDbContext();
+        RefreshToken token = await verifyContext.RefreshTokens.SingleAsync(t => t.TokenHash == ComputeSha256("no-session-token"));
+        Assert.Null(token.RevokedAt);
+    }
+
     // X-Api-Key auth on an [Authorize] endpoint
 
     [Fact]

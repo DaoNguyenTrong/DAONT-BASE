@@ -42,6 +42,9 @@
   <data name="RefreshTokenRequired" xml:space="preserve">
     <value>Refresh token là bắt buộc.</value>
   </data>
+  <data name="CurrentSessionUnidentified" xml:space="preserve">
+    <value>Không xác định được phiên đăng nhập hiện tại, nên không thể đăng xuất các thiết bị khác.</value>
+  </data>
   <data name="RefreshTokenExpiryFuture" xml:space="preserve">
     <value>Thời hạn refresh token phải ở tương lai.</value>
   </data>
