@@ -21,111 +21,61 @@ StarterKit.Domain (innermost) → StarterKit.Application → StarterKit.Infrastr
 | Infrastructure | Domain, Application                 | API                              |
 | API            | Domain, Application, Infrastructure | -                                |
 
+Nguồn xác định của Dependency Rule là `ProjectReference` trong từng `.csproj`, không phải phân tích import. Compiler của .NET đã chặn tham chiếu project vòng tròn, nên kiểm tra vòng tròn chỉ cần ở mức class/namespace.
+
 ## Quy trình Review
 
-### Phase 1: Tổng quan với GitNexus
+### Phase 1: Dependency Rule và cấu trúc tổng thể
 
 ```
 Task Progress:
-- [ ] 1. Kiểm tra index freshness
-- [ ] 2. Xem clusters để hiểu phân vùng chức năng
-- [ ] 3. Phát hiện layer violations qua file path
-- [ ] 4. Phát hiện circular dependencies
+- [ ] 1. Đọc ProjectReference của 4 .csproj và so với bảng layer
+- [ ] 2. Dùng CodeGraph để tìm cặp class/namespace nghi vòng tròn
+- [ ] 3. Dùng CodeGraph để xem module boundaries và call path giữa các layer
 ```
 
-**1.1 Kiểm tra index:**
+**1.1 Dependency Rule (xác định):**
+
+Đọc các file sau và liệt kê mọi `<ProjectReference>`:
 
 ```
-Đọc resource: gitnexus://repo/DAONT-BASE/context
+backend/src/StarterKit.Domain/StarterKit.Domain.csproj
+backend/src/StarterKit.Application/StarterKit.Application.csproj
+backend/src/StarterKit.Infrastructure/StarterKit.Infrastructure.csproj
+backend/src/StarterKit.API/StarterKit.API.csproj
 ```
 
-> Nếu index stale → chạy `npx gitnexus analyze` trước khi tiếp tục.
+So sánh với bảng ở trên. Mọi tham chiếu nằm ngoài cột "Cho phép" là vi phạm CRITICAL.
 
-**1.2 Xem clusters:**
+**1.2 Vòng tròn ở mức class/namespace:**
+
+Với mỗi cặp nghi ngờ (ví dụ hai service gọi nhau), dùng `codegraph_explore` với tên hai symbol để xem call path. CodeGraph không có truy vấn tìm chu trình tự động, nên cần chọn cặp ứng viên trước.
+
+**1.3 Luồng giữa các layer:**
 
 ```
-gitnexus_query({query: "all clusters"})
+codegraph_explore("<tên class hoặc use case>")
 ```
 
-**1.3 Kiểm tra layer violations qua file path:**
-
-```cypher
--- Domain import Infrastructure/API (vi phạm)
-MATCH (a:File)-[:CodeRelation {type: 'IMPORTS'}]->(b:File)
-WHERE a.filePath CONTAINS '/StarterKit.Domain/'
-  AND (b.filePath CONTAINS '/StarterKit.Infrastructure/'
-    OR b.filePath CONTAINS '/StarterKit.API/')
-RETURN a.filePath, b.filePath
-
--- Application import Infrastructure/API (vi phạm)
-MATCH (a:File)-[:CodeRelation {type: 'IMPORTS'}]->(b:File)
-WHERE a.filePath CONTAINS '/StarterKit.Application/'
-  AND (b.filePath CONTAINS '/StarterKit.Infrastructure/'
-    OR b.filePath CONTAINS '/StarterKit.API/')
-RETURN a.filePath, b.filePath
-
--- Infrastructure import API (vi phạm)
-MATCH (a:File)-[:CodeRelation {type: 'IMPORTS'}]->(b:File)
-WHERE a.filePath CONTAINS '/StarterKit.Infrastructure/'
-  AND b.filePath CONTAINS '/StarterKit.API/'
-RETURN a.filePath, b.filePath
-```
-
-**1.4 Phát hiện circular dependencies:**
-
-```cypher
-MATCH (a)-[r:CodeRelation]->(b)-[s:CodeRelation]->(a)
-WHERE r.type IN ['CALLS', 'IMPORTS']
-  AND s.type IN ['CALLS', 'IMPORTS']
-RETURN a.name, b.name, r.type, s.type
-```
+Dùng kết quả để xác định module nào đang gọi xuyên layer, trước khi đi sâu vào từng file.
 
 ### Phase 2: Chi tiết với Serena
 
 ```
 Task Progress:
-- [ ] 1. Kiểm tra using statements trong Domain
-- [ ] 2. Kiểm tra using statements trong Application
-- [ ] 3. Kiểm tra using statements trong Infrastructure
-- [ ] 4. Đánh giá Interface Segregation
-- [ ] 5. Đánh giá Single Responsibility
+- [ ] 1. Đánh giá Interface Segregation
+- [ ] 2. Đánh giá Single Responsibility
 ```
 
-**2.1 Domain layer violations:**
+**2.1 Interface Segregation:**
 
-```
-get_symbols_overview({path: "backend/src/StarterKit.Domain"})
-# Tìm bất kỳ using StarterKit.Application, StarterKit.Infrastructure, StarterKit.API
-```
+Dùng Serena `find_symbol` với pattern `I*` trong `backend/src/StarterKit.Application` và `backend/src/StarterKit.Infrastructure`, `depth=1` để liệt kê method của từng interface. Interface có hơn 5 method → cân nhắc tách.
 
-**2.2 Application layer violations:**
+**2.2 Single Responsibility:**
 
-```
-get_symbols_overview({path: "backend/src/StarterKit.Application"})
-# Tìm bất kỳ using StarterKit.Infrastructure, StarterKit.API
-```
+Dùng Serena `find_symbol` với pattern `*Service` trong `backend/src/StarterKit.Application` và `backend/src/StarterKit.Infrastructure`, `include_body=true`. Class có hơn 5 tham số constructor, hoặc hơn 300 dòng, → ghi nhận.
 
-**2.3 Infrastructure layer violations:**
-
-```
-get_symbols_overview({path: "backend/src/StarterKit.Infrastructure"})
-# Tìm bất kỳ using StarterKit.API
-```
-
-**2.4 Interface Segregation:**
-
-```
-find_symbol({name: "I*", path: "backend/src/StarterKit.Application", include_body: true})
-# Interface > 5 methods → cân nhắc tách
-```
-
-**2.5 Single Responsibility:**
-
-```
-# Class có quá nhiều dependencies (> 5 constructor params)
-find_symbol({name: "*Service", path: "backend/src/StarterKit.Application", include_body: true})
-find_symbol({name: "*Service", path: "backend/src/StarterKit.Infrastructure", include_body: true})
-```
+**2.3 Vì sao không kiểm tra `using` ở phase này:** `get_symbols_overview` của Serena không trả về câu lệnh `using`. Vi phạm import đã được Phase 1.1 bắt đầy đủ hơn qua `ProjectReference`, nên không cần kiểm tra lại.
 
 ## Violation Categories
 
@@ -136,6 +86,8 @@ find_symbol({name: "*Service", path: "backend/src/StarterKit.Infrastructure", in
 | 🟡 Fat Interface       | HIGH     | Interface > 5 methods                  |
 | 🟡 God Class           | HIGH     | Class > 300 LOC hoặc > 5 dependencies  |
 | 🟢 Leaky Abstraction   | MEDIUM   | Implementation details trong interface |
+
+Chi tiết mẫu vi phạm và cách sửa: `violation-patterns.md` cùng thư mục.
 
 ## Output Format
 
@@ -168,8 +120,8 @@ find_symbol({name: "*Service", path: "backend/src/StarterKit.Infrastructure", in
 
 ## Quick Commands
 
-| Task             | Command                           |
+| Task             | Phần cần chạy                     |
 | ---------------- | --------------------------------- |
-| Full review      | Chạy Phase 1 + Phase 2            |
-| Layer check only | Phase 1.3 + 2.1 + 2.2 + 2.3      |
-| Coupling check   | Phase 1.4 + 2.5                   |
+| Full review      | Phase 1 + Phase 2                 |
+| Layer check only | Phase 1.1                         |
+| Coupling check   | Phase 1.2 + Phase 2.2             |
