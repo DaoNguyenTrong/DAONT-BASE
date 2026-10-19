@@ -53,7 +53,7 @@ public sealed class ArchitectureTests
         Assert.Empty(offenders);
     }
 
-    /// <summary>Entity pattern (CLAUDE.md): no public constructor, created through <c>static Create</c>.</summary>
+    /// <summary>Entity pattern (AGENTS.md): no public constructor, created through <c>static Create</c>.</summary>
     [Fact]
     public void Entities_HaveNoPublicConstructorAndAStaticCreateFactory()
     {

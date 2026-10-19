@@ -25,7 +25,7 @@ shared/     docs/ + openapi/ (shared contract — frontend generates its client/
 plans/      history of plan files from implemented tasks (reference for patterns, not product documentation)
 ```
 
-For layer/rule details for each part, see `CLAUDE.md` / `AGENTS.md` and `.claude/rules/`.
+For layer/rule details for each part, see `AGENTS.md` and `.claude/rules/`.
 
 ## Tech Stack
 

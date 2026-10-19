@@ -4,7 +4,7 @@ Call `mcp__serena__initial_instructions` at the start of any coding task to load
 
 **When to reach for Serena:** after CodeGraph has told you *which* module or class is involved. Serena is the drill; CodeGraph is the map. If you don't yet know where to look, orient with CodeGraph first.
 
-Scope của từng tool (backend, frontend, và tool nào bị giới hạn): xem CLAUDE.md § Tool Selection. File này chỉ ghi các giới hạn chi tiết không có ở đó.
+Scope của từng tool (backend, frontend, và tool nào bị giới hạn): xem AGENTS.md § Tool Selection. File này chỉ ghi các giới hạn chi tiết không có ở đó.
 
 Serena operates at the LSP/symbol level — precise, file-scoped. For cross-module call graphs and service wiring, use CodeGraph instead.
 
