@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 This file provides guidance to Claude Code when working with this repository.
 
@@ -40,9 +40,17 @@ Follow this order for every non-trivial task:
 3. **Orient (macro)** — CodeGraph (`codegraph_explore`) to understand module boundaries, data flow, and cross-service relationships across both backend and frontend
 4. **Orient (micro)** — for backend C#, use Serena (`find_symbol`/`get_symbols_overview`) to drill into a specific symbol once CodeGraph has located the module. For frontend, CodeGraph's step-3 response already includes verbatim source — skip a separate Serena call unless you need `find_declaration` to confirm what a specific template-tag usage resolves to.
 5. **Impact check** — before editing, review every caller of the symbol you plan to modify. For backend C# symbols, prefer Serena's `find_referencing_symbols` (exact call sites with line-level snippets); fall back to `codegraph_explore` only when the symbol has dynamic dispatch across multiple implementations (interface/base-class methods). For any frontend symbol (`.ts` or `.vue`), use `codegraph_explore`'s blast-radius — never Serena's `find_referencing_symbols`/`rename_symbol`, which silently miss any caller inside a `.vue` file regardless of import style (verified, not a config gap).
-6. **Execute** — make changes
-7. **Verify** — run the test suite for whichever side you touched (`backend/scripts/test.sh` for `backend/`, `bun run --cwd frontend test:run` for `frontend/` — see `commands.md`); it must pass before considering the task done
+5b. **Feature map** — for a change to a user-facing flow, read `docs/feature-map.md` for the affected feature: entry path, test accounts, selectors, how to verify. If the feature has no entry, note it and propose one.
+5c. **Reproduce first (bug fixes)** — reproduce the failure before editing: a failing regression test for backend/frontend logic (`testing.md`), or the failing request/UI step through the running stack (`scripts/dev-up.sh`, then `scripts/verify/`). Keep the evidence under `verify-output/`.
+6. **Execute** — make changes in small, atomic steps; one concern per PR. Prefer repo generators/templates over hand-writing structure.
+7. **Verify** — every gate below must pass; never disable or suppress a rule to get there:
+   - a. Unit/integration tests for the side touched (`backend/scripts/test.sh` for `backend/`, `bun run --cwd frontend test:run` for `frontend/` — see `commands.md`)
+   - b. Architecture tests and static checks (`ArchitectureTests.cs`, `bun run --cwd frontend type-check`, and `bun run --cwd frontend lint:boundaries` for frontend import boundaries)
+   - c. For a change to a user-facing flow: start the stack with `scripts/dev-up.sh`, run the matching `scripts/verify/*.sh` and `bun run --cwd frontend test:e2e`, then `scripts/dev-down.sh`. Attach the output paths under `verify-output/` to the report.
+   - d. For a bug fix: show the failure from 5c no longer reproduces
 8. **Log decisions** — record only choices that affect system design (architecture, contracts, security posture) in `.claude/decisions.md`, titled `### YYYY-MM-DD — <decision>`, written in English; skip branding/UI/copy calls and routine bug fixes. **Gate: before writing, show the user the proposed entry and get explicit confirmation — never write to `.claude/decisions.md` unprompted.**
+
+**Recurring feedback:** if the same correction comes up twice (from a reviewer or from your own earlier work), stop and turn it into a lint rule, architecture test, or generator instead of adding another prose rule.
 
 ### Worktrees
 
