@@ -14,7 +14,7 @@ public sealed class JwtTokenService(IOptions<JwtSettings> options) : IJwtTokenSe
 {
     private readonly JwtSettings settings = options.Value;
 
-    public string GenerateAccessToken(Account account, Guid? organizationId)
+    public string GenerateAccessToken(Account account, Guid? organizationId, Guid sessionId)
     {
         if (settings.Audiences.Length == 0)
         {
@@ -36,6 +36,8 @@ public sealed class JwtTokenService(IOptions<JwtSettings> options) : IJwtTokenSe
         {
             claims.Add(new Claim(IJwtTokenService.OrganizationIdClaimType, orgId.ToString()));
         }
+
+        claims.Add(new Claim(IJwtTokenService.SessionIdClaimType, sessionId.ToString()));
 
         var token = new JwtSecurityToken(
             issuer: settings.Issuer,

@@ -36,7 +36,7 @@ public class JwtTokenServiceTests
         JwtTokenService service = CreateService(audiences: []);
         Account account = CreateAccount();
 
-        Assert.Throws<InvalidOperationException>(() => service.GenerateAccessToken(account, null));
+        Assert.Throws<InvalidOperationException>(() => service.GenerateAccessToken(account, null, Guid.NewGuid()));
     }
 
     [Fact]
@@ -44,8 +44,9 @@ public class JwtTokenServiceTests
     {
         JwtTokenService service = CreateService();
         Account account = CreateAccount();
+        Guid sessionId = Guid.NewGuid();
 
-        string token = service.GenerateAccessToken(account, null);
+        string token = service.GenerateAccessToken(account, null, sessionId);
 
         JwtSecurityToken parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
         Assert.Equal(account.Id.ToString(), parsed.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
@@ -54,6 +55,7 @@ public class JwtTokenServiceTests
         Assert.Equal("StarterKit.Tests", parsed.Issuer);
         Assert.Contains("StarterKit.Tests.Client", parsed.Audiences);
         Assert.DoesNotContain(parsed.Claims, c => c.Type == IJwtTokenService.OrganizationIdClaimType);
+        Assert.Equal(sessionId.ToString(), parsed.Claims.First(c => c.Type == IJwtTokenService.SessionIdClaimType).Value);
         double diffSeconds = Math.Abs((parsed.ValidTo - DateTime.UtcNow.AddMinutes(15)).TotalSeconds);
         Assert.True(diffSeconds < 5, $"Expected expiry within 5s tolerance, was off by {diffSeconds}s");
     }
@@ -65,7 +67,7 @@ public class JwtTokenServiceTests
         Account account = CreateAccount();
         Guid organizationId = Guid.NewGuid();
 
-        string token = service.GenerateAccessToken(account, organizationId);
+        string token = service.GenerateAccessToken(account, organizationId, Guid.NewGuid());
 
         JwtSecurityToken parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
         Assert.Equal(
@@ -79,7 +81,7 @@ public class JwtTokenServiceTests
         JwtTokenService service = CreateService(audiences: ["first-audience", "second-audience"]);
         Account account = CreateAccount();
 
-        string token = service.GenerateAccessToken(account, null);
+        string token = service.GenerateAccessToken(account, null, Guid.NewGuid());
 
         JwtSecurityToken parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
         Assert.Contains("first-audience", parsed.Audiences);

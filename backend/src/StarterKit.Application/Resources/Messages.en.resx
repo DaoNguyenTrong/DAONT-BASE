@@ -42,6 +42,9 @@
   <data name="RefreshTokenRequired" xml:space="preserve">
     <value>Refresh token is required.</value>
   </data>
+  <data name="CurrentSessionUnidentified" xml:space="preserve">
+    <value>The current sign-in session cannot be identified, so other devices cannot be signed out.</value>
+  </data>
   <data name="RefreshTokenExpiryFuture" xml:space="preserve">
     <value>Refresh token expiry must be in the future.</value>
   </data>

@@ -45,7 +45,7 @@ public class RegistrationServiceTests
             .Returns([]);
 
         IJwtTokenService jwtTokenService = Substitute.For<IJwtTokenService>();
-        jwtTokenService.GenerateAccessToken(Arg.Any<Account>(), Arg.Any<Guid?>()).Returns("fake-access-token");
+        jwtTokenService.GenerateAccessToken(Arg.Any<Account>(), Arg.Any<Guid?>(), Arg.Any<Guid>()).Returns("fake-access-token");
         jwtTokenService.GenerateRefreshToken().Returns(_ => Guid.NewGuid().ToString());
 
         IPermissionResolver permissionResolver = Substitute.For<IPermissionResolver>();
