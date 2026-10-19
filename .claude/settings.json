@@ -1,15 +1,16 @@
 {
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-task-reminder.sh\"",
-            "timeout": 10
-          }
-        ]
-      }
+  "permissions": {
+    "deny": [
+      "Bash(git add -A)",
+      "Bash(git add .)",
+      "Bash(git commit -a:*)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git merge:*)"
     ]
   },
   "enabledPlugins": {
