@@ -57,7 +57,7 @@ Git hooks (see README's "Git Hooks" section for the one-time `bun install` neede
 git push origin feature/your-feature-name
 ```
 
-Then create PR to `dev` branch on GitHub. CI (`.github/workflows/ci.yml`) runs the test gate on the PR — backend tests, an OpenAPI-export drift check, frontend formatting, type-check and unit tests; a red check means fix it before review. `scripts/test-gate.sh` runs the same checks locally.
+Then create PR to `dev` branch on GitHub. CI (`.github/workflows/ci.yml`) runs the test gate on the PR — backend tests and an OpenAPI-export drift check when `backend/` or `shared/openapi/` changes, frontend formatting, type-check and unit tests when `frontend/` or `shared/openapi/` changes, and the user-guide checks when `frontend/` changes. A part the change doesn't touch reports as skipped, which counts as passing. A red check means fix it before review. `scripts/test-gate.sh` runs the same checks locally.
 
 **Repository setup (once, by a maintainer):** add a ruleset for `main` that requires a pull request and the status checks `test / backend`, `test / frontend` and `test / guide`. Don't require status checks on `dev` without a bypass for the maintainer role: `/git-release` pushes the CHANGELOG commit to `dev` directly and the post-release reconcile is a direct `git push`, both of which a required-check rule rejects. On GitLab, enable *Settings → Merge requests → Pipelines must succeed*.
 

@@ -1,7 +1,9 @@
 # The same pipelines as .github/workflows/{ci,test,release}.yml, for a fork hosted on GitLab (GitHub
-# ignores this file, GitLab ignores .github/). Every merge request and every push to dev runs `test`
-# alone; the v* tag that /git-release pushes runs test → production images → GitLab Release.
-# Make the MR pipeline required: Settings → Merge requests → "Pipelines must succeed".
+# ignores this file, GitLab ignores .github/). Every merge request and every push to dev runs only the
+# test jobs its changes touch (rules:changes below — the same mapping as ci.yml's `changes` job); the
+# v* tag that /git-release pushes runs all of them, then the production images and the GitLab Release.
+# Make the MR pipeline required: Settings → Merge requests → "Pipelines must succeed". Skipped jobs do
+# not fail a pipeline, so a docs-only MR is not blocked.
 #
 # Images are built here, from the tag, not from a push to main: /git-release merges into main
 # *before* it tags, so a main build runs while the tag doesn't exist yet and MinVer / `git describe`
@@ -35,10 +37,23 @@ variables:
       alias: docker
       command: ["--tls=false"]
 
-test:
+# The jobs that install bun (frontend and user guide). Same image as the backend job.
+.bun:
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends unzip # the bun installer unzips
+    - curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.14"
+    - export PATH="$HOME/.bun/bin:$PATH"
+
+test:backend:
   extends: .docker
   stage: test
   image: mcr.microsoft.com/dotnet/sdk:10.0
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+    - changes:
+        - backend/**/*
+        - shared/openapi/**/*
+        - .gitlab-ci.yml
   variables:
     STARTERKIT_TEST_COVERAGE: "1" # reported, not gated — .claude/rules/testing.md § Coverage
   script:
@@ -48,24 +63,54 @@ test:
     # A controller/DTO change without a re-export leaves the frontend's generated client stale.
     - dotnet build backend/src/StarterKit.API/StarterKit.API.csproj --no-restore -m:1 -p:OpenApiGenerateDocumentsOnBuild=true
     - git diff --exit-code -- shared/openapi/openapi.json || { echo "openapi.json is out of date — run the export and commit it"; exit 1; }
-    - apt-get update && apt-get install -y --no-install-recommends unzip # the bun installer unzips
-    - curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.14"
-    - export PATH="$HOME/.bun/bin:$PATH"
-    - bun install --cwd frontend --frozen-lockfile
-    - bun run --cwd frontend prettier --check --experimental-cli src/ e2e/
-    - bun run --cwd frontend build-only # writes src/typings/, which vue-tsc needs
-    - bun run --cwd frontend type-check # vitest doesn't type-check
-    - bun run --cwd frontend test:coverage
-    - bun install --cwd frontend/user-guide/site --frozen-lockfile
-    - bun run --cwd frontend/user-guide/site format:check
-    - bun run --cwd frontend/user-guide/site test # includes the content integrity check
-    - bun run --cwd frontend/user-guide/site build # fails on dead links
   artifacts:
     when: always
     reports:
       coverage_report:
         coverage_format: cobertura
         path: backend/TestResults/coverage/**/coverage.cobertura.xml
+
+test:frontend:
+  extends: .bun
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+    - changes:
+        - frontend/**/*
+        - shared/openapi/**/*
+        - .gitlab-ci.yml
+  script:
+    - bun install --cwd frontend --frozen-lockfile
+    - bun run --cwd frontend prettier --check --experimental-cli src/ e2e/
+    - bun run --cwd frontend build-only # writes src/typings/, which vue-tsc needs
+    - bun run --cwd frontend type-check # vitest doesn't type-check
+    - bun run --cwd frontend test:coverage
+
+# The user guide is fed by the app's tokens and logos (frontend/src, frontend/public), so a frontend
+# change runs it too.
+test:guide:
+  extends: .bun
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+    - changes:
+        - frontend/**/*
+        - .gitlab-ci.yml
+  script:
+    - bun install --cwd frontend/user-guide/site --frozen-lockfile
+    - bun run --cwd frontend/user-guide/site format:check
+    - bun run --cwd frontend/user-guide/site test # includes the content integrity check
+    - bun run --cwd frontend/user-guide/site build # fails on dead links
+
+# Keeps the pipeline non-empty when no test job above applies (a docs-only change), so the MR still
+# has a pipeline to report a result on.
+test:gate:
+  stage: test
+  image: alpine:3
+  script:
+    - echo "No test job matched this change."
 
 # $CI_REGISTRY_IMAGE/<service>:X.Y.Z, plus :latest for a stable (non-pre-release) tag.
 images:
