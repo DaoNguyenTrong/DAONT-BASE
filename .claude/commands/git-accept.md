@@ -2,9 +2,7 @@
 description: Merge the current branch's docs-only PR into dev when the gate passes (required CI green, agent review without blocking findings, docs-only scope)
 ---
 
-Merge a docs-only pull request into `dev` through a gate. This command is the only sanctioned merge path for work that is not a hotfix or release. The gate runs on the client, so it is not a hard control: it only enforces the process.
-
-Run only on a `feature/*`, `fix/*` or `chore/*` branch that has an open PR into `dev`.
+Merge a docs-only pull request into `dev` through a gate. This command is the only merge path that does not need the user's explicit order; any other merge (code, hotfix, release) needs one (`AGENTS.md` § Commits). The gate runs on the client, so it is not a hard control: it only enforces the process.
 
 ## Steps
 
@@ -14,7 +12,7 @@ Run only on a `feature/*`, `fix/*` or `chore/*` branch that has an open PR into 
 gh pr view --json number,state,baseRefName,headRefName,url,title
 ```
 
-Stop unless `state` is `OPEN` and `baseRefName` is `dev`. Report which condition failed.
+Stop unless `state` is `OPEN`, `baseRefName` is `dev`, and `headRefName` starts with `feature/`, `fix/` or `chore/`. Report which condition failed.
 
 ### 2. Scope gate
 
@@ -22,9 +20,13 @@ Stop unless `state` is `OPEN` and `baseRefName` is `dev`. Report which condition
 gh pr view <number> --json files --jq '.files[].path'
 ```
 
-Every path must match `*.md` or `docs/**`, and must not sit under `.claude/` or `.github/` even when it ends in `.md` (rules and agent prompts change the process, so they are reviewed by hand). Any other path → stop and report the first offending file. Code, workflows, rules, settings and anything touching auth are merged by hand.
+Check each path in turn, in this order:
 
-Check each path in turn: `.claude/*` and `.github/*` fail; `docs/*` and `*.md` pass; anything else fails. Any failing path → stop.
+1. Under `.claude/` or `.github/` → fail, even when it ends in `.md` (rules and agent prompts change the process, so they are reviewed by hand).
+2. Under `docs/`, or ends in `.md` → pass.
+3. Anything else → fail.
+
+Any failing path → stop and report the first offending file. Code, workflows, rules, settings and anything touching auth are merged by hand.
 
 ### 3. CI gate
 
@@ -32,12 +34,12 @@ Check each path in turn: `.claude/*` and `.github/*` fail; `docs/*` and `*.md` p
 gh pr view <number> --json statusCheckRollup --jq '.statusCheckRollup[] | "\(.name)\t\(.conclusion // .status)"'
 ```
 
-- `test / backend` and `test / frontend` must be `SUCCESS`. A `SKIPPED` for either is reported and allowed only when the `changes` job shows no backend or frontend change, which step 2 already guarantees for docs-only PRs.
-- Any `FAILURE`, `PENDING`, `QUEUED` or `IN_PROGRESS` → stop. Do not wait in a loop; report which check is not finished.
+- `changes` must be `SUCCESS`, and `test / backend`, `test / frontend` and `test / guide` must each be `SUCCESS` or `SKIPPED`. CI skips the parts a change does not touch and counts a skip as passing (see the header of `.github/workflows/ci.yml`), so a docs-only PR usually shows them skipped.
+- Any of those checks missing, or any check `FAILURE`, `CANCELLED`, `PENDING`, `QUEUED` or `IN_PROGRESS` → stop. Do not wait in a loop; report which check is not finished.
 
 ### 4. Review gate
 
-Run the `code-reviewer` agent on the PR diff (`git diff origin/dev...HEAD`). It checks the docs against the rules they describe (for example, a doc that names a file or command that no longer exists).
+Dispatch the `code-reviewer` subagent (Agent tool, `subagent_type: code-reviewer`) and give it the PR number, so it reviews `gh pr diff <number>`. It checks the docs against the rules they describe (for example, a doc that names a file or command that no longer exists) and labels each finding `blocking` or `non-blocking`.
 
 Post its output as a PR comment so the decision is on record:
 
@@ -45,7 +47,7 @@ Post its output as a PR comment so the decision is on record:
 gh pr comment <number> --body-file <file>
 ```
 
-Write the body to the scratchpad directory, not `/tmp`. Any finding the reviewer marks as blocking → stop and report it. Non-blocking findings do not stop the merge.
+Write the body to the scratchpad directory, not `/tmp`. Any finding labelled `blocking` → stop and report it. Non-blocking findings do not stop the merge.
 
 ### 5. Merge
 
