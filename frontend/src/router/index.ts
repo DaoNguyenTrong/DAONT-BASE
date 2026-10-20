@@ -104,11 +104,8 @@ export function resolveGuardRedirect(
   auth: { isAuthenticated: boolean; hasPermission: (code: string) => boolean },
   health: { isDown: boolean },
 ) {
-  // During an API outage, ServerErrorScreen takes over the whole screen and the
-  // silent refresh could not run — so `auth.isAuthenticated` is unreliable.
-  // Don't redirect anywhere (no /login flash): keep the URL on the intended
-  // route so App.vue's recovery watcher can restore the session and route once
-  // the API comes back.
+  // During an outage the silent refresh couldn't run, so `isAuthenticated` is unreliable: don't
+  // redirect (no /login flash); keep the URL so App.vue's recovery watcher can restore and route.
   if (health.isDown) {
     return undefined
   }

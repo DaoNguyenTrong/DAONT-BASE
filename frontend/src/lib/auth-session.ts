@@ -1,10 +1,8 @@
 export const KEEP_LOGIN_STORAGE_KEY = 'keep-login'
 
-// The auth cookies are HttpOnly and set by the API on a different origin, so
-// frontend JS can never see them. This flag is our own client-side breadcrumb:
-// "this browser has authenticated at least once, so a silent refresh is worth
-// attempting on boot." Without it, every first-time / logged-out visitor pays a
-// guaranteed-401 round-trip that blocks the first paint.
+// The auth cookies are HttpOnly on the API's origin, so JS can't see them. This flag records that
+// the browser has authenticated before, so a silent refresh on boot is worth trying; without it
+// every logged-out visitor pays a guaranteed-401 round-trip that blocks the first paint.
 export const SESSION_HINT_STORAGE_KEY = 'has-session'
 
 function canUseStorage() {

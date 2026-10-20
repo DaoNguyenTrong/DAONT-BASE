@@ -8,10 +8,9 @@ using StarterKit.Infrastructure.Persistence;
 namespace StarterKit.API.Tests.Architecture;
 
 /// <summary>
-/// Architecture rules the compiler doesn't hold for us. <c>ProjectReference</c>s already fix the direction
-/// between projects; these catch what still slips through: an infrastructure package pulled into an inner
-/// layer, an Infrastructure <c>using</c> in a controller, an entity with a public constructor, and dependency
-/// cycles between namespaces inside one project.
+/// Architecture rules the compiler doesn't enforce (<c>ProjectReference</c>s already fix project direction): no
+/// infrastructure package in an inner layer, no Infrastructure <c>using</c> in a controller, no public entity
+/// constructor, no namespace dependency cycles inside one project.
 /// </summary>
 public sealed class ArchitectureTests
 {
@@ -89,16 +88,10 @@ public sealed class ArchitectureTests
     }
 
     /// <summary>
-    /// No dependency cycles between namespaces (by <c>using</c>, grouped at <c>StarterKit.Layer.X.Y</c>). The
-    /// failure lists every edge inside a cycle — removing one of them (move the shared type to the side that is
-    /// depended on, or split out a new namespace) is enough to break it.
+    /// No namespace cycles by <c>using</c>, grouped at <c>StarterKit.Layer.X.Y</c>; removing one listed edge breaks a
+    /// cycle. Split at segment four (<c>Services.Sessions</c>, not <c>Services.Auth.Sessions</c>); deeper fold in.
+    /// A <c>cref</c> needs a <c>using</c>, which adds an edge: write the relative name instead.
     /// </summary>
-    /// <remarks>
-    /// Child namespaces fold into the parent sharing their first four segments, so splitting part of one out to
-    /// break a cycle must change the fourth segment (<c>Services.Sessions</c>, not <c>Services.Auth.Sessions</c>).
-    /// A reference made only for documentation (<c>cref</c>) needs a <c>using</c> too; write the relative name
-    /// instead of adding one.
-    /// </remarks>
     [Fact]
     public void Namespaces_HaveNoDependencyCycles()
     {

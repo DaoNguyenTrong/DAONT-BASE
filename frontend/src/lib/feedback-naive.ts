@@ -7,14 +7,8 @@ import {
 } from './confirmation-override'
 
 /**
- * Naive UI equivalent of `src/lib/feedback.ts`.
- *
- * Naive UI's discrete API mounts its own isolated Vue app instance — it does
- * NOT inherit the main app's `<n-config-provider>` — so the theme must be
- * passed explicitly here. `configProviderProps` accepts a `Ref`
- * (`MaybeRef<ConfigProviderProps>`), so a computed tied to the same
- * `isDark` state App.vue uses keeps the discrete message/dialog instance in
- * sync with the app's light/dark toggle instead of freezing on light.
+ * The discrete API mounts its own Vue app and doesn't inherit `<n-config-provider>`, so the theme
+ * is passed here; `configProviderProps` accepts a Ref, so this computed follows the dark toggle.
  */
 const { isDark } = useThemePreference()
 

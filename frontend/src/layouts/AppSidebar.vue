@@ -51,7 +51,7 @@ const drawerThemeOverrides = computed(() =>
   layout.menuTheme === 'brand' && !isDark.value
     ? {
         Drawer: {
-          color: '#5e4c9e',
+          color: '#6428f4',
           textColor: '#ffffff',
           titleTextColor: '#ffffff',
           closeIconColor: 'rgba(255, 255, 255, 0.7)',
@@ -80,10 +80,9 @@ function handlePanelLeave() {
   if (!isTouch.value) layout.collapseDrawer()
 }
 
-// Keyboard: tabbing into the rail opens the drawer so the pin button and the menu are reachable. A touch
-// tap focuses the entry it hits, which must not expand (a leaf tap navigates), so on touch screens only
-// keyboard-driven focus counts. The entry under focus is replaced by its panel twin, so focus moves to the
-// logo button, which stays mounted.
+// Tabbing into the rail opens the drawer; on touch only keyboard focus counts, since a tap on a
+// leaf navigates. The focused entry is swapped for its panel twin, so focus moves to the logo
+// button, which stays mounted.
 function isKeyboardFocus(target: EventTarget | null) {
   if (!isTouch.value) return true
   try {
@@ -150,10 +149,9 @@ function handleDocumentClick(event: MouseEvent) {
     layout.collapseDrawer()
   }
 }
-// Esc belongs to whatever is on top: an overlay (palette, settings panel, profile dialog) or a handler
-// that already took the key (the avatar menu, the palette's input) closes first, the drawer stays.
-// Whether an overlay was open is read in the capture phase: naive-ui's drawer and modal close themselves
-// from their own window-level listener, which doesn't prevent the key and may run before this one.
+// Esc closes whatever is on top first (an overlay, or a handler that already took the key). The
+// overlay state is read in the capture phase: naive-ui closes its drawer/modal from a window
+// listener that doesn't prevent the key and may run before this one.
 let overlayOnTop = false
 function recordOverlay() {
   overlayOnTop = layout.paletteOpen || layout.settingsOpen || layout.profileOpen

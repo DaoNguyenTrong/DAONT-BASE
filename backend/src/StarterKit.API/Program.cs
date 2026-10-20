@@ -165,11 +165,9 @@ if (await CliCommands.TryRunAsync(app.Services, args, CancellationToken.None) is
     return commandExitCode;
 }
 
-// The build-time OpenAPI export (-p:OpenApiGenerateDocumentsOnBuild=true) runs this file inside the
-// GetDocument.Insider tool to build the host, then reads the document without starting the server.
-// Every startup step that reaches Postgres or S3 is skipped there, so the export needs no running
-// services and doesn't fail with connection errors that look like contract errors. New startup work
-// that touches an external service belongs behind this flag too.
+// The build-time OpenAPI export (-p:OpenApiGenerateDocumentsOnBuild=true) builds the host in GetDocument.Insider
+// without starting it. Startup steps that reach Postgres or S3 are skipped there so the export needs no services;
+// new startup work that touches an external service belongs behind this flag too.
 bool isOpenApiExport = Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider";
 
 if (!isOpenApiExport)
@@ -187,11 +185,9 @@ if (!isOpenApiExport)
 }
 
 app.UseForwardedHeaders();
-// No UseHttpsRedirection(): no layer in this stack terminates TLS today (nginx in
-// docker-compose.prod.yml only listens on :80; see README "Production (Docker)"). With no HTTPS
-// port ever discoverable, the middleware doesn't actually redirect anything — verified empirically
-// — but it does log a "Failed to determine the https port for redirect" warning on every request
-// that reaches it. Re-add once TLS terminates somewhere in front (nginx or an external LB).
+// No UseHttpsRedirection(): nothing here terminates TLS (nginx in docker-compose.prod.yml listens on :80 only; see
+// README "Production (Docker)"), so it would redirect nothing and log "Failed to determine the https port for
+// redirect" on every request. Re-add once TLS terminates in front (nginx or an external LB).
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging();
 app.UseRequestLocalization();

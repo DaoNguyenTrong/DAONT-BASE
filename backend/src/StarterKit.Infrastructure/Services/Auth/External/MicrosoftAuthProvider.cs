@@ -27,10 +27,8 @@ internal sealed class MicrosoftAuthProvider(
                 externalAuthSettings.Microsoft.ClientId,
                 cancellationToken);
         }
-        // SecurityTokenMalformedException (e.g. a credential that isn't even JWT-shaped) derives
-        // from SecurityTokenArgumentException/ArgumentException, not SecurityTokenException — a
-        // malformed Credential from a misbehaving or malicious client would otherwise fall through
-        // this catch and surface as an unhandled 500 instead of a 401.
+        // SecurityTokenMalformedException (non-JWT-shaped credential) derives from SecurityTokenArgumentException,
+        // not SecurityTokenException; uncaught, a malicious client's malformed Credential would be a 500, not a 401.
         catch (Exception ex) when (ex is SecurityTokenException or SecurityTokenArgumentException)
         {
             throw new UnauthorizedException(ApplicationMessages.InvalidExternalCredential);

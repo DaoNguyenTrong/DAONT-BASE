@@ -106,22 +106,15 @@ describe('apiClient interceptors', () => {
     const apiClient = await loadApiClient()
 
     const first = apiClient.get('/api/test-protected')
-    // Wait until the first 401 has actually triggered the refresh call
-    // (refreshClient.post is invoked synchronously before isRefreshing's
-    // guard would let a second 401 through) before firing the second
-    // request, so the second request deterministically hits the
-    // isRefreshing branch instead of racing to start its own refresh.
+    // Wait until the first 401 has started the refresh, so the second request deterministically
+    // hits the isRefreshing branch instead of racing to start its own refresh.
     await vi.waitFor(() => {
       if (refreshCalls !== 1) throw new Error('refresh not started yet')
     })
 
     const second = apiClient.get('/api/test-protected')
-    // Wait for request 2's ORIGINAL 401 round-trip to actually land before
-    // letting the refresh resolve — axios always sends the request over the
-    // wire regardless of isRefreshing; only once its 401 response comes
-    // back does the interceptor check isRefreshing and enqueue it. If the
-    // gate resolves too early, request 2's original and its post-refresh
-    // retry can interleave unpredictably against the shared call counter.
+    // Axios sends request 2 regardless of isRefreshing and only queues it once its 401 lands; let
+    // the refresh resolve before that and its original and retry interleave on the call counter.
     await vi.waitFor(() => {
       if (protectedCalls !== 2) throw new Error('second original 401 not received yet')
     })

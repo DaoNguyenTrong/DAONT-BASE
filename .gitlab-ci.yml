@@ -104,13 +104,15 @@ test:guide:
     - bun run --cwd frontend/user-guide/site test # includes the content integrity check
     - bun run --cwd frontend/user-guide/site build # fails on dead links
 
-# Keeps the pipeline non-empty when no test job above applies (a docs-only change), so the MR still
-# has a pipeline to report a result on.
-test:gate:
+# .claude/rules/comments.md. Scans the whole tree, so it runs on every pipeline — which also keeps a
+# docs-only MR's pipeline non-empty.
+test:comments:
+  extends: .bun
   stage: test
-  image: alpine:3
+  image: mcr.microsoft.com/dotnet/sdk:10.0
   script:
-    - echo "No test job matched this change."
+    - bun test scripts/
+    - bun scripts/check-comments.ts
 
 # $CI_REGISTRY_IMAGE/<service>:X.Y.Z, plus :latest for a stable (non-pre-release) tag.
 images:

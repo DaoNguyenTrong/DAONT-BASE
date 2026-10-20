@@ -7,12 +7,9 @@ using StarterKit.Application.Resources;
 namespace StarterKit.API.Authorization;
 
 /// <summary>
-/// Overrides only the Forbidden outcome of the framework's default authorization result handler,
-/// so a policy denial still produces the app's <see cref="CodedProblemDetails"/> body (same shape
-/// <see cref="Middleware.ExceptionHandlingMiddleware"/> writes for a thrown <c>ForbiddenException</c>)
-/// instead of the framework's empty-body 403 — no <c>AddProblemDetails()</c> is registered, so
-/// leaving this to the default handler would silently drop the localized error message the
-/// frontend displays. Challenge (401) and Success are delegated to the real handler untouched.
+/// Overrides only Forbidden (Challenge/401 and Success keep the default handler), giving a policy denial the same
+/// <see cref="CodedProblemDetails"/> body <see cref="Middleware.ExceptionHandlingMiddleware"/> writes for a
+/// <c>ForbiddenException</c>; with no <c>AddProblemDetails()</c>, the default empty 403 drops the localized message.
 /// </summary>
 internal sealed class AuthorizationResultHandler : IAuthorizationMiddlewareResultHandler
 {

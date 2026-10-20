@@ -54,10 +54,8 @@ export async function renderComponent<C extends Component>(
     ],
   })
 
-  // Resolve the initial navigation (query included) BEFORE mounting — a component
-  // that reads route.query inside onMounted would otherwise see an unresolved
-  // route, since router.isReady() only resolves once the app installs the router
-  // plugin during mount(), which happens after onMounted has already run.
+  // Resolve the initial navigation BEFORE mounting: otherwise router.isReady() waits for mount()
+  // to install the router, and a component reading route.query in onMounted sees no route yet.
   await router.push(initialRoute ?? '/')
   await router.isReady()
 

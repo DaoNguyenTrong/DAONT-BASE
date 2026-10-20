@@ -111,10 +111,8 @@ function isPasswordChangeRequest(url?: string) {
 }
 
 /**
- * Array query params as repeated keys (`ids=3&ids=4`), not axios's default `ids[]=3&ids[]=4`:
- * ASP.NET's model binder looks for the key `ids` and binds the bracketed form to an empty array —
- * a silent failure, the server answers 200 with unfiltered data. Set on the client so every
- * generated call with an array param is covered at once.
+ * Array params as repeated keys (`ids=3&ids=4`), not axios's default `ids[]=3`: ASP.NET binds the
+ * bracketed form to an empty array and silently answers 200 with unfiltered data.
  */
 const REPEATED_KEY_ARRAY_PARAMS = { indexes: null } as const
 

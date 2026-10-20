@@ -8,10 +8,8 @@ vi.mock('naive-ui', async (importOriginal) => {
   return { ...actual, useDialog: () => ({ create: mockCreate }) }
 })
 
-// Mocking naive-ui's useDialog() context sidesteps mounting a real
-// <n-dialog-provider> + teleported DOM (fragile, first-of-its-kind here) —
-// we capture the options object passed to dialog.create(...) and drive its
-// callbacks directly as plain function calls instead.
+// Mocking useDialog() avoids mounting a real <n-dialog-provider> and teleported DOM (fragile);
+// tests capture the options passed to dialog.create(...) and call its callbacks directly.
 const { useAppDialogNaive } = await import('@/composables/use-app-dialog-naive')
 const { withSetup } = await import('../../helpers/with-setup')
 

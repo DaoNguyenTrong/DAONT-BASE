@@ -65,17 +65,13 @@ public sealed class ApiFactoryFixture : WebApplicationFactory<Program>, IAsyncLi
             await migrateContext.Database.MigrateAsync();
         }
 
-        // The host loads the developer's gitignored appsettings.json, which differs per machine (lockout limits,
-        // cookie flags, a local Redis, real OAuth client ids...), while CI runs with a copy of the example. Pin
-        // every key of the committed example first, so the suite tests the same configuration everywhere —
-        // TestHostConfigurationTests checks it. Only keys absent from the example still come from the local file.
+        // Pin every committed-example key first: the gitignored appsettings.json differs per machine while CI runs the
+        // example (TestHostConfigurationTests checks it). Only keys absent from the example come from the local file.
         Dictionary<string, string> pinned = CommittedExampleConfiguration();
 
-        // Then what the tests themselves need. Isolation pins stay here even when the example already agrees,
-        // so a fork editing the example towards real services doesn't send the suite to them: a shared Redis
-        // would carry cache entries between runs (Respawn only resets Postgres), a real OAuth ClientId would
-        // register the provider ExternalLogin_UnsupportedProvider_ReturnsBadRequest expects to be missing, and
-        // FCM credentials would push to real devices.
+        // Isolation pins stay even if the example agrees, so a fork aiming it at real services can't reach them: Redis
+        // carries cache across runs (Respawn resets only Postgres), a real OAuth ClientId registers the provider that
+        // ExternalLogin_UnsupportedProvider_ReturnsBadRequest expects missing, FCM credentials push to real devices.
         pinned["ConnectionStrings:DefaultConnection"] = ConnectionString;
         pinned["RateLimiterSettings:AuthPermitLimit"] = "1000";
         pinned["RateLimiterSettings:AuthWindowMinutes"] = "1";
@@ -118,11 +114,8 @@ public sealed class ApiFactoryFixture : WebApplicationFactory<Program>, IAsyncLi
             // tables (notably hangfire.schema/lock) makes every extra host built via
             // WithWebHostBuilder re-run the schema install against a half-empty schema and hang.
             SchemasToExclude = ["hangfire"],
-            // Respawn's default is one TRUNCATE over every table: ~60ms per reset, since TRUNCATE
-            // allocates a new file per table even when it is nearly empty. DELETE on a handful of rows
-            // is near-instant, and Respawn still orders child tables before parents. Trade-off: DELETE
-            // does NOT reset sequences — never assert a specific auto-increment id ("first session has
-            // id 1").
+            // DELETE instead of Respawn's default TRUNCATE (~60ms per reset: TRUNCATE allocates a new file per table).
+            // Trade-off: DELETE does NOT reset sequences — never assert a specific auto-increment id.
             FormatDeleteStatement = table => $"DELETE FROM {table.GetFullName('"')};"
         });
     }

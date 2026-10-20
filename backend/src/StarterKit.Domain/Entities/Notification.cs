@@ -47,10 +47,9 @@ public sealed class Notification : BaseEntity<Guid>
     public string? Data { get; private set; }
 
     /// <summary>
-    /// Natural key of the event that produced this notification, or <c>null</c> when it has none. Unique per
-    /// (<see cref="AccountId"/>, key) in the database, so a source that runs again (a re-run job, a retried
-    /// webhook) can't notify the same person twice. It names the <i>event</i>, not the run — two runs for
-    /// the same event must produce the same key, or it prevents nothing.
+    /// Natural key of the producing event, or <c>null</c> if none. Unique per (<see cref="AccountId"/>, key), so a
+    /// re-run job or retried webhook can't notify the same person twice. It names the <i>event</i>, not the run:
+    /// two runs for the same event must produce the same key.
     /// </summary>
     public string? DedupeKey { get; private set; }
 

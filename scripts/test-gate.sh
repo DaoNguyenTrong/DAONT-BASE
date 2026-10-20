@@ -7,6 +7,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# Comment length (.claude/rules/comments.md) — seconds, so it fails fast.
+bun test scripts/
+bun scripts/check-comments.ts
+
 backend/scripts/test.sh
 
 # A controller/DTO change without a re-export leaves the frontend's generated client stale. Compared

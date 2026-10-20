@@ -141,11 +141,8 @@ public sealed class GenericRepositoryTests(PostgresContainerFixture fixture) : I
         ApiKey newer = CreateApiKey("Newer");
         await SeedAsync(older, newer);
 
-        // AppDbContext.SetAuditFields stamps CreatedAt = now for every Added entity on
-        // SaveChangesAsync, overwriting any value set before seeding — both rows above land
-        // with the same timestamp. Back-date "older" via raw SQL (bypasses the change tracker,
-        // so SetAuditFields never touches it) to give the ordering assertion below a real,
-        // deterministic timestamp difference to sort on.
+        // SetAuditFields stamps CreatedAt = now on every Added entity, so both rows share a timestamp. Back-date
+        // "older" via raw SQL (bypasses the change tracker) to give the ordering assertion a real difference.
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE api_keys SET created_at = {older.CreatedAt.AddHours(-1)} WHERE id = {older.Id}");
 

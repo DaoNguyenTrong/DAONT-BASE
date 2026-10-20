@@ -19,11 +19,8 @@ export async function restoreSession(pinia?: Pinia) {
     await authStore.refreshToken()
     return true
   } catch (error) {
-    // The API is unreachable — not "no valid session". Don't wipe the keep-login
-    // preference or fall through to the /login redirect over an outage: hand the
-    // signal to the health store so App.vue renders ServerErrorScreen on the
-    // first paint (no login flash), and its poll recovers the app when the API
-    // comes back.
+    // An outage isn't "no valid session": keep the keep-login preference and skip the /login
+    // redirect; the health store shows ServerErrorScreen on first paint and its poll recovers.
     if (isServerOutage(error)) {
       healthStore.reportOutage()
       return false

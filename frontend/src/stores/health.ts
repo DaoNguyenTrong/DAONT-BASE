@@ -23,12 +23,9 @@ export const useHealthStore = defineStore('health', () => {
   let currentInterval = POLL_INTERVAL_MS
   let consecutiveFailures = 0
 
-  // Re-evaluate the poll cadence after every check: setInterval only, so the
-  // fake-timer test setup (`toFake: ['setInterval', 'clearInterval']`, which MSW
-  // needs to keep real setTimeout) can still drive it.
-  // Switch to the fast cadence as soon as ANY check fails, not just once we've
-  // escalated — so the confirming second failure (and the takeover) lands
-  // ~RETRY_INTERVAL_MS after the first, not a full POLL_INTERVAL_MS later.
+  // setInterval only: the fake-timer setup fakes just setInterval/clearInterval (MSW needs real
+  // setTimeout). Any failure switches to the fast cadence, so the confirming second failure (and
+  // the takeover) lands ~RETRY_INTERVAL_MS after the first.
   function applyCadence() {
     if (!timer) return
     const desired = consecutiveFailures > 0 ? RETRY_INTERVAL_MS : POLL_INTERVAL_MS
@@ -58,11 +55,9 @@ export const useHealthStore = defineStore('health', () => {
     applyCadence()
   }
 
-  // Called when another caller has already proven the API is unreachable (a
-  // failed silent-refresh on app boot) — escalate straight to the takeover
-  // instead of waiting for this store's own poll to rack up FAILURE_THRESHOLD.
-  // Seeds consecutiveFailures so the next real check keeps or clears 'error'
-  // consistently, and the fast recovery cadence applies once polling starts.
+  // For a caller that already proved the API unreachable (boot silent-refresh failure): escalate
+  // straight to the takeover. Seeding consecutiveFailures keeps the next check and the fast
+  // recovery cadence consistent.
   function reportOutage() {
     consecutiveFailures = Math.max(consecutiveFailures, FAILURE_THRESHOLD)
     status.value = 'error'

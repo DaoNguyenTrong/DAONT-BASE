@@ -5,10 +5,9 @@ using StarterKit.API.Common;
 
 namespace StarterKit.API.Middleware;
 
-// A cross-site HTML <form> submission can carry the access_token cookie ambiently but cannot
-// attach an arbitrary custom header — that's the entire defense. The header's value is never
-// checked, only its presence: unlike a double-submit token, this doesn't need the SPA to read a
-// cookie set by the API's own origin (which breaks once frontend/API are split across subdomains).
+// A cross-site HTML <form> can carry the access_token cookie ambiently but cannot attach a custom header — that's the
+// entire defense, so only the header's presence is checked, never its value. Unlike a double-submit token, it doesn't
+// need the SPA to read an API-origin cookie (which breaks once frontend/API are split across subdomains).
 public sealed class CsrfProtectionMiddleware(RequestDelegate next)
 {
     private const string CsrfHeaderName = "X-CSRF-Protection";

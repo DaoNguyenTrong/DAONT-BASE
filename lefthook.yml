@@ -43,6 +43,10 @@ pre-commit:
         - "frontend/user-guide/site/**/*.{ts,mts,vue,css,md,json}"
       run: bunx prettier --write {staged_files}
       stage_fixed: true
+    # .claude/rules/comments.md. Last, so it reads the staged blobs after prettier re-staged them.
+    comments:
+      priority: 6
+      run: bun scripts/check-comments.ts --staged
 
 commit-msg:
   commands:

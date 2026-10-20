@@ -3,23 +3,9 @@ import App from './App.vue'
 import './assets/styles/tailwind.css'
 import './assets/styles/main.scss'
 
-// The app uses hash-based routing (createWebHashHistory), and MSAL's popup sign-in
-// also returns its response as a URL hash fragment ("#code=...&client_info=...").
-// vue-router normalizes the current hash the moment createWebHashHistory() runs — as
-// a side effect of `createRouter()` at router/index.ts's module top level — rewriting
-// the unrecognized "#code=..." into "#/code=..." (treating it as an unmatched route).
-// A `import router from './router'` at this file's top would trigger that normalization
-// on every load (ES module imports evaluate before this file's own body runs), so the
-// router module is only ever imported dynamically below, after this check has run.
-// A real app route always starts with "#/", so any other hash containing "code=" or
-// "error=" is unambiguously an OAuth redirect response, never a route.
-//
-// It's not enough to just leave the hash alone, though: msal-browser 5.x's popup flow
-// no longer polls the popup's location.href from the opener — the popup itself must
-// broadcast the response back over a BroadcastChannel (see @azure/msal-browser's
-// redirect_bridge/index.mjs, `broadcastResponseToMainFrame`) and close itself. Skipping
-// the app mount without calling that bridge left the popup sitting on the callback URL
-// forever, since nothing ever posted the response back to the tab that opened it.
+// createRouter() (hash history) rewrites MSAL's popup "#code=..." to "#/code=...", so the router is
+// imported dynamically only after this check. msal-browser 5.x needs the popup itself to broadcast
+// the response and close (redirect-bridge `broadcastResponseToMainFrame`), or it hangs.
 function isOAuthPopupRedirect(): boolean {
   const hash = window.location.hash
   return !hash.startsWith('#/') && /[#&](code|error)=/.test(hash)
