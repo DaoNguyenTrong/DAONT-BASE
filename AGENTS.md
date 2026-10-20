@@ -62,7 +62,8 @@ A git worktree (including an agent's `isolation: "worktree"`) has only tracked f
 - Run `git branch --show-current` before every commit; never commit on `main` (the Lefthook branch guard blocks it) or on a branch you didn't expect.
 - Stage only the files the task changed, by explicit path — never `git add -A`/`git add .`/`git commit -a`; leave changes that predate the task unstaged. Subagents working in parallel each commit their own paths, so one never sweeps up another's half-finished files.
 - A commit rejected by Lefthook (commitlint, prettier, secretlint) means fix the message or re-stage — not `--no-verify`.
-- Push, merge, or open a PR only on the user's explicit order.
+- Push or open a PR only on the user's explicit order.
+- Merge only through `/git-accept`, and only for a docs-only PR that passes its gate (see `.claude/commands/git-accept.md`). Any other merge needs the user's explicit order.
 
 ### Tool Selection
 
