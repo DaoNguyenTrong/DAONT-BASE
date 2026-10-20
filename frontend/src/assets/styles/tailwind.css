@@ -4,9 +4,8 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Tailwind v4's preflight resets <button> to `cursor: default` (v3 used `pointer`), so every raw button
-   without an explicit `cursor-pointer` lost its hover pointer. Restored once here, as the v4 upgrade guide
-   suggests, instead of per button. In `base`, so any `cursor-*` utility still wins. */
+/* Tailwind v4's preflight gives <button> `cursor: default`; restored once, as the v4 upgrade guide
+   suggests. In `base`, so any `cursor-*` utility still wins. */
 @layer base {
   button:not(:disabled),
   [role='button']:not(:disabled) {
@@ -15,31 +14,22 @@
 }
 
 @theme {
-  /* Static accent palette (supports opacity modifiers, e.g. bg-accent-500/50) —
-     indigo/violet derived from the weatherplus logo's wordmark color (#4e3d90).
-     600/700/800 (the light-mode primaryColor/-Hover/-Pressed trio — see
-     naive-theme.ts) were retuned to the same H253°/S35% hue/saturation as
-     #5e4c9e (the sidebar background, now promoted to the actual primary
-     color rather than a one-off hex) — same hue family as the rest of this
-     ramp, just a lighter point on it, so 700/800 are darkened continuations
-     of it rather than the old #3d3071-anchored steps. */
-  --color-accent-50: #f4f3fa;
-  --color-accent-100: #dcd7f0;
-  --color-accent-200: #bab0df;
-  --color-accent-300: #8e7fc9;
-  --color-accent-400: #624db4;
-  --color-accent-500: #4e3d8f;
-  --color-accent-600: #5e4c9e;
-  --color-accent-700: #4e3f84;
-  --color-accent-800: #41356d;
-  --color-accent-900: #272041;
-  --color-accent-950: #141122;
+  /* Brand violet, one hue (258°) throughout. 600/700/800 are the light-mode
+     primary/hover/pressed in naive-theme.ts. */
+  --color-accent-50: #f5f0fe;
+  --color-accent-100: #e7ddfd;
+  --color-accent-200: #cfbcfb;
+  --color-accent-300: #ac8cf8;
+  --color-accent-400: #895bf5;
+  --color-accent-500: #7842f5;
+  --color-accent-600: #6428f4;
+  --color-accent-700: #5017d3;
+  --color-accent-800: #4418aa;
+  --color-accent-900: #31176d;
+  --color-accent-950: #1d0f3d;
 
-  /* Static leaf-green accent — derived from the small leaf glyph in the
-     weatherplus logo (#89b43f). A deliberate secondary accent, not a second
-     primary: only used for Naive UI's `successColor` (see naive-theme.ts),
-     not on interactive/primary elements, so it doesn't compete with the
-     brand's actual dominant color (the purple wordmark). */
+  /* Secondary accent for Naive UI's `successColor` only — keep it off
+     interactive elements so it doesn't compete with the primary. */
   --color-leaf-50: #f8fbf2;
   --color-leaf-100: #e7f1d6;
   --color-leaf-200: #cfe3ac;
@@ -66,37 +56,31 @@
   --color-primary-950: var(--color-accent-950);
 
   /* Surface (bridged, auto-switches light/dark below) — light default.
-     Same lightness steps as before, retinted with a low-saturation slice of
-     the brand hue (252°) instead of a hue-neutral slate, so neutrals read as
-     part of the same family as --color-accent-* rather than a generic gray. */
+     50-300 are the sky-blue page tones (100 = app body), 400-950 a slate
+     ramp for text and borders. */
   --color-surface-0: #ffffff;
-  --color-surface-50: #f9f9fc;
-  --color-surface-100: #f3f2f8;
-  --color-surface-200: #e6e4ee;
-  --color-surface-300: #d2cfdd;
-  --color-surface-400: #9f9ab2;
-  --color-surface-500: #7b7593;
-  --color-surface-600: #69647f;
-  --color-surface-700: #514c65;
-  --color-surface-800: #3f3a51;
-  --color-surface-900: #2d293d;
-  --color-surface-950: #181523;
+  --color-surface-50: #eef7fe;
+  --color-surface-100: #daeefd;
+  --color-surface-200: #c9e2f5;
+  --color-surface-300: #b3cde3;
+  --color-surface-400: #94a3b8;
+  --color-surface-500: #64748b;
+  --color-surface-600: #475569;
+  --color-surface-700: #334155;
+  --color-surface-800: #1e293b;
+  --color-surface-900: #0f172a;
+  --color-surface-950: #020617;
 
-  /* Shared neutral fill for filled controls (Button secondary, Tag, Input, Select) —
-     single source of truth so they can't drift out of sync with each other. */
+  /* One fill for Button secondary, Tag, Input and Select (naive-theme.ts). */
   --fill-color: var(--color-surface-200);
 }
 
 .dark {
-  /* Primary — dark mode. 50/100/300-950 stay the shared accent scale; 200 is
-     overridden below (not just `var(--color-accent-200)`) since it's the one
-     step used exclusively by `dark:` variants app-wide (never referenced
-     unprefixed) — bumping only it gives dark mode a more saturated, more
-     purple primary without recoloring anything light mode still reads off
-     the shared accent-100 (e.g. NotFoundView's `ring-primary-100`). */
+  /* Primary — dark mode. Only 200 differs: it is the step `dark:` variants
+     use, and it must equal naive-theme.ts's dark primaryColor. */
   --color-primary-50: var(--color-accent-50);
   --color-primary-100: var(--color-accent-100);
-  --color-primary-200: #9c80dc;
+  --color-primary-200: #a27aff;
   --color-primary-300: var(--color-accent-300);
   --color-primary-400: var(--color-accent-400);
   --color-primary-500: var(--color-accent-500);
@@ -106,18 +90,9 @@
   --color-primary-900: var(--color-accent-900);
   --color-primary-950: var(--color-accent-950);
 
-  /* Surface — dark mode (same lightness steps, retinted — see light-mode note
-     above). Saturation here is roughly half of the light-mode surface ramp's
-     — a stronger tint read as a distinctly purple-navy dark theme rather than
-     a dark neutral with a brand hint, so it's toned down to just a hint.
-     600/700/800 are hue-matched (~230°) and re-saturated to the navy 900/950
-     pair above (was the ~252° violet hue at ~9-11% saturation, same family
-     as the old body/card) — otherwise every hover/fill state built on these
-     three (sidebar nav-item hover, logo-button hover, `--fill-color`) reads
-     as a mismatched violet-grey flash against the new navy body/card. Exact
-     lightness kept unchanged from before so the hover/fill contrast against
-     the card stays as subtle as originally designed — only hue+saturation
-     shifted to match. */
+  /* Surface — dark mode. 600/700/800 share the navy hue of 900/950: the
+     hover and fill states built on them would otherwise flash violet-grey
+     against the body/card. */
   --color-surface-0: #e2e1e6;
   --color-surface-50: #dad9de;
   --color-surface-100: #ceccd4;
@@ -131,6 +106,6 @@
   --color-surface-900: #1e2235;
   --color-surface-950: #121527;
 
-  /* Shared neutral fill for filled controls — see light-mode definition above. */
+  /* Shared control fill — see the light-mode definition. */
   --fill-color: var(--color-surface-800);
 }
