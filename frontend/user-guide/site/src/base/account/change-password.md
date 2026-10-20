@@ -14,7 +14,7 @@ description: 'Đặt mật khẩu mới cho tài khoản khi bạn biết mật 
 
 ## Các bước
 
-1. Ở chân thanh bên trái, bấm vào tên của bạn để mở **Hồ sơ cá nhân**.
+1. Ở góc trên phải, bấm vào ảnh đại diện của bạn rồi chọn **Hồ sơ cá nhân**.
 2. Chọn tab **Đổi mật khẩu**.
 3. Nhập **Mật khẩu hiện tại**.
 4. Nhập **Mật khẩu mới**, ít nhất 8 ký tự. Bấm biểu tượng con mắt nếu muốn xem lại chữ đã gõ.

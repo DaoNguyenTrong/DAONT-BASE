@@ -1,17 +1,28 @@
 # The test gate, shared by ci.yml (every PR, every push to dev) and release.yml (the v* tag), so the
-# gate a PR must pass and the gate a release must pass can't drift apart. .gitlab-ci.yml's `test`
-# job is the GitLab twin, scripts/test-gate.sh the local one (and /git-release's gate) — change all
-# three together.
+# gate a PR must pass and the gate a release must pass can't drift apart. .gitlab-ci.yml's `test:*`
+# jobs are the GitLab twin, scripts/test-gate.sh the local one (and /git-release's gate) — change all
+# three together. Each job can be switched off by its input; the default runs everything (release).
 name: Test
 
 on:
   workflow_call:
+    inputs:
+      backend:
+        type: boolean
+        default: true
+      frontend:
+        type: boolean
+        default: true
+      guide:
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
 jobs:
   backend:
+    if: inputs.backend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,6 +78,7 @@ jobs:
           fi
 
   frontend:
+    if: inputs.frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -122,6 +134,7 @@ jobs:
 
   # The user guide (frontend/user-guide/site): its own VitePress package and lockfile.
   guide:
+    if: inputs.guide
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

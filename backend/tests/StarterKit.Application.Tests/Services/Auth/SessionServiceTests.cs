@@ -36,7 +36,8 @@ public class SessionServiceTests
         string rawToken,
         bool isPersistent = false,
         DateTime? expiresAt = null,
-        DateTime? loginAt = null)
+        DateTime? loginAt = null,
+        Guid? familyId = null)
     {
         return RefreshToken.Create(new RefreshTokenParams(
             accountId,
@@ -45,7 +46,8 @@ public class SessionServiceTests
             DeviceInfo: null,
             IpAddress: null,
             IsPersistent: isPersistent,
-            LoginAt: loginAt ?? DateTime.UtcNow));
+            LoginAt: loginAt ?? DateTime.UtcNow,
+            FamilyId: familyId));
     }
 
     // GetSessionsAsync
@@ -69,8 +71,8 @@ public class SessionServiceTests
         revoked.Id = 3;
         revoked.Revoke();
 
-        f.RefreshTokenRepo.ListAsync(Arg.Any<Expression<Func<RefreshToken, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns([older, newer, revoked]);
+        RepositoryPredicateStub.StubListAsync(f.RefreshTokenRepo, [older, newer, revoked]);
+        RepositoryPredicateStub.StubFirstOrDefault(f.RefreshTokenRepo, [older, newer, revoked]);
 
         IReadOnlyList<SessionDto> sessions = await f.Service.GetSessionsAsync("newer-token", CancellationToken.None);
 
@@ -79,6 +81,26 @@ public class SessionServiceTests
         Assert.True(sessions[0].IsCurrent);
         Assert.Equal(older.Id, sessions[1].Id);
         Assert.False(sessions[1].IsCurrent);
+    }
+
+    [Fact]
+    public async Task GetSessionsAsync_SessionNamedByAccessToken_MarksItsTokenAsCurrentWithoutACookie()
+    {
+        Fixture f = CreateFixture();
+        Guid accountId = Guid.NewGuid();
+        Guid currentSession = Guid.NewGuid();
+        f.CurrentUserService.UserId.Returns(accountId.ToString());
+        f.CurrentUserService.SessionId.Returns(currentSession);
+
+        RefreshToken current = CreateRefreshToken(accountId, "current-token", familyId: currentSession);
+        current.Id = 1;
+        RefreshToken other = CreateRefreshToken(accountId, "other-token");
+        other.Id = 2;
+        RepositoryPredicateStub.StubListAsync(f.RefreshTokenRepo, [current, other]);
+
+        IReadOnlyList<SessionDto> sessions = await f.Service.GetSessionsAsync(null, CancellationToken.None);
+
+        Assert.Equal(current.Id, sessions.Single(s => s.IsCurrent).Id);
     }
 
     [Fact]
@@ -152,8 +174,8 @@ public class SessionServiceTests
         RefreshToken alreadyRevoked = CreateRefreshToken(accountId, "already-revoked");
         alreadyRevoked.Revoke();
 
-        f.RefreshTokenRepo.ListAsync(Arg.Any<Expression<Func<RefreshToken, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns([current, other1, other2, alreadyRevoked]);
+        RepositoryPredicateStub.StubListAsync(f.RefreshTokenRepo, [current, other1, other2, alreadyRevoked]);
+        RepositoryPredicateStub.StubFirstOrDefault(f.RefreshTokenRepo, [current]);
 
         await f.Service.RevokeOtherSessionsAsync("current-token", CancellationToken.None);
 
@@ -167,7 +189,26 @@ public class SessionServiceTests
     }
 
     [Fact]
-    public async Task RevokeOtherSessionsAsync_NoCurrentTokenIdentified_RevokesAllActiveSessions()
+    public async Task RevokeOtherSessionsAsync_SessionNamedByAccessToken_KeepsItsFamilyWithoutACookie()
+    {
+        Fixture f = CreateFixture();
+        Guid accountId = Guid.NewGuid();
+        Guid currentSession = Guid.NewGuid();
+        f.CurrentUserService.UserId.Returns(accountId.ToString());
+        f.CurrentUserService.SessionId.Returns(currentSession);
+
+        RefreshToken current = CreateRefreshToken(accountId, "current-token", familyId: currentSession);
+        RefreshToken other = CreateRefreshToken(accountId, "other-token");
+        RepositoryPredicateStub.StubListAsync(f.RefreshTokenRepo, [current, other]);
+
+        await f.Service.RevokeOtherSessionsAsync(null, CancellationToken.None);
+
+        Assert.Null(current.RevokedAt);
+        Assert.NotNull(other.RevokedAt);
+    }
+
+    [Fact]
+    public async Task RevokeOtherSessionsAsync_NoCurrentSessionIdentified_ThrowsAndRevokesNothing()
     {
         Fixture f = CreateFixture();
         Guid accountId = Guid.NewGuid();
@@ -175,13 +216,14 @@ public class SessionServiceTests
 
         RefreshToken token1 = CreateRefreshToken(accountId, "token-1");
         RefreshToken token2 = CreateRefreshToken(accountId, "token-2");
+        RepositoryPredicateStub.StubListAsync(f.RefreshTokenRepo, [token1, token2]);
 
-        f.RefreshTokenRepo.ListAsync(Arg.Any<Expression<Func<RefreshToken, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns([token1, token2]);
+        await ApplicationAssert.ThrowsWithMessageAsync<DomainException>(
+            DomainMessages.CurrentSessionUnidentified,
+            () => f.Service.RevokeOtherSessionsAsync(null, CancellationToken.None));
 
-        await f.Service.RevokeOtherSessionsAsync(null, CancellationToken.None);
-
-        Assert.NotNull(token1.RevokedAt);
-        Assert.NotNull(token2.RevokedAt);
+        Assert.Null(token1.RevokedAt);
+        Assert.Null(token2.RevokedAt);
+        f.RefreshTokenRepo.DidNotReceive().Update(Arg.Any<RefreshToken>());
     }
 }

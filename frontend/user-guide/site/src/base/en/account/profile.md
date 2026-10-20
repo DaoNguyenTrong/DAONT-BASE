@@ -9,7 +9,7 @@ Your profile holds what others see about you, such as your name and email. Updat
 
 ## Steps
 
-1. At the bottom of the left sidebar, click your name. The **Profile** dialog opens on the **Personal information** tab.
+1. At the top right, click your avatar (the initials of your name), then choose **Profile**. The **Profile** dialog opens on the **Personal information** tab.
 2. Change the fields you need. **Name** and **Email** are required; **Phone**, **Position** and **Address** can stay empty.
 3. Click **Save**.
 
@@ -28,7 +28,7 @@ Your profile holds what others see about you, such as your name and email. Updat
 
 ## Result
 
-The app shows **Profile updated**. The name at the bottom of the sidebar changes once you reload the page. You still sign in with your username, even after changing your email.
+The app shows **Profile updated**. The name in the menu at the top right changes once you reload the page. You still sign in with your username, even after changing your email.
 
 ## Troubleshooting
 

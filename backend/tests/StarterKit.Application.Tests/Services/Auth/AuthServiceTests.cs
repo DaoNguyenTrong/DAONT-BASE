@@ -56,7 +56,7 @@ public class AuthServiceTests
             .Returns([]);
 
         IJwtTokenService jwtTokenService = Substitute.For<IJwtTokenService>();
-        jwtTokenService.GenerateAccessToken(Arg.Any<Account>(), Arg.Any<Guid?>()).Returns("fake-access-token");
+        jwtTokenService.GenerateAccessToken(Arg.Any<Account>(), Arg.Any<Guid?>(), Arg.Any<Guid>()).Returns("fake-access-token");
         jwtTokenService.GenerateRefreshToken().Returns(_ => Guid.NewGuid().ToString());
 
         ITenantAccessService tenantAccessService = Substitute.For<ITenantAccessService>();
@@ -835,7 +835,7 @@ public class AuthServiceTests
 
         Assert.Equal(organization.Id, result.OrganizationId);
         Assert.Equal(organization.Name, result.OrganizationName);
-        f.JwtTokenService.Received(1).GenerateAccessToken(account, organization.Id);
+        f.JwtTokenService.Received(1).GenerateAccessToken(account, organization.Id, Arg.Any<Guid>());
     }
 
     [Fact]
@@ -858,7 +858,7 @@ public class AuthServiceTests
         AuthResult result = await f.Service.LoginAsync(request, null, null, CancellationToken.None);
 
         Assert.Null(result.OrganizationId);
-        f.JwtTokenService.Received(1).GenerateAccessToken(account, null);
+        f.JwtTokenService.Received(1).GenerateAccessToken(account, null, Arg.Any<Guid>());
     }
 
     [Fact]
@@ -877,7 +877,7 @@ public class AuthServiceTests
         AuthResult result = await f.Service.RefreshTokenAsync("old-token", null, null, CancellationToken.None);
 
         Assert.Equal(organizationId, result.OrganizationId);
-        f.JwtTokenService.Received(1).GenerateAccessToken(account, organizationId);
+        f.JwtTokenService.Received(1).GenerateAccessToken(account, organizationId, Arg.Any<Guid>());
     }
 
     [Fact]
@@ -953,7 +953,7 @@ public class AuthServiceTests
 
         Assert.Equal(organization.Id, result.OrganizationId);
         Assert.Equal(organization.Name, result.OrganizationName);
-        f.JwtTokenService.Received(1).GenerateAccessToken(account, organization.Id);
+        f.JwtTokenService.Received(1).GenerateAccessToken(account, organization.Id, Arg.Any<Guid>());
     }
 
     [Fact]
@@ -968,8 +968,35 @@ public class AuthServiceTests
 
         Assert.Null(result.OrganizationId);
         Assert.Null(result.OrganizationName);
-        f.JwtTokenService.Received(1).GenerateAccessToken(account, null);
+        f.JwtTokenService.Received(1).GenerateAccessToken(account, null, Arg.Any<Guid>());
         await f.OrganizationMemberRepo.DidNotReceive().FirstOrDefaultAsync(
             Arg.Any<Expression<Func<OrganizationMember, bool>>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SwitchOrganizationAsync_InASession_KeepsTheSessionAndRetiresItsPreviousToken()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        Guid sessionId = Guid.NewGuid();
+        f.CurrentUserService.UserId.Returns(account.Id.ToString());
+        f.CurrentUserService.SessionId.Returns(sessionId);
+        f.AccountRepo.GetByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+
+        Organization organization = Organization.Create(new OrganizationParams("Acme", "acme"));
+        OrganizationMember membership = OrganizationMember.Create(
+            new OrganizationMemberParams(organization.Id, account.Id));
+        RepositoryPredicateStub.StubFirstOrDefault(f.OrganizationMemberRepo, [membership]);
+        f.OrganizationRepo.GetByIdAsync(organization.Id, Arg.Any<CancellationToken>()).Returns(organization);
+
+        RefreshToken previous = RefreshToken.Create(new RefreshTokenParams(
+            account.Id, "previous-hash", DateTime.UtcNow.AddDays(1), null, null, false, DateTime.UtcNow, FamilyId: sessionId));
+        RepositoryPredicateStub.StubListAsync(f.RefreshTokenRepo, [previous]);
+
+        await f.Service.SwitchOrganizationAsync(organization.Id, null, null, CancellationToken.None);
+
+        Assert.NotNull(previous.RevokedAt);
+        f.RefreshTokenRepo.Received().Update(previous);
+        f.JwtTokenService.Received(1).GenerateAccessToken(account, organization.Id, sessionId);
     }
 }

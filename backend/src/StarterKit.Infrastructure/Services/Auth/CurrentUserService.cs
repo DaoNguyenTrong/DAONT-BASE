@@ -15,6 +15,13 @@ public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor)
     public bool IsApiKeyCaller =>
         httpContextAccessor.HttpContext?.User.HasClaim(c => c.Type == ApiKeyClaims.KeyId) ?? false;
 
+    public Guid? SessionId =>
+        Guid.TryParse(
+            httpContextAccessor.HttpContext?.User.FindFirst(IJwtTokenService.SessionIdClaimType)?.Value,
+            out Guid id)
+            ? id
+            : null;
+
     public Guid? ApiKeyId =>
         Guid.TryParse(
             httpContextAccessor.HttpContext?.User.FindFirst(ApiKeyClaims.KeyId)?.Value,

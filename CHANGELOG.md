@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.6.1] - 2026-10-20
+
+### Added
+
+- Users can choose one of five menu layouts and two menu colors from a new appearance panel. (#57)
+- The color mode can follow the operating system setting, and Ctrl/⌘ K opens a quick "go to" box. (#57)
+
+### Changed
+
+- Account, organization switching, language and logout moved from the sidebar footer to an avatar menu in the header. (#57)
+
+### Fixed
+
+- Signing out other devices no longer signs out the current device for clients that sign in with a bearer token. (#60)
+- Switching organization no longer leaves a duplicate entry for the same device in the sessions list. (#60)
+
 ## [v1.6.0] - 2026-10-17
 
 ### Added

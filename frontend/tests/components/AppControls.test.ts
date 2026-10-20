@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import AppControls from '@/components/AppControls.vue'
 import { useThemePreference } from '@/composables/use-theme-preference'
 import { DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '@/lib/font-size'
@@ -25,6 +25,7 @@ describe('AppControls', () => {
   afterEach(() => {
     // useThemePreference()'s `isDark` ref is a module-level singleton — reset
     // it so state doesn't leak into later test files.
+    vi.unstubAllGlobals()
     useThemePreference().setPreference('light')
     document.documentElement.style.fontSize = ''
   })
@@ -104,6 +105,22 @@ describe('AppControls', () => {
     await themeButton().trigger('click')
 
     expect(themeButton().find('circle').exists()).toBe(false)
+  })
+
+  it('switches to the opposite of the shown theme when the setting is system', async () => {
+    vi.stubGlobal('matchMedia', () => ({
+      matches: true,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }))
+    useThemePreference().setPreference('system')
+    const { wrapper } = await renderComponent(AppControls, {
+      global: { stubs: { teleport: true } },
+    })
+
+    await wrapper.findAll('button')[0]!.trigger('click')
+
+    expect(localStorage.getItem('theme-preference')).toBe('light')
   })
 
   it('toggles the locale on click, updating the language button label', async () => {

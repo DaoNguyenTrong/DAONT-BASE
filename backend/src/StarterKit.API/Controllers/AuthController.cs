@@ -210,10 +210,11 @@ public sealed class AuthController(
         return NoContent();
     }
 
-    /// <summary>Revokes every other session for the currently authenticated account. The session making this request is left active.</summary>
+    /// <summary>Revokes every other session for the currently authenticated account. The session making this request is left active; a request that names no session is refused (400) and revokes nothing.</summary>
     [Authorize]
     [HttpPost("sessions/revoke-others")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RevokeOtherSessions(CancellationToken cancellationToken)
     {

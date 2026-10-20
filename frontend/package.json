@@ -18,7 +18,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install chromium",
     "guide:capture": "playwright test -c user-guide/tools/playwright.capture.config.ts",
-    "format": "prettier --write --experimental-cli src/ e2e/"
+    "format": "prettier --write --experimental-cli src/ e2e/",
+    "lint:boundaries": "eslint src"
   },
   "dependencies": {
     "@azure/msal-browser": "^5.17.1",
@@ -38,6 +39,7 @@
     "vue-router": "^5.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@pinia/testing": "^2.0.1",
     "@playwright/test": "1.61.1",
     "@tsconfig/node24": "^24.0.4",
@@ -49,6 +51,9 @@
     "@vue/test-utils": "^2.4.11",
     "@vue/tsconfig": "^0.9.1",
     "dotenv": "^17.4.2",
+    "eslint": "^10.13.0",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-boundaries": "^7.2.0",
     "fast-glob": "^3.3.3",
     "happy-dom": "^20.10.6",
     "msw": "^2.15.0",
@@ -57,11 +62,13 @@
     "prettier": "3.8.4",
     "sass-embedded": "^1.100.0",
     "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.2",
     "unplugin-auto-import": "^21.0.0",
     "unplugin-vue-components": "^32.1.0",
     "vite": "^8.1.0",
     "vite-plugin-vue-devtools": "^8.1.3",
     "vitest": "^4.1.10",
+    "vue-eslint-parser": "^10.4.1",
     "vue-tsc": "^3.3.5"
   },
   "engines": {

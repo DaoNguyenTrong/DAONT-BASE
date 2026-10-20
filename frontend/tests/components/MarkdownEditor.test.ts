@@ -88,4 +88,12 @@ describe('MarkdownEditor', () => {
     expect(wrapper.find('.markdown-preview').exists()).toBe(true)
     expect(wrapper.html()).toContain('<strong>bold</strong>')
   })
+
+  it('keeps Ctrl K for the browser while typing, opting out of the command palette', async () => {
+    const { wrapper } = await renderComponent(MarkdownEditor, {
+      props: { modelValue: '' },
+    })
+
+    expect(wrapper.get('textarea').element.closest('[data-command-palette-ignore]')).not.toBeNull()
+  })
 })

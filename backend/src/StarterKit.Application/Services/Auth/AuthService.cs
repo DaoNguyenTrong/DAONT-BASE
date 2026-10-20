@@ -327,7 +327,24 @@ public sealed class AuthService(
         Account account = await unitOfWork.Repository<Account, Guid>().GetByIdAsync(accountId, cancellationToken)
             ?? throw new UnauthorizedException(ApplicationMessages.AuthenticatedUserRequired);
 
-        return await tokenIssuer.IssueTokensAsync(account, organizationId, deviceInfo, ipAddress, true, DateTime.UtcNow, familyId: null, cancellationToken);
+        // Same sign-in, different organization: the session keeps its family and its previous token is retired, so the
+        // device is listed once. Without a session claim (a token minted before sessions were named) it starts a new one.
+        Guid? sessionId = currentUserService.SessionId;
+        if (sessionId is { } currentSessionId)
+        {
+            IRepository<RefreshToken, long> refreshTokenRepository = unitOfWork.Repository<RefreshToken, long>();
+            IReadOnlyList<RefreshToken> previousTokens = await refreshTokenRepository.ListAsync(
+                token => token.AccountId == accountId && token.FamilyId == currentSessionId && token.RevokedAt == null,
+                cancellationToken);
+
+            foreach (RefreshToken previousToken in previousTokens)
+            {
+                previousToken.Revoke();
+                refreshTokenRepository.Update(previousToken);
+            }
+        }
+
+        return await tokenIssuer.IssueTokensAsync(account, organizationId, deviceInfo, ipAddress, true, DateTime.UtcNow, familyId: sessionId, cancellationToken);
     }
 
     private Guid GetCurrentAccountId()

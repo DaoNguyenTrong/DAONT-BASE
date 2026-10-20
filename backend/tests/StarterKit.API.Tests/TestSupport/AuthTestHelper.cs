@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NSubstitute;
 using StarterKit.Application.Common.Authorization;
+using StarterKit.Application.Common.Interfaces;
 using StarterKit.Application.Common.Settings;
 using StarterKit.Application.Services.ApiKeys;
 using StarterKit.Domain.Entities;
@@ -50,10 +51,15 @@ public static class AuthTestHelper
         return account;
     }
 
-    public static string MintAccessToken(Account account, Guid? organizationId = null)
+    // Names no session, like a token minted before sessions were named: the refresh cookie is the only session marker.
+    public static string MintAccessToken(Account account, Guid? organizationId = null) =>
+        MintAccessToken(account, JwtSettings.SecretKey, DateTime.UtcNow.AddMinutes(15), organizationId);
+
+    // An access token as sign-in issues it, naming the session (refresh-token family) it belongs to.
+    public static string MintAccessTokenForSession(Account account, Guid sessionId)
     {
         JwtTokenService jwtTokenService = new(Options.Create(JwtSettings));
-        return jwtTokenService.GenerateAccessToken(account, organizationId);
+        return jwtTokenService.GenerateAccessToken(account, null, sessionId);
     }
 
     public static async Task<Organization> SeedOrganizationAsync(
@@ -155,7 +161,7 @@ public static class AuthTestHelper
     public static string MintTamperedAccessToken(Account account) =>
         MintAccessToken(account, "tampered-secret-key-also-32-chars-minimum", DateTime.UtcNow.AddMinutes(15));
 
-    private static string MintAccessToken(Account account, string secretKey, DateTime expires)
+    private static string MintAccessToken(Account account, string secretKey, DateTime expires, Guid? organizationId = null)
     {
         SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(secretKey));
         SigningCredentials credentials = new(key, SecurityAlgorithms.HmacSha256);
@@ -167,6 +173,10 @@ public static class AuthTestHelper
             new(JwtRegisteredClaimNames.Sub, account.Id.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         ];
+        if (organizationId is { } orgId)
+        {
+            claims.Add(new Claim(IJwtTokenService.OrganizationIdClaimType, orgId.ToString()));
+        }
 
         JwtSecurityToken token = new(
             issuer: JwtSettings.Issuer,

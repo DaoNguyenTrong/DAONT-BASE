@@ -5,6 +5,7 @@ using StarterKit.Application.Services.ApiKeys;
 using StarterKit.Application.Services.Accounts;
 using StarterKit.Application.Services.AuditLogs;
 using StarterKit.Application.Services.Auth;
+using StarterKit.Application.Services.DevData;
 using StarterKit.Application.Services.Files;
 using StarterKit.Application.Services.Notifications;
 using StarterKit.Application.Services.Organizations;
@@ -34,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<IPermissionCatalogService, PermissionCatalogService>();
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<ISystemSettingsService, SystemSettingsService>();
+        services.AddScoped<IDevDataSeeder, DevDataSeeder>();
 
         return services;
     }

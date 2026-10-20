@@ -9,7 +9,7 @@ Mỗi lần bạn đăng nhập trên một trình duyệt hay thiết bị, ứ
 
 ## Xem các phiên
 
-1. Ở chân thanh bên trái, bấm vào tên của bạn để mở **Hồ sơ cá nhân**.
+1. Ở góc trên phải, bấm vào ảnh đại diện của bạn rồi chọn **Hồ sơ cá nhân**.
 2. Chọn tab **Phiên đăng nhập**.
 
 Mỗi phiên cho biết thiết bị và trình duyệt, thời điểm **Hoạt động gần nhất**, địa chỉ IP và thời điểm **Đăng nhập**. Phiên trên máy bạn đang dùng có nhãn **Thiết bị này**. Nhãn **Ghi nhớ đăng nhập** nghĩa là phiên đó được giữ lại cả khi đóng trình duyệt.

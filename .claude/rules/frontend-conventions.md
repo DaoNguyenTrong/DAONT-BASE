@@ -68,7 +68,7 @@ vue-i18n, `useI18n()` in components, keys in `frontend/src/locales/{vi,en}.ts`. 
 
 ## Formatting & Linting
 
-Prettier only (`frontend/.prettierrc.json`: no semicolons, single quotes, printWidth 100) — run `bun run --cwd frontend format`. **There is no ESLint configuration in this project.** Do not add one without confirming with the user first — it would introduce a whole new rule set and CI implication that hasn't been decided on.
+Prettier only (`frontend/.prettierrc.json`: no semicolons, single quotes, printWidth 100) — run `bun run --cwd frontend format`. ESLint runs **only the layer-boundary rules** (`frontend/eslint.config.js`, `bun run --cwd frontend lint:boundaries`): lib/api stay out of state and UI, stores stay out of UI, components never reach routed views or layouts. Do not add style or other rule sets without confirming with the user first — each one brings its own rules and CI implications.
 
 ## Testing
 

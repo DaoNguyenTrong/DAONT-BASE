@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 This file provides guidance to Claude Code when working with this repository.
 
@@ -10,11 +10,24 @@ Three top-level trees, each with its own stack and rule surface:
 | ----------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `backend/`  | .NET 10, Clean Architecture (Domain → Application → Infrastructure → API)                                | `architecture.md`, `code-conventions.md`, `authentication.md`, `commands.md` |
 | `frontend/` | Vue 3 + Vite + TypeScript, Pinia, naive-ui, vue-i18n, Tailwind                                           | `frontend-conventions.md`, `commands.md`                                     |
-| `shared/`   | `docs/` (architecture & API docs), `openapi/` (contract exported from `backend`, consumed by `frontend`) | `api-contract.md`                                                            |
+| `shared/`   | `openapi/` (contract exported from `backend`, consumed by `frontend`)                                   | `api-contract.md`                                                            |
 
 `shared/openapi/` is the reason this is a monorepo rather than two separate repos: the backend's OpenAPI export is meant to be the single source of truth the frontend generates its client/types from (see `.claude/decisions.md` — "Monorepo: backend/frontend/shared, overriding..."). Codegen is wired up: `orval` regenerates `frontend/src/api/generated/**` (gitignored) from the committed `openapi.json` on every `bun install` — see `api-contract.md` for the regenerate workflow.
 
 CodeGraph is indexed repo-wide (backend + frontend) and is the tool for cross-file impact-check on both sides. Serena's symbol-navigation LSP covers `backend/` (C#), plus `frontend/` TypeScript and Vue for read-only symbol lookup — but its caller-search/rename tools (`find_referencing_symbols`, `rename_symbol`) are reliable for `backend/` (C#) only; see `serena.md` for why.
+
+## Common Commands
+
+```bash
+backend/scripts/test.sh                          # backend tests
+bun run --cwd frontend test:run                  # frontend unit tests
+bun run --cwd frontend build-only                # writes src/typings/ — required before type-check
+bun run --cwd frontend type-check
+scripts/test-gate.sh                             # full local gate before push (no coverage)
+```
+
+Full list (build, dev, codegen, migrations, OpenAPI export): `.claude/rules/commands.md`.
+CI workflows and git hooks (Lefthook): `.claude/reference/ci-and-git-hooks.md`.
 
 ## Agent Workflow
 
@@ -27,9 +40,17 @@ Follow this order for every non-trivial task:
 3. **Orient (macro)** — CodeGraph (`codegraph_explore`) to understand module boundaries, data flow, and cross-service relationships across both backend and frontend
 4. **Orient (micro)** — for backend C#, use Serena (`find_symbol`/`get_symbols_overview`) to drill into a specific symbol once CodeGraph has located the module. For frontend, CodeGraph's step-3 response already includes verbatim source — skip a separate Serena call unless you need `find_declaration` to confirm what a specific template-tag usage resolves to.
 5. **Impact check** — before editing, review every caller of the symbol you plan to modify. For backend C# symbols, prefer Serena's `find_referencing_symbols` (exact call sites with line-level snippets); fall back to `codegraph_explore` only when the symbol has dynamic dispatch across multiple implementations (interface/base-class methods). For any frontend symbol (`.ts` or `.vue`), use `codegraph_explore`'s blast-radius — never Serena's `find_referencing_symbols`/`rename_symbol`, which silently miss any caller inside a `.vue` file regardless of import style (verified, not a config gap).
-6. **Execute** — make changes
-7. **Verify** — run the test suite for whichever side you touched (`backend/scripts/test.sh` for `backend/`, `bun run --cwd frontend test:run` for `frontend/` — see `commands.md`); it must pass before considering the task done
+5b. **Feature map** — for a change to a user-facing flow, read `docs/feature-map.md` for the affected feature: entry path, test accounts, selectors, how to verify. If the feature has no entry, note it and propose one.
+5c. **Reproduce first (bug fixes)** — reproduce the failure before editing: a failing regression test for backend/frontend logic (`testing.md`), or the failing request/UI step through the running stack (`scripts/dev-up.sh`, then `scripts/verify/`). Keep the evidence under `verify-output/`.
+6. **Execute** — make changes in small, atomic steps; one concern per PR. Prefer repo generators/templates over hand-writing structure.
+7. **Verify** — every gate below must pass; never disable or suppress a rule to get there:
+   - a. Unit/integration tests for the side touched (`backend/scripts/test.sh` for `backend/`, `bun run --cwd frontend test:run` for `frontend/` — see `commands.md`)
+   - b. Architecture tests and static checks (`ArchitectureTests.cs`, `bun run --cwd frontend type-check`, and `bun run --cwd frontend lint:boundaries` for frontend import boundaries)
+   - c. For a change to a user-facing flow: start the stack with `scripts/dev-up.sh`, run the matching `scripts/verify/*.sh` and `bun run --cwd frontend test:e2e`, then `scripts/dev-down.sh`. Attach the output paths under `verify-output/` to the report.
+   - d. For a bug fix: show the failure from 5c no longer reproduces
 8. **Log decisions** — record only choices that affect system design (architecture, contracts, security posture) in `.claude/decisions.md`, titled `### YYYY-MM-DD — <decision>`, written in English; skip branding/UI/copy calls and routine bug fixes. **Gate: before writing, show the user the proposed entry and get explicit confirmation — never write to `.claude/decisions.md` unprompted.**
+
+**Recurring feedback:** if the same correction comes up twice (from a reviewer or from your own earlier work), stop and turn it into a lint rule, architecture test, or generator instead of adding another prose rule.
 
 ### Worktrees
 
@@ -41,7 +62,8 @@ A git worktree (including an agent's `isolation: "worktree"`) has only tracked f
 - Run `git branch --show-current` before every commit; never commit on `main` (the Lefthook branch guard blocks it) or on a branch you didn't expect.
 - Stage only the files the task changed, by explicit path — never `git add -A`/`git add .`/`git commit -a`; leave changes that predate the task unstaged. Subagents working in parallel each commit their own paths, so one never sweeps up another's half-finished files.
 - A commit rejected by Lefthook (commitlint, prettier, secretlint) means fix the message or re-stage — not `--no-verify`.
-- Push, merge, or open a PR only on the user's explicit order.
+- Push or open a PR only on the user's explicit order.
+- Merge only through `/git-accept`, and only for a docs-only PR that passes its gate (see `.claude/commands/git-accept.md`). Any other merge needs the user's explicit order.
 
 ### Tool Selection
 
@@ -103,19 +125,3 @@ If the superpowers plugin is installed, its skills yield to this file. Where a s
 Record only decisions that affect **system design** in `.claude/decisions.md` — architecture, module/layer boundaries, API or data contracts, security posture, or other cross-cutting structural choices that carry a real trade-off, an external constraint, a rejected alternative, or would be costly to re-derive later. Out of scope: visual/branding/UI styling, copy/content wording, and one-off bug fixes — even ones that took real investigation — unless the fix itself changed a structural/contract/security decision. Skip routine decisions — following an existing pattern, a standard CRUD addition, a mechanical rename — even if you had to think about them briefly; those add noise without future value. Write only the **why** — the reasoning and rejected alternative — never "what was done" or "how" (that's git log/diff's job; don't restate file names, method names, or a narrative of the change), and only when the why isn't obvious from reading the code. Title format: `### YYYY-MM-DD — <decision>`. Write every entry (title and body) in English, whatever language the conversation is in. Newest entry at top — prepend new entries directly below the header note, do not append at the bottom. Keep each entry under ~80 words (excluding heading).
 
 **Gate:** never write to `.claude/decisions.md` without asking first. Draft the proposed entry, show it to the user, and wait for explicit confirmation before prepending it.
-
-## Rule Index
-
-All rule files in `.claude/rules/` are auto-loaded. This table documents when each is most relevant.
-
-| File                      | Read when                                                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `api-contract.md`         | Changing API endpoints/DTOs that the frontend consumes                                                                    |
-| `architecture.md`         | Understanding backend layer responsibilities or boundaries                                                                |
-| `authentication.md`       | Adding endpoints, headers, or role-based access                                                                           |
-| `code-conventions.md`     | Writing C# — naming, EF Core patterns, Mapperly                                                                           |
-| `commands.md`             | Building/running/testing the backend or the frontend                                                                      |
-| `frontend-conventions.md` | Writing Vue/TypeScript — components, stores, api client patterns                                                          |
-| `localization.md`         | Adding or editing user-facing messages (backend and/or frontend)                                                          |
-| `testing.md`              | Writing or changing tests; deciding which layer a change must be tested at                                                |
-| `serena.md`               | Using Serena symbol navigation tools — read-only lookup works backend + frontend, caller-search/rename is backend C# only |

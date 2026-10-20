@@ -17,6 +17,8 @@ declare module 'vue-router' {
       labelKey: string
       icon: Component
       order?: number
+      /** `MenuGroup.id` from `layouts/menu-groups.ts`; omit for a standalone top-level item. */
+      group?: string
     }
   }
 }

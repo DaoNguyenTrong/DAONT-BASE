@@ -23,6 +23,45 @@ export interface LocaleSchema {
     no: string
     user: string
   }
+  layout: {
+    openSettings: string
+    more: string
+    pinSidebar: string
+    userMenu: {
+      open: string
+      vietnamese: string
+      english: string
+    }
+    settings: {
+      title: string
+      colorMode: string
+      light: string
+      dark: string
+      system: string
+      menuMode: string
+      menuModeWideOnly: string
+      menuTheme: string
+    }
+    menuModes: {
+      static: string
+      slim: string
+      slimPlus: string
+      drawer: string
+      horizontal: string
+    }
+    menuThemes: {
+      brand: string
+      transparent: string
+    }
+    palette: {
+      trigger: string
+      placeholder: string
+      empty: string
+      pages: string
+      actions: string
+      switchLanguage: string
+    }
+  }
   markdownEditor: {
     split: string
     editor: string
@@ -117,8 +156,6 @@ export interface LocaleSchema {
     organizations: string
     profile: string
     toggleSidebar: string
-    collapseSidebar: string
-    expandSidebar: string
     userGuide: string
   }
   guideAuth: {
@@ -270,6 +307,45 @@ const en: LocaleSchema = {
     no: 'No',
     user: 'User',
   },
+  layout: {
+    openSettings: 'Appearance settings',
+    more: 'More',
+    pinSidebar: 'Pin sidebar',
+    userMenu: {
+      open: 'Account',
+      vietnamese: 'Tiếng Việt',
+      english: 'English',
+    },
+    settings: {
+      title: 'Appearance settings',
+      colorMode: 'Color mode',
+      light: 'Light',
+      dark: 'Dark',
+      system: 'System',
+      menuMode: 'Menu type',
+      menuModeWideOnly: 'Applies on wide screens',
+      menuTheme: 'Menu color',
+    },
+    menuModes: {
+      static: 'Static',
+      slim: 'Slim',
+      slimPlus: 'Slim+',
+      drawer: 'Drawer',
+      horizontal: 'Horizontal',
+    },
+    menuThemes: {
+      brand: 'Brand',
+      transparent: 'Transparent',
+    },
+    palette: {
+      trigger: 'Go to page…',
+      placeholder: 'Type a page or action',
+      empty: 'No results',
+      pages: 'Pages',
+      actions: 'Actions',
+      switchLanguage: 'Switch language',
+    },
+  },
   markdownEditor: {
     split: 'Split',
     editor: 'Editor',
@@ -375,8 +451,6 @@ const en: LocaleSchema = {
     organizations: 'Organizations',
     profile: 'Profile',
     toggleSidebar: 'Toggle sidebar',
-    collapseSidebar: 'Collapse sidebar',
-    expandSidebar: 'Expand sidebar',
     userGuide: 'User guide',
   },
   guideAuth: {

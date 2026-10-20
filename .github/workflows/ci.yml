@@ -1,6 +1,8 @@
 # Runs the test gate (test.yml) on every PR and on every push to dev — the push covers what reaches dev
 # without a PR: /git-release's CHANGELOG commit and the main → dev reconcile merge.
-# Make `test / backend`, `test / frontend` and `test / guide` required status checks on main (see CONTRIBUTING.md).
+# Only the parts a change touches run (the `changes` job); the rest report as skipped, which counts as
+# passing for a required check. Make `test / backend`, `test / frontend` and `test / guide` required
+# status checks on main (see CONTRIBUTING.md).
 name: CI
 
 on:
@@ -21,5 +23,61 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The path mapping lives here and in .gitlab-ci.yml's test:* rules — change both together.
+  # Any doubt (no usable base commit) runs everything.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      guide: ${{ steps.filter.outputs.guide }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_HEAD: ${{ github.sha }}
+        run: |
+          backend=false frontend=false guide=false
+          all=false
+          if [ "$EVENT" = pull_request ]; then
+            files=$(git diff --name-only "$PR_BASE...$PR_HEAD") || all=true
+          elif git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+            files=$(git diff --name-only "$PUSH_BEFORE" "$PUSH_HEAD") || all=true
+          else
+            # A new branch, or a force-push that dropped the old tip: nothing to diff against.
+            all=true
+          fi
+
+          if [ "$all" = true ]; then
+            backend=true frontend=true guide=true
+          else
+            while IFS= read -r f; do
+              case "$f" in
+                .github/*) backend=true frontend=true guide=true ;;
+                backend/*) backend=true ;;
+                frontend/*) frontend=true guide=true ;;
+                shared/openapi/*) backend=true frontend=true ;;
+              esac
+            done <<< "$files"
+          fi
+
+          {
+            echo "backend=$backend"
+            echo "frontend=$frontend"
+            echo "guide=$guide"
+          } >> "$GITHUB_OUTPUT"
+
   test:
+    needs: changes
     uses: ./.github/workflows/test.yml
+    with:
+      backend: ${{ needs.changes.outputs.backend == 'true' }}
+      frontend: ${{ needs.changes.outputs.frontend == 'true' }}
+      guide: ${{ needs.changes.outputs.guide == 'true' }}
