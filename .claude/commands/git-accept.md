@@ -34,7 +34,7 @@ Any failing path → stop and report the first offending file. Code, workflows, 
 gh pr view <number> --json statusCheckRollup --jq '.statusCheckRollup[] | "\(.name)\t\(.conclusion // .status)"'
 ```
 
-- `changes` must be `SUCCESS`, and `test / backend`, `test / frontend` and `test / guide` must each be `SUCCESS` or `SKIPPED`. CI skips the parts a change does not touch and counts a skip as passing (see the header of `.github/workflows/ci.yml`), so a docs-only PR usually shows them skipped.
+- `changes` and `test / comments` must be `SUCCESS` (`comments` never skips), and `test / backend`, `test / frontend` and `test / guide` must each be `SUCCESS` or `SKIPPED`. CI skips the parts a change does not touch and counts a skip as passing (see the header of `.github/workflows/ci.yml`), so a docs-only PR usually shows them skipped.
 - Any of those checks missing, or any check `FAILURE`, `CANCELLED`, `PENDING`, `QUEUED` or `IN_PROGRESS` → stop. Do not wait in a loop; report which check is not finished.
 
 ### 4. Review gate
