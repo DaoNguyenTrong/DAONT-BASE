@@ -1,10 +1,9 @@
 namespace StarterKit.Application.Services.Accounts;
 
 /// <summary>
-/// Bookkeeping for the temporary lock on repeated wrong passwords. Every call is one statement that
-/// touches only the lockout columns of <paramref name="purpose"/>: a load-modify-save of the account would
-/// hold it across the ~0.3s password hash and could write back a stale row over a concurrent password
-/// change or deactivation.
+/// Bookkeeping for the temporary lock on repeated wrong passwords. Each call is one statement touching only the
+/// lockout columns of <paramref name="purpose"/>: a load-modify-save of the account would span the ~0.3s password
+/// hash and could write a stale row over a concurrent password change or deactivation.
 /// </summary>
 public interface IPasswordAttemptStore
 {

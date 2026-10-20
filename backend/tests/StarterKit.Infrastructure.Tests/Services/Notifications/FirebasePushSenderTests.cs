@@ -13,12 +13,9 @@ using StarterKit.Infrastructure.Services.Notifications;
 namespace StarterKit.Infrastructure.Tests.Services.Notifications;
 
 /// <summary>
-/// <see cref="FirebasePushSender"/> talks to <c>FirebaseMessaging.DefaultInstance</c>, so these tests
-/// create the process-wide default <see cref="FirebaseApp"/> with an offline access-token credential
-/// and an <see cref="AppOptions.HttpClientFactory"/> whose handler answers the FCM v1 send calls — the
-/// SDK's HTTP edge, so no request ever leaves the process. The default app is global state: every test
-/// that touches it lives in this one class (xUnit runs a class's tests serially) and
-/// <see cref="Dispose"/> deletes it again.
+/// <see cref="FirebasePushSender"/> uses <c>FirebaseMessaging.DefaultInstance</c>, so these tests create the default
+/// <see cref="FirebaseApp"/> with an offline credential and an <see cref="AppOptions.HttpClientFactory"/> answering FCM
+/// sends in-process. That is global state: only this class touches it, serially; <see cref="Dispose"/> deletes it.
 /// </summary>
 public sealed class FirebasePushSenderTests : IDisposable
 {

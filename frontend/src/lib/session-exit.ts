@@ -3,15 +3,9 @@ import { stringifyQuery, type LocationQueryRaw } from 'vue-router'
 let reloading = false
 
 /**
- * Leaves the current session with a full page reload instead of an in-SPA navigation. Every Pinia
- * store is a page-lifetime singleton, so `router.replace` would hand the previous account's (or the
- * previous organization's) state — unread count, permissions, cached lists — to whoever comes next
- * in the same tab. A reload wipes every store, including ones added later, with no reset list to
- * keep in sync.
- *
- * Only the first call takes effect: logout also flips `isAuthenticated`, which trips the
- * session-lapse watcher in `App.vue`, and that second exit must not override the first one's
- * destination.
+ * Full reload, not SPA navigation: it wipes every Pinia store, so no account's or organization's
+ * state (permissions, cached lists) leaks to the next user in the tab. Only the first call counts —
+ * logout also trips App.vue's session-lapse watcher, which must not override the destination.
  */
 export function reloadTo(path: string) {
   if (reloading) return

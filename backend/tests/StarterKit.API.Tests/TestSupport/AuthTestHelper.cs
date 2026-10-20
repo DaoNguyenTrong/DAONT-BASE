@@ -17,11 +17,8 @@ namespace StarterKit.API.Tests.TestSupport;
 
 public static class AuthTestHelper
 {
-    // Set once by ApiFactoryFixture right after the test host boots, from the same IOptions<JwtSettings>
-    // the host's own JwtBearer pipeline validates against — so tokens minted here always match
-    // whatever SecretKey is actually configured (appsettings.json/env), instead of a hardcoded
-    // literal that silently drifts from a developer's local appsettings.json and breaks every
-    // authenticated test with 401s.
+    // Set by ApiFactoryFixture after the host boots, from the host's own IOptions<JwtSettings>, so minted tokens
+    // match whatever SecretKey is configured — a hardcoded literal would drift from local appsettings.json into 401s.
     private static JwtSettings? configuredJwtSettings;
 
     private static JwtSettings JwtSettings => configuredJwtSettings

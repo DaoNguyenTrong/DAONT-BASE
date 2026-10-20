@@ -6,10 +6,9 @@ using Testcontainers.PostgreSql;
 namespace StarterKit.Infrastructure.Tests.TestSupport;
 
 /// <summary>
-/// One Postgres container per test process, migrated once into a template database; every collection that
-/// uses this fixture clones its own database from it (<c>CREATE DATABASE … TEMPLATE</c>, ~100ms instead of a
-/// migration run), so collections run in parallel without seeing each other's data. Testcontainers' Ryuk
-/// removes the container when the process exits — the clones go with it.
+/// One Postgres container per test process, migrated once into a template; each collection clones its own database
+/// from it (<c>CREATE DATABASE … TEMPLATE</c>, ~100ms vs a migration run), so collections run in parallel in isolation.
+/// Testcontainers' Ryuk removes the container, and the clones with it, when the process exits.
 /// </summary>
 public sealed class PostgresContainerFixture : IAsyncLifetime
 {

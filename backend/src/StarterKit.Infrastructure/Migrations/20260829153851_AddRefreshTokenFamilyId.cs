@@ -11,11 +11,9 @@ namespace StarterKit.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Add nullable first, then backfill each existing row with its OWN family
-            // id before enforcing NOT NULL. A static default would collapse every
-            // historical token into one family and make reuse detection misfire
-            // across unrelated sessions. New rows always get their FamilyId from the
-            // domain factory, so the column keeps no default.
+            // Backfill each existing row with its OWN family id before NOT NULL: a shared default would merge every
+            // historical token into one family and make reuse detection misfire across unrelated sessions. New rows
+            // get FamilyId from the domain factory, so the column keeps no default.
             migrationBuilder.AddColumn<Guid>(
                 name: "FamilyId",
                 table: "refresh_tokens",

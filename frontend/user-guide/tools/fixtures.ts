@@ -56,10 +56,9 @@ export type Capture = {
    */
   open(locale: Locale, path?: string, ready?: string): Promise<void>
   /**
-   * Numbered violet marks, drawn by `shot`: by default inside each element's top-left corner;
-   * `top-right` keeps a control at the left edge visible, `after` sits just right of a short element
-   * such as a label, `below` under a small icon button. A missing element, or a mark outside the
-   * shot, fails the test.
+   * Numbered violet marks drawn by `shot`, by default inside each element's top-left corner;
+   * `top-right` for a control at the left edge, `after` for a label, `below` for an icon button.
+   * A missing element, or a mark outside the shot, fails the test.
    */
   annotate(items: { selector: string; n: number; at?: MarkPlacement }[]): Promise<void>
   /** CSS selectors of private data (names, email, IP, devices) to blur in the next shot. */
@@ -103,7 +102,7 @@ async function readPreconditions(context: BrowserContext): Promise<PreconditionD
   return { organizations, membersByOrg, customRolesByOrg, unreadNotifications: count, sessions }
 }
 
-/** Signs in only if the stored session no longer works, then checks the account's data. */
+/** Signs in only if the stored session is rejected, then checks the account's data. */
 async function openSession(context: BrowserContext): Promise<void> {
   const page = await context.newPage()
   try {
@@ -140,10 +139,9 @@ export const test = base.extend<
   { blockedWrites: string[]; capture: Capture; guest: { page: Page; capture: Capture } },
   { session: BrowserContext }
 >({
-  // One context for the whole run, restored from and saved back to .auth/state.json. Every refresh
-  // rotates the refresh token and a replayed old one revokes the session family, so contexts must not
-  // share the file; and every sign-in adds a session the "Sessions" screenshot shows, so the tool
-  // signs in only when the stored state no longer works.
+  // One context per run, saved back to .auth/state.json: a replayed rotated refresh token revokes
+  // the session family, so contexts can't share the file, and each sign-in adds a session to the
+  // "Sessions" screenshot, so it signs in only when the stored state is rejected.
   session: [
     async ({ browser }, use, workerInfo) => {
       // Playwright retries a failed worker fixture once per remaining test; a wrong password would

@@ -4,13 +4,9 @@ using Microsoft.OpenApi;
 namespace StarterKit.API.OpenApi;
 
 /// <summary>
-/// Query parameters bound from a shared request DTO (e.g. paging: PageNumber/PageSize/Search)
-/// reflect the DTO's PascalCase C# property names, while parameters bound directly as method
-/// arguments are already camelCase — an inconsistency baked into the declared contract. ASP.NET
-/// Core's query-string binding is case-insensitive so this never affected the real server, but
-/// it did make client codegen emit PascalCase param names inconsistent with this app's actual
-/// (camelCase) query-string convention. Normalize the declared casing so the generated client
-/// matches what every hand-written caller has always sent.
+/// Query parameters bound from a shared request DTO (e.g. paging) get its PascalCase property names; ones bound as
+/// method arguments are camelCase. Binding is case-insensitive, so only the contract differs: normalize it to
+/// camelCase so the generated client follows the app's query-string convention.
 /// </summary>
 public sealed class QueryParameterCasingTransformer : IOpenApiOperationTransformer
 {

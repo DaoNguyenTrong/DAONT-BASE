@@ -21,11 +21,9 @@ public interface ICacheService
     Task RemoveAsync(string scope, string key, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Invalidates every entry previously stored under <paramref name="scope"/> in one call.
-    /// An implementation must make this effective for every reader of the scope immediately — e.g.
-    /// via an atomic per-scope generation counter — not by enumerating and evicting keys tracked only
-    /// in the calling process's local state; a cache shared across multiple app instances (a
-    /// distributed cache such as Redis) would not propagate a locally-tracked eviction to the others.
+    /// Invalidates every entry under <paramref name="scope"/>, effective at once for every reader on every instance,
+    /// e.g. via an atomic per-scope generation counter; never by evicting keys tracked in the calling process, which
+    /// a distributed cache (Redis) shared by other instances would not see.
     /// </summary>
     Task InvalidateScopeAsync(string scope, CancellationToken cancellationToken = default);
 }

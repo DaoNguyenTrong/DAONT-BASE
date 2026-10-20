@@ -147,13 +147,9 @@ public sealed class AuthService(
     }
 
     /// <summary>
-    /// A presented refresh token that is no longer active is not automatically a
-    /// forgery: because the refresh cookie is shared across a browser's tabs, a
-    /// near-simultaneous refresh from another tab may have just rotated it. If the
-    /// family still has an active token and this one was revoked within the grace
-    /// window (<see cref="JwtSettings.RefreshTokenReuseGraceSeconds"/>), accept the
-    /// presenter and continue rotating from that active token. Otherwise treat the
-    /// replay as a leaked token and revoke the entire family.
+    /// An inactive refresh token isn't necessarily a forgery: tabs share the cookie, so another tab's refresh may have
+    /// just rotated it. If its family still has an active token and this one was revoked within the grace window
+    /// (<see cref="JwtSettings.RefreshTokenReuseGraceSeconds"/>), rotate from that token; else revoke the whole family.
     /// </summary>
     private async Task<RefreshToken> ResolveInactiveRefreshTokenAsync(
         IRepository<RefreshToken, long> repository,
@@ -327,8 +323,8 @@ public sealed class AuthService(
         Account account = await unitOfWork.Repository<Account, Guid>().GetByIdAsync(accountId, cancellationToken)
             ?? throw new UnauthorizedException(ApplicationMessages.AuthenticatedUserRequired);
 
-        // Same sign-in, different organization: the session keeps its family and its previous token is retired, so the
-        // device is listed once. Without a session claim (a token minted before sessions were named) it starts a new one.
+        // Same sign-in, different organization: the session keeps its family and its previous token is retired, so
+        // the device is listed once. A token minted before sessions were named (no session claim) starts a new one.
         Guid? sessionId = currentUserService.SessionId;
         if (sessionId is { } currentSessionId)
         {

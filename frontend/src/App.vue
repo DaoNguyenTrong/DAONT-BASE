@@ -18,24 +18,17 @@ const router = useRouter()
 onMounted(() => health.startPolling())
 onUnmounted(() => health.stopPolling())
 
-// The navigation guard is bypassed while `isDown` (see resolveGuardRedirect), so
-// on recovery the router may be parked on a route that no longer matches the
-// session state. Re-run the silent refresh and route explicitly once the API
-// comes back.
+// The guard is bypassed while `isDown` (see resolveGuardRedirect), so on recovery the current
+// route may not match the session state: re-run the silent refresh and route explicitly.
 watch(isDown, async (down, wasDown) => {
   if (!wasDown || down) return
   const restored = await restoreSession()
   await router.replace(restored ? useHomeRoute() : { name: 'login' })
 })
 
-// A session can lapse while the tab is open (refresh token expired): an API call
-// 401s, the client's silent refresh fails, and the auth store clears itself —
-// but the guard only runs on navigation, so the user is left on a now-
-// unauthorized shell. Reload to login (keeping the destination) when that
-// happens — a full reload, so no store keeps the lapsed account's data (see
-// lib/session-exit.ts). Boot-time failure never trips this: isAuthenticated
-// starts false, so there is no true→false transition. On an explicit logout this
-// fires too, but the logout's own reload already won and this call is a no-op.
+// The guard only runs on navigation, so a session lapsing mid-tab (silent refresh fails) reloads
+// to login here — a full reload, so no store keeps the lapsed account's data. Never fires on boot
+// (no true→false flip); on logout, the logout's own reload already won and this is a no-op.
 const { isAuthenticated } = storeToRefs(useAuthStore())
 watch(isAuthenticated, (isAuth) => {
   if (isAuth) return

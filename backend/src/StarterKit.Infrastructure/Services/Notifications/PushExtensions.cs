@@ -10,10 +10,9 @@ namespace StarterKit.Infrastructure;
 
 internal static class PushExtensions
 {
-    // Push is a best-effort "hint" channel (see the notification module's architecture doc) —
-    // unlike EmailSettings, an unconfigured FcmSettings must not block application startup.
-    // Mirrors ExternalAuthExtensions.AddExternalAuth: only wire the channel up once credentials
-    // are actually present, so every fresh clone (and the API integration test host) still boots.
+    // Push is a best-effort hint channel, so unlike EmailSettings a missing FcmSettings must not block startup:
+    // like ExternalAuthExtensions.AddExternalAuth, wire it only when credentials exist, so fresh clones and the
+    // API test host still boot.
     internal static IServiceCollection AddPush(
         this IServiceCollection services,
         IConfiguration configuration)

@@ -1,9 +1,7 @@
 import type { PagedResult } from '@/api/types'
 
-// Generated PagedResultOf*Dto types report int64/int32 fields as `number | string` (the .NET
-// OpenAPI generator widens them for JS-safe-integer interop) and mark totalPages/hasPreviousPage/
-// hasNextPage optional (computed properties don't get inferred as required). Normalize back to
-// the stable, number-only PagedResult<T> shape every list consumer expects.
+// The .NET OpenAPI generator widens integers to `number | string` and marks computed properties
+// (totalPages, hasPreviousPage, hasNextPage) optional; normalize to the number-only PagedResult<T>.
 interface RawPagedResult<T> {
   items: T[]
   totalCount: number | string

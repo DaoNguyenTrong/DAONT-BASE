@@ -19,10 +19,8 @@ export class ApiError extends Error {
   }
 }
 
-// Pagination fields come back from the generated PagedResultOf*Dto types as `number | string`
-// (the .NET OpenAPI generator widens int64/int32 response fields to a string-pattern union for
-// JS-safe-integer interop). The api layer normalizes to this stable, number-only shape before
-// returning — keeps call sites doing plain arithmetic/comparisons on pageNumber/totalPages etc.
+// The generated PagedResultOf*Dto types widen int fields to `number | string` (.NET OpenAPI
+// JS-safe-integer interop); the api layer normalizes to this number-only shape before returning.
 export interface PagedResult<T> {
   items: T[]
   totalCount: number

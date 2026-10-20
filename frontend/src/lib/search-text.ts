@@ -56,15 +56,9 @@ const FUSE_OPTIONS = {
 } satisfies IFuseOptions<{ text: string }>
 
 /**
- * A matcher over a fixed list (a select's options): {@link matchesSearchText}, plus typo tolerance
- * only when **no** item matches word by word. Fuzzy matching on every keystroke would drag in
- * look-alikes — after stripping accents Vietnamese syllables are short and close (`ha`, `hai`,
- * `hoa`, `nam`) — so a query that already finds something is never widened. In the fallback each
- * word of four letters or more may match fuzzily; shorter words still have to occur exactly.
- *
- * Each item is read and normalized once, on first use; the matching set is computed once per
- * pattern (one fuse.js index for the list), so each `(pattern, item)` call is a lookup — a select
- * calls it for every option on every keystroke.
+ * {@link matchesSearchText} over a fixed list, falling back to fuzzy matching (words of 4+ letters)
+ * only when nothing matches: unaccented Vietnamese syllables are short and close (`ha`, `hai`).
+ * Matches are computed once per pattern, so each `(pattern, item)` call is a set lookup.
  */
 export function createSearchTextMatcher<T>(
   items: readonly T[],

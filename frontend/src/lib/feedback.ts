@@ -24,10 +24,7 @@ type NotificationOptions = {
 }
 
 /**
- * Delegates to feedback-naive.ts's already-proven *Naive functions (same
- * discrete Naive UI dialog/message backend). Kept as a separate module —
- * rather than merging into feedback-naive.ts or renaming every caller — so
- * the ~50 existing call sites across the app don't need to change at all.
+ * The stable feedback API the app's call sites use; delegates to feedback-naive.ts.
  */
 export function requestConfirmation(options: ConfirmationOptions) {
   requestConfirmationNaive({

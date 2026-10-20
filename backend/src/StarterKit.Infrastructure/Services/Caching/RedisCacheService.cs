@@ -22,10 +22,9 @@ internal sealed class RedisCacheService(
 
     private const string KeyPrefix = "sk:cache";
 
-    // Every Redis call below degrades instead of throwing: the cache is an optimization, and
-    // PermissionResolver/TenantAccessService sit on every authenticated request — a Redis outage must
-    // cost latency (reads fall through to the factory), not fail the API. Factory exceptions are NOT
-    // caught; only Redis' own failures are.
+    // Every Redis call degrades instead of throwing: PermissionResolver/TenantAccessService run on every
+    // authenticated request, so a Redis outage must cost latency (reads fall through to the factory), not fail
+    // the API. Factory exceptions are NOT caught; only Redis' own failures are.
 
     public async Task<T?> GetAsync<T>(string scope, string key, CancellationToken cancellationToken = default)
     {
@@ -141,12 +140,9 @@ internal sealed class RedisCacheService(
     private static bool IsRedisFailure(Exception exception) =>
         exception is RedisException or TimeoutException;
 
-    // Every counter carries a TTL longer than any entry can live (CacheExpiration.GenerationTtl), and a
-    // write extends both counters in the same transaction that stores the entry — so a counter only
-    // expires once every entry it versions has, and restarting it from 0 can't resurrect anything. Redis
-    // must expire keys only through their TTL — maxmemory-policy noeviction; any eviction policy could
-    // drop a counter early. A full Redis then rejects the INCR, which surfaces as a logged invalidation
-    // failure.
+    // Counters' TTL (CacheExpiration.GenerationTtl) outlives any entry and each write extends both in the entry's
+    // transaction, so a counter expires only after everything it versions — restarting at 0 resurrects nothing.
+    // Requires maxmemory-policy noeviction (eviction could drop a counter early); a full Redis fails the INCR, logged.
     private async Task WriteAsync<T>(CacheSlot slot, T value, TimeSpan? expiration)
     {
         TimeSpan entryExpiration = CacheExpiration.Resolve(settings, expiration);

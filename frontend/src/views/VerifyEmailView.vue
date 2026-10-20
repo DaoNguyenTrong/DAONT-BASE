@@ -11,10 +11,8 @@ function extractToken(raw: unknown): string | null {
   return typeof raw === 'string' && raw.trim().length > 0 ? raw : null
 }
 
-// A watcher (not onMounted) so a query change is re-processed even if vue-router
-// reuses this component instance across two /verify-email visits within the
-// same SPA session (no full page reload) — e.g. two verification links opened
-// back to back. onMounted alone would only ever run once per mount.
+// A watcher, not onMounted: vue-router may reuse this instance across two /verify-email visits
+// (e.g. two verification links opened back to back), and each new token must be processed.
 watch(
   () => route.query.token,
   async (rawToken) => {

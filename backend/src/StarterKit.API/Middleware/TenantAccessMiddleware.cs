@@ -18,13 +18,9 @@ public sealed class TenantAccessMiddleware(RequestDelegate next)
         ICurrentTenantProvider currentTenantProvider,
         ITenantAccessService tenantAccessService)
     {
-        // Exempt: /api/auth (must work even when the session's active org access is revoked, e.g.
-        // logout/switch-organization), /api/organizations (its endpoints take an explicit
-        // organization id in the URL and self-authorize against it — they aren't scoped to
-        // the session's active org claim, so gating them on it would block cross-org actions,
-        // e.g. managing org B while the token's active org A has been revoked), and
-        // /api/permissions (a static, org-independent catalog — gating it on the active org
-        // claim would spuriously 403 it the moment that org's access is revoked).
+        // Exempt, as gating on the active org claim would 403 them once that org's access is revoked: /api/auth
+        // (logout and switch-organization must still work), /api/organizations (self-authorizes against the org id
+        // in its URL; gating would block cross-org actions) and /api/permissions (static, org-independent catalog).
         if (context.Request.Path.StartsWithSegments("/api/auth")
             || context.Request.Path.StartsWithSegments("/api/organizations")
             || context.Request.Path.StartsWithSegments("/api/permissions")

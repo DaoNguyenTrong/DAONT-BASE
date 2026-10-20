@@ -2,16 +2,9 @@ import { getAuth } from '@/api/generated/auth/auth'
 import { reloadTo } from '@/lib/session-exit'
 
 /**
- * Switching organization swaps the tenant every store's data was loaded for (members, roles,
- * notifications, permissions…), so it ends with a full reload to the home route — same reasoning as
- * a session exit (see lib/session-exit.ts). Home, not the current page: that page may belong to the
- * organization just left.
- *
- * Calls the endpoint directly instead of through the auth store: committing the response to the
- * store first would flip organizationId reactively, so the still-mounted page would refetch for the
- * new tenant (or render old-tenant lists with new-tenant permissions) right before the reload
- * discards it. The server already re-issued the auth cookies; the reloaded app's silent refresh
- * picks up the new organization. Errors propagate to the caller; nothing reloads on failure.
+ * Full reload to home (the current page may belong to the org just left), so no store keeps the
+ * old tenant's data. Skips the auth store, whose reactive organizationId would refetch the mounted
+ * page first; the reload's silent refresh reads the re-issued cookies. Errors propagate, no reload.
  */
 export function useOrganizationSwitch() {
   const client = getAuth()

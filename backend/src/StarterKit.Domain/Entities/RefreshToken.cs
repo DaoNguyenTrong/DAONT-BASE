@@ -46,10 +46,8 @@ public sealed class RefreshToken : BaseEntity<long>
             IsPersistent = p.IsPersistent,
             LoginAt = p.LoginAt,
             OrganizationId = p.OrganizationId,
-            // Every token minted from one login chain shares a FamilyId. A fresh
-            // login starts a new family; a rotation inherits the presented token's.
-            // The refresh flow uses it to tell a legitimate concurrent-tab rotation
-            // apart from a replayed (stolen) token.
+            // One FamilyId per login chain: a fresh login starts a new family, a rotation inherits the presented
+            // token's. The refresh flow uses it to tell a concurrent-tab rotation from a replayed (stolen) token.
             FamilyId = p.FamilyId is { } familyId && familyId != Guid.Empty ? familyId : Guid.NewGuid()
         };
     }

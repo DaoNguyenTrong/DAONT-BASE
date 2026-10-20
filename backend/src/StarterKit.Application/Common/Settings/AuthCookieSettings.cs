@@ -13,19 +13,16 @@ public sealed class AuthCookieSettings
     public const string RefreshTokenCookieName = "refresh_token";
 
     /// <summary>
-    /// Whether the auth cookies carry the <c>Secure</c> attribute. Leave <c>true</c> wherever TLS
-    /// terminates. Set <c>false</c> only for a host served over plain http from an origin other than
-    /// <c>localhost</c> — the browser silently drops a Secure cookie there, so login returns 200 and
-    /// every later request is 401. With it off, tokens travel in cleartext: fine for a throwaway demo,
-    /// never for real data. Must be paired with <see cref="SameSite"/> <c>Lax</c> or <c>Strict</c>.
+    /// Whether the auth cookies are <c>Secure</c>; keep <c>true</c> wherever TLS terminates. <c>false</c> only for
+    /// plain http on a non-<c>localhost</c> origin, where browsers drop Secure cookies (login 200, then every request
+    /// 401); tokens then go in cleartext, so demo only. Requires <see cref="SameSite"/> <c>Lax</c> or <c>Strict</c>.
     /// </summary>
     public bool Secure { get; init; } = true;
 
     /// <summary>
-    /// <c>None</c>, <c>Lax</c> or <c>Strict</c>. <c>None</c> is only required when the SPA and the API
-    /// sit on different registrable domains. The shipped Docker setup proxies the API under the SPA's
-    /// own origin (same-site), but the default stays <c>None</c> — what this API has always sent — so
-    /// making it configurable doesn't silently change an existing deployment's cookie policy.
+    /// <c>None</c>, <c>Lax</c> or <c>Strict</c>. <c>None</c> is needed only when SPA and API are on different
+    /// registrable domains; it stays the default, though the shipped Docker setup is same-site, so an existing
+    /// deployment's cookie policy doesn't change silently.
     /// </summary>
     public string SameSite { get; init; } = "None";
 }
