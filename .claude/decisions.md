@@ -9,6 +9,10 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-10-20 — Docs-only PRs merge through a gated project command
+
+The repo has no reviewer account, GitHub does not let an author approve their own PR, and branch protection is unavailable on private repos under the Free plan. The merge gate therefore lives in the project's own `/git-accept` command: required CI checks green, agent review with no blocking finding, and docs-only scope. Rejected: manual-only merge (a bottleneck for a solo maintainer) and a GitHub App approver for now (needs a second identity). Code, workflows, rules and auth changes stay manual. The gate runs client-side, so it is not a hard control.
+
 ### 2026-10-17 — User guide is gated at the nginx edge against a session-only check, fail-closed
 
 The guide stays a static site (keeps SSG and search, and in public mode survives app outages), so access control lives at the edge rather than in the SPA. The check accepts only the user-session scheme: the default policy also admits API keys, which would let a service credential read the guide. An API failure denies access instead of serving content. Rejected: guide as SPA routes; always public; fail-open on 5xx.
