@@ -33,7 +33,7 @@ A change isn't done until its tests are in the same PR. Pick the layer by what c
 - Name `Method_Scenario_Expected` (`CreateAsync_DuplicateEmail_ThrowsConflict`). API tests name the endpoint (`Register_DuplicateUsername_ReturnsConflict`). A persistence test whose subject is the database rule itself may read as a sentence (`SameDedupeKeyForTheSameAccount_IsRejectedByTheDatabase`).
 - xUnit `Assert` and NSubstitute only — no FluentAssertions, Shouldly or Moq.
 - One private `Fixture` record per test class (the subject under test plus its substitutes), built by `CreateFixture()`; no base test classes.
-- Build entities through their domain `Create()` factory (CLAUDE.md § Critical Invariants), never by hand or reflection.
+- Build entities through their domain `Create()` factory (AGENTS.md § Critical Invariants), never by hand or reflection.
 - Reuse the assertion helpers: `ApplicationAssert.ThrowsWithMessageAsync` / `AssertNotFoundAsync`, `DomainAssert`, and `RepositoryPredicateStub.StubFirstOrDefault` when a mocked repository must evaluate a real predicate.
 - Assert exception and validation messages through their key constants (`DomainMessages.X`, resource keys), never literal text.
 - Group methods with `// MethodName` section comments; no `// Arrange` / `// Act` / `// Assert`.
