@@ -136,3 +136,6 @@ appsettings.Staging.json
 
 # Verification output: stack logs, screenshots and reports from scripts/dev-up.sh and scripts/verify/
 verify-output/
+
+# MinIO AIStor license (per machine)
+minio.license

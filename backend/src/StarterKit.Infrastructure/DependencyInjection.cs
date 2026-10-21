@@ -53,7 +53,7 @@ public static class DependencyInjection
             cronExpression);
     }
 
-    // Bucket must exist before the first upload — SeaweedFS's S3 gateway does not auto-create
+    // Bucket must exist before the first upload — the S3 gateways of SeaweedFS and MinIO do not auto-create
     // buckets on PutObject the way some S3-compatible stores do. No-op for any other provider.
     public static async Task UseStorageAsync(this IApplicationBuilder app)
     {
@@ -61,18 +61,26 @@ public static class DependencyInjection
         StorageSettings storageSettings = scope.ServiceProvider
             .GetRequiredService<IOptions<StorageSettings>>().Value;
 
-        if (storageSettings.Provider != "SeaweedFS")
+        switch (storageSettings.Provider)
         {
-            return;
+            case "SeaweedFS":
+                await EnsureBucketAsync(
+                    scope.ServiceProvider.GetRequiredService<IAmazonS3>(),
+                    scope.ServiceProvider.GetRequiredService<IOptions<SeaweedFsSettings>>().Value.BucketName);
+                break;
+            case StorageExtensions.MinioProvider:
+                await EnsureBucketAsync(
+                    scope.ServiceProvider.GetRequiredKeyedService<IAmazonS3>(StorageExtensions.MinioProvider),
+                    scope.ServiceProvider.GetRequiredService<IOptions<MinioSettings>>().Value.BucketName);
+                break;
         }
+    }
 
-        IAmazonS3 s3Client = scope.ServiceProvider.GetRequiredService<IAmazonS3>();
-        SeaweedFsSettings seaweedFsSettings = scope.ServiceProvider
-            .GetRequiredService<IOptions<SeaweedFsSettings>>().Value;
-
-        if (!await AmazonS3Util.DoesS3BucketExistV2Async(s3Client, seaweedFsSettings.BucketName))
+    private static async Task EnsureBucketAsync(IAmazonS3 s3Client, string bucketName)
+    {
+        if (!await AmazonS3Util.DoesS3BucketExistV2Async(s3Client, bucketName))
         {
-            await s3Client.PutBucketAsync(seaweedFsSettings.BucketName);
+            await s3Client.PutBucketAsync(bucketName);
         }
     }
 }
