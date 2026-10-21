@@ -60,7 +60,7 @@ The export builds the real host from `Program.cs` inside the `GetDocument.Inside
 backend/scripts/test.sh
 ```
 
-Builds the solution once (serialized, `-m:1` — see Build above), then runs the 4 test projects as independent parallel processes (each still `-m:1` internally, so no process attempts the broken parallel-build path — only the OS scheduler runs them concurrently). Measured 2026-08-09: 479 tests, ~35s, vs. ~56s for `dotnet test backend/StarterKit.sln --no-restore -m:1` run serially. See `.claude/decisions.md` (2026-08-09) for why.
+Builds the solution once (serialized, `-m:1` — see Build above), then runs the 4 test projects as independent parallel processes (each still `-m:1` internally, so no process attempts the broken parallel-build path — only the OS scheduler runs them concurrently) — markedly faster than `dotnet test backend/StarterKit.sln --no-restore -m:1` run serially. See `.claude/decisions.md` (2026-08-09) for why.
 
 Tests tagged `[Trait("Category", "RealData")]` read gitignored real source data and are **skipped by default** (none exist in the template yet — the tag is for a fork's import/reference-data checks, which only change outcome when that data does). Include them with `STARTERKIT_TEST_REAL_DATA=1 backend/scripts/test.sh` whenever that data changes; a plain `dotnet test` runs them, so they must skip themselves when the data file is absent.
 
@@ -103,8 +103,18 @@ bun run --cwd frontend codegen
 # Type-check + production build
 bun run --cwd frontend build
 
-# Unit tests (vitest)
+# Production build only — also writes the gitignored src/typings/, required before type-check
+bun run --cwd frontend build-only
+
+# Type-check only (vue-tsc over the app, node, vitest and e2e tsconfigs)
+bun run --cwd frontend type-check
+
+# Import-boundary lint (ESLint, layer rules only)
+bun run --cwd frontend lint:boundaries
+
+# Unit tests (vitest); test:coverage adds coverage
 bun run --cwd frontend test:run
+bun run --cwd frontend test:coverage
 
 # E2E tests (playwright — install browsers once with test:e2e:install)
 bun run --cwd frontend test:e2e
@@ -136,4 +146,4 @@ Run the site's `dev` next to `bun run --cwd frontend dev` to follow the app head
 - Read a store after `renderComponent` with `storeIn(pinia, useXxxStore)` (`tests/helpers/pinia.ts`), using the `pinia` it returns — a testing pinia ignores `useXxxStore(pinia)`'s argument and returns the *active* pinia's store, which a leftover timer from an earlier test may have switched.
 - Tests that drive the real router (guards, route table) stub the lazy views they navigate to with `vi.mock('@/views/XxxView.vue', () => stubView())` (`tests/helpers/router-view-stubs.ts`) instead of loading real view chunks.
 - **Time zones**: CI runs in UTC, developers usually don't. A fixture timestamp that the code parses in the machine's zone must be built from a UTC instant (`new Date('2026-09-15T12:00:00Z')`, then formatted the way the backend emits it), never hard-coded as local wall-clock text — that silently assumes the author's zone and fails on the runner. Check with `TZ=UTC bun run --cwd frontend test:run` (and `TZ=UTC backend/scripts/test.sh`) when a test touches dates.
-- `type-check` runs `src` under both `tsconfig.app.json` and `tsconfig.vitest.json` on purpose: the vitest config adds `node`/`vitest/globals` types, so only the app pass catches app code that leans on them.
+- `type-check` runs `src` under `tsconfig.app.json` as well as `tsconfig.vitest.json` on purpose: the vitest config adds `node`/`vitest/globals` types, so only the app pass catches app code that leans on them.
