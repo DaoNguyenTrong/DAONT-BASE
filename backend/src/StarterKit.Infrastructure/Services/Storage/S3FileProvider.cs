@@ -15,9 +15,10 @@ internal abstract class S3FileProvider(
         Stream content,
         string fileName,
         string contentType,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? folder = null)
     {
-        string key = storagePathGenerator.Generate(fileName);
+        string key = storagePathGenerator.Generate(fileName, folder);
 
         using MemoryStream buffer = new();
         await content.CopyToAsync(buffer, cancellationToken);

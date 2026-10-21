@@ -61,4 +61,18 @@ public class StorageServiceTests
 
         Assert.True(result);
     }
+
+    [Fact]
+    public async Task UploadAsync_WithFolder_PassesFolderToProvider()
+    {
+        Fixture f = CreateFixture();
+        using MemoryStream content = new();
+        StorageUploadResult expected = new("public/avatars/file.png", 100);
+        f.Provider.UploadAsync(content, "file.png", "image/png", Arg.Any<CancellationToken>(), "public/avatars").Returns(expected);
+
+        StorageUploadResult result = await f.Service.UploadAsync(
+            content, "file.png", "image/png", CancellationToken.None, "public/avatars");
+
+        Assert.Same(expected, result);
+    }
 }

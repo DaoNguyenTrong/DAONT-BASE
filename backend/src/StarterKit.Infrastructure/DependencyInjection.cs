@@ -1,4 +1,5 @@
 using Amazon.S3;
+using Amazon.S3.Model;
 using Amazon.S3.Util;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
@@ -82,5 +83,14 @@ public static class DependencyInjection
         {
             await s3Client.PutBucketAsync(bucketName);
         }
+
+        // Only public/ is readable without credentials; every other key stays reachable through the API alone.
+        await s3Client.PutBucketPolicyAsync(new PutBucketPolicyRequest
+        {
+            BucketName = bucketName,
+            Policy = $$"""
+                {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":["s3:GetObject"],"Resource":["arn:aws:s3:::{{bucketName}}/public/*"]}]}
+                """
+        });
     }
 }

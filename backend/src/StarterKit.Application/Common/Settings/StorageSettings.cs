@@ -11,4 +11,7 @@ public sealed class StorageSettings
     public long MaxFileSizeBytes { get; init; } = 10_485_760;
 
     public string[] AllowedContentTypes { get; init; } = [];
+
+    public string BuildPublicUrl(string storagePath) =>
+        $"{PublicUrlBase.TrimEnd('/')}/{storagePath.TrimStart('/')}";
 }

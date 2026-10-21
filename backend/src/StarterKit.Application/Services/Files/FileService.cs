@@ -137,7 +137,7 @@ public sealed class FileService(
             storedFile.ContentType,
             storedFile.Size,
             storedFile.StoragePath,
-            BuildPublicUrl(storedFile.StoragePath),
+            storageSettings.BuildPublicUrl(storedFile.StoragePath),
             storedFile.OrganizationId,
             storedFile.Description,
             storedFile.Category,
@@ -145,10 +145,4 @@ public sealed class FileService(
             storedFile.UpdatedAt);
     }
 
-    private string BuildPublicUrl(string storagePath)
-    {
-        string urlBase = storageSettings.PublicUrlBase.TrimEnd('/');
-
-        return $"{urlBase}/{storagePath.TrimStart('/')}";
-    }
 }

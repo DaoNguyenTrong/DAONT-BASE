@@ -17,9 +17,10 @@ internal sealed class LocalFileProvider(
         Stream content,
         string fileName,
         string contentType,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? folder = null)
     {
-        string storagePath = storagePathGenerator.Generate(fileName);
+        string storagePath = storagePathGenerator.Generate(fileName, folder);
         string fullPath = GetFullPath(storagePath);
 
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);

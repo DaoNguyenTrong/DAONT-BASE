@@ -8,7 +8,8 @@ internal interface IStorageProvider
         Stream content,
         string fileName,
         string contentType,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        string? folder = null);
 
     Task<Stream> DownloadAsync(string storagePath, CancellationToken cancellationToken);
 
