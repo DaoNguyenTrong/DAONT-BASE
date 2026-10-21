@@ -14,7 +14,8 @@ Two authentication schemes, both accepted by the default `[Authorize]` policy (`
 `[AllowAnonymous]` endpoints: `/api/auth/login`, `/api/auth/register`, `/api/auth/verify-email`,
 `/api/auth/resend-verification`, `/api/auth/external/{provider}`, `/api/auth/refresh`. `/api/health`
 is public too — `HealthController` carries no `[Authorize]`, and there is no fallback policy, so a
-controller or action without an `[Authorize]` attribute is public. Every other controller declares one.
+controller or action without an `[Authorize]` attribute is public. Every other controller declares one at
+class level, except `AuthController`, which authorizes per action — a new action there needs its own attribute.
 
 ## Organizations and permissions
 
