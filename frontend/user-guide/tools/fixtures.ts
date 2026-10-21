@@ -30,7 +30,7 @@ const statePath = fileURLToPath(new URL('./.auth/state.json', import.meta.url))
 // every worker of one run.
 const resultsDir = fileURLToPath(new URL('./.results', import.meta.url))
 const runId = String(process.ppid)
-const apiUrl = (process.env.GUIDE_API_URL ?? 'http://localhost:7000').replace(/\/$/, '')
+const apiUrl = (process.env.GUIDE_API_URL ?? 'http://localhost:7100').replace(/\/$/, '')
 const APP_SHELL = '[data-testid="app-shell"]'
 const MARK_CLASS = 'guide-capture-mark'
 

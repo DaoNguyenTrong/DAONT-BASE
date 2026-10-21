@@ -7,12 +7,12 @@ scrape_configs:
     static_configs:
       # The API runs via `dotnet run` on the host (no container today), so Prometheus
       # (running inside docker-compose) reaches it through the host gateway instead of
-      # a service name. Port must match launchSettings.json's http profile (7000).
+      # a service name. Port must match launchSettings.json's http profile (7100).
       #
       # Verified empirically: the default `dotnet run` bind (launchSettings.json's
-      # "http://localhost:7000") is loopback-only and unreachable from this container —
+      # "http://localhost:7100") is loopback-only and unreachable from this container —
       # scraping this target requires running the API bound to all interfaces instead,
-      # e.g. `dotnet run --project backend/src/StarterKit.API --urls http://0.0.0.0:7000`.
+      # e.g. `dotnet run --project backend/src/StarterKit.API --urls http://0.0.0.0:7100`.
       # That also makes the API reachable from other machines on the LAN while running,
       # so only do this on a trusted network, and stop it when done.
-      - targets: ["host.docker.internal:7000"]
+      - targets: ["host.docker.internal:7100"]

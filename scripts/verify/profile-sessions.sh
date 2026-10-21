@@ -10,7 +10,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-API_URL="${API_URL:-http://localhost:7000}"
+API_URL="${API_URL:-http://localhost:7100}"
 USERNAME="${E2E_USER_USERNAME:-e2e-user}"
 PASSWORD="${E2E_USER_PASSWORD:-E2e-User!2026}"
 EVIDENCE_DIR="$ROOT_DIR/verify-output/profile-sessions"
