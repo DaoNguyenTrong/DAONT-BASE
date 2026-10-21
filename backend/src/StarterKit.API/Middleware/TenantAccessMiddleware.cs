@@ -50,7 +50,7 @@ public sealed class TenantAccessMiddleware(RequestDelegate next)
 
     private static Task WriteProblemAsync(HttpContext context)
     {
-        var problemDetails = new ProblemDetails
+        ProblemDetails problemDetails = new()
         {
             Status = StatusCodes.Status403Forbidden,
             Title = "Forbidden",

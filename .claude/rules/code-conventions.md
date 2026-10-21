@@ -7,7 +7,7 @@ paths:
 
 ## Variable Declarations
 
-Avoid `var` — use explicit types.
+Avoid `var` — use explicit types. Enforced: the root `.editorconfig` sets IDE0008 to `error` and `EnforceCodeStyleInBuild` (`backend/Directory.Build.props`) fails the build on it; `dotnet format style backend/StarterKit.sln --diagnostics IDE0008 --severity error --no-restore` fixes most hits.
 
 ```csharp
 Account? account = await repository.GetByIdAsync(id, ct);

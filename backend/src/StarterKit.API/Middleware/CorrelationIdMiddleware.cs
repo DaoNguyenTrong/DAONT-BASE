@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Primitives;
 using Serilog.Context;
 
 namespace StarterKit.API.Middleware;
@@ -24,7 +25,7 @@ public sealed class CorrelationIdMiddleware(RequestDelegate next)
     // back to ASP.NET Core's own per-request TraceIdentifier rather than reflecting it unchecked.
     private static string ResolveCorrelationId(HttpContext context)
     {
-        if (context.Request.Headers.TryGetValue(HeaderName, out var values)
+        if (context.Request.Headers.TryGetValue(HeaderName, out StringValues values)
             && values.ToString() is { Length: > 0 and <= MaxLength } candidate
             && IsValidCorrelationId(candidate))
         {

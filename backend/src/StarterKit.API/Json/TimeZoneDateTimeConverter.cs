@@ -18,7 +18,7 @@ public sealed class TimeZoneDateTimeConverter(IHttpContextAccessor httpContextAc
 
     public override bool CanConvert(Type objectType)
     {
-        var type = Nullable.GetUnderlyingType(objectType) ?? objectType;
+        Type type = Nullable.GetUnderlyingType(objectType) ?? objectType;
 
         return type == typeof(DateTime);
     }
@@ -29,7 +29,7 @@ public sealed class TimeZoneDateTimeConverter(IHttpContextAccessor httpContextAc
         object? existingValue,
         JsonSerializer serializer)
     {
-        var isNullable = Nullable.GetUnderlyingType(objectType) is not null;
+        bool isNullable = Nullable.GetUnderlyingType(objectType) is not null;
 
         if (reader.TokenType == JsonToken.Null)
         {
@@ -43,7 +43,7 @@ public sealed class TimeZoneDateTimeConverter(IHttpContextAccessor httpContextAc
             throw new JsonSerializationException("DateTime value must be a string.");
         }
 
-        var value = reader.Value?.ToString();
+        string? value = reader.Value?.ToString();
 
         if (string.IsNullOrWhiteSpace(value))
         {
@@ -57,7 +57,7 @@ public sealed class TimeZoneDateTimeConverter(IHttpContextAccessor httpContextAc
                 InputFormats,
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.None,
-                out var localDateTime))
+                out DateTime localDateTime))
         {
             throw new JsonSerializationException(
                 $"Invalid DateTime format. Expected one of: {string.Join(", ", InputFormats)}.");
@@ -75,8 +75,8 @@ public sealed class TimeZoneDateTimeConverter(IHttpContextAccessor httpContextAc
             return;
         }
 
-        var utcDateTime = (DateTime)value;
-        var convertedDateTime = GetUserTimeZoneProvider()?.ConvertFromUtc(utcDateTime)
+        DateTime utcDateTime = (DateTime)value;
+        DateTime convertedDateTime = GetUserTimeZoneProvider()?.ConvertFromUtc(utcDateTime)
             ?? DateTime.SpecifyKind(utcDateTime, DateTimeKind.Utc);
 
         writer.WriteValue(convertedDateTime.ToString(OutputFormat, CultureInfo.InvariantCulture));

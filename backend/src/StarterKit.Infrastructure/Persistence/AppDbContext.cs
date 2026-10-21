@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Domain.Entities;
 
@@ -55,14 +56,14 @@ public sealed class AppDbContext(
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        var now = dateTimeProvider?.UtcNow ?? DateTime.UtcNow;
-        var userId = currentUserService?.UserId;
+        DateTime now = dateTimeProvider?.UtcNow ?? DateTime.UtcNow;
+        string? userId = currentUserService?.UserId;
 
         SetAuditFields(now, userId);
 
-        var auditEntries = CaptureAuditEntries(now, userId);
+        List<AuditEntry> auditEntries = CaptureAuditEntries(now, userId);
 
-        var result = await base.SaveChangesAsync(cancellationToken);
+        int result = await base.SaveChangesAsync(cancellationToken);
 
         await SaveAuditLogsAsync(auditEntries, now, cancellationToken);
 
@@ -78,7 +79,7 @@ public sealed class AppDbContext(
 
     private void SetAuditFields(DateTime now, string? userId)
     {
-        foreach (var entry in ChangeTracker.Entries())
+        foreach (EntityEntry entry in ChangeTracker.Entries())
         {
             if (entry.Entity is not IHasAuditFields auditableEntity)
             {
@@ -101,10 +102,10 @@ public sealed class AppDbContext(
 
     private List<AuditEntry> CaptureAuditEntries(DateTime now, string? userId)
     {
-        var entries = new List<AuditEntry>();
-        var httpContext = httpContextAccessor?.HttpContext;
+        List<AuditEntry> entries = new();
+        HttpContext? httpContext = httpContextAccessor?.HttpContext;
 
-        foreach (var entry in ChangeTracker.Entries())
+        foreach (EntityEntry entry in ChangeTracker.Entries())
         {
             if (entry.Entity is AuditLog ||
                 entry.Entity is not IHasAuditFields ||
@@ -118,7 +119,7 @@ public sealed class AppDbContext(
                 continue;
             }
 
-            var auditEntry = new AuditEntry(entry)
+            AuditEntry auditEntry = new(entry)
             {
                 EntityName = entry.Entity.GetType().Name,
                 Action = entry.State.ToString(),
@@ -127,7 +128,7 @@ public sealed class AppDbContext(
                 UserAgent = httpContext?.Request.Headers.UserAgent.ToString()
             };
 
-            foreach (var property in entry.Properties)
+            foreach (PropertyEntry property in entry.Properties)
             {
                 if (property.IsTemporary)
                 {
@@ -135,7 +136,7 @@ public sealed class AppDbContext(
                     continue;
                 }
 
-                var propertyName = property.Metadata.Name;
+                string propertyName = property.Metadata.Name;
 
                 if (entry.State == EntityState.Added)
                 {
@@ -168,9 +169,9 @@ public sealed class AppDbContext(
             return;
         }
 
-        foreach (var auditEntry in auditEntries)
+        foreach (AuditEntry auditEntry in auditEntries)
         {
-            foreach (var prop in auditEntry.TemporaryProperties)
+            foreach (PropertyEntry prop in auditEntry.TemporaryProperties)
             {
                 if (prop.Metadata.Name == "Id")
                 {
