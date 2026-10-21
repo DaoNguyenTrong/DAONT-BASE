@@ -202,8 +202,8 @@ app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapOpenApi().AllowAnonymous();
+    app.MapScalarApiReference().AllowAnonymous();
 }
 
 StorageSettings storageSettings = app.Services.GetRequiredService<IOptions<StorageSettings>>().Value;
@@ -226,21 +226,21 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<TenantAccessMiddleware>();
 
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
+app.MapHangfireDashboard("/hangfire", new DashboardOptions
 {
     // Access is restricted at the network layer (internal LAN only, not internet-exposed) —
     // the default LocalRequestsOnlyAuthorizationFilter would incorrectly block real LAN
     // clients once UseForwardedHeaders() rewrites RemoteIpAddress to the real client IP.
     Authorization = []
-});
+}).AllowAnonymous();
 
 app.MapControllers();
 
 app.MapHub<NotificationHub>("/hubs/notifications");
 
-// Not under /api, so it already skips UserTimeZoneMiddleware/rate limiting/auth like /hangfire —
+// Not under /api, so it skips UserTimeZoneMiddleware and rate limiting; anonymous like /hangfire —
 // restrict at the network layer (internal only) the same way, not exposed to the internet.
-app.MapMetrics();
+app.MapMetrics().AllowAnonymous();
 
 app.Run();
 
