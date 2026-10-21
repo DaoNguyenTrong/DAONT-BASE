@@ -11,4 +11,5 @@ public sealed record AccountDto(
     string Email,
     bool EmailConfirmed,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    string? AvatarUrl = null);

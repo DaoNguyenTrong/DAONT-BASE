@@ -75,6 +75,9 @@
   <data name="FileSizeExceeded" xml:space="preserve">
     <value>File size must not exceed {0} bytes.</value>
   </data>
+  <data name="AvatarInvalidImage" xml:space="preserve">
+    <value>The avatar must be a valid PNG, JPEG or WebP image.</value>
+  </data>
   <data name="FileContentTypeNotAllowed" xml:space="preserve">
     <value>File content type is not allowed.</value>
   </data>

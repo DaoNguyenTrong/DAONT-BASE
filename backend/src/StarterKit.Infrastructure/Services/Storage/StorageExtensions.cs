@@ -11,6 +11,8 @@ namespace StarterKit.Infrastructure;
 
 internal static class StorageExtensions
 {
+    internal const string MinioProvider = "MinIO";
+
     internal static IServiceCollection AddStorage(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -18,6 +20,7 @@ internal static class StorageExtensions
         services.AddSingleton<StoragePathGenerator>();
         services.Configure<StorageSettings>(configuration.GetSection(nameof(StorageSettings)));
         services.Configure<SeaweedFsSettings>(configuration.GetSection(nameof(SeaweedFsSettings)));
+        services.Configure<MinioSettings>(configuration.GetSection(nameof(MinioSettings)));
 
         services.AddKeyedScoped<IStorageProvider, LocalFileProvider>("Local");
 
@@ -40,6 +43,28 @@ internal static class StorageExtensions
                 config);
         });
         services.AddKeyedScoped<IStorageProvider, SeaweedFsFileProvider>("SeaweedFS");
+
+        services.AddKeyedSingleton<IAmazonS3>(MinioProvider, (serviceProvider, _) =>
+        {
+            MinioSettings minioSettings = serviceProvider
+                .GetRequiredService<IOptions<MinioSettings>>()
+                .Value;
+
+            AmazonS3Config config = new()
+            {
+                ServiceURL = minioSettings.ServiceUrl,
+                ForcePathStyle = true
+            };
+
+            return new AmazonS3Client(
+                new BasicAWSCredentials(minioSettings.AccessKey, minioSettings.SecretKey),
+                config);
+        });
+        services.AddKeyedScoped<IStorageProvider>(MinioProvider, (serviceProvider, _) =>
+            new MinioFileProvider(
+                serviceProvider.GetRequiredKeyedService<IAmazonS3>(MinioProvider),
+                serviceProvider.GetRequiredService<IOptions<MinioSettings>>(),
+                serviceProvider.GetRequiredService<StoragePathGenerator>()));
 
         services.AddScoped<IStorageService>(serviceProvider =>
         {

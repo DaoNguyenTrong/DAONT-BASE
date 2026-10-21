@@ -170,6 +170,13 @@ export interface LocaleSchema {
     newPassword: string
     changePassword: string
     personalInfo: string
+    avatarChange: string
+    avatarRemove: string
+    avatarUpdated: string
+    avatarRemoved: string
+    avatarTooLarge: string
+    avatarInvalidType: string
+    avatarAlt: string
     currentPasswordPlaceholder: string
     newPasswordPlaceholder: string
     currentPasswordRequired: string
@@ -465,6 +472,13 @@ const en: LocaleSchema = {
     newPassword: 'New password',
     changePassword: 'Change password',
     personalInfo: 'Personal information',
+    avatarChange: 'Change photo',
+    avatarRemove: 'Remove photo',
+    avatarUpdated: 'Profile photo updated',
+    avatarRemoved: 'Profile photo removed',
+    avatarTooLarge: 'The photo must not exceed {max} MB.',
+    avatarInvalidType: 'Choose a PNG, JPEG or WebP image.',
+    avatarAlt: 'Profile photo',
     currentPasswordPlaceholder: 'Enter your current password',
     newPasswordPlaceholder: 'Enter a new password',
     currentPasswordRequired: 'Current password is required.',

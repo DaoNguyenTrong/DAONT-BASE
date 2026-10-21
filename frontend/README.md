@@ -18,6 +18,6 @@ bun run test:e2e      # playwright — requires `bun run test:e2e:install` once,
 
 Re-run `bun run codegen` after a backend contract change to refresh `src/api/generated/**`.
 
-Copy `.env.example` to `.env` and adjust `VITE_API_BASE_URL` if the backend isn't on `http://localhost:7000`.
+Copy `.env.example` to `.env` and adjust `VITE_API_BASE_URL` if the backend isn't on `http://localhost:7100`.
 
 For a deployed build, the API base URL can also be overridden at runtime — copy `public/config.example.json` to `public/config.json` (gitignored) with the real backend URL and drop it alongside the built `dist/` output. If present and valid, it takes priority over the build-time `VITE_API_BASE_URL`; if absent or invalid, the build-time value is used. This lets one build get deployed to multiple environments without rebuilding. (Testing this locally with `bun run dev`: `public/` isn't watched — see `vite.config.ts`'s `server.watch.ignored` — so restart the dev server after adding/editing `public/config.json`, it won't hot-reload.)

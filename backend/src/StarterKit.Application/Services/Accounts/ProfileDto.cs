@@ -9,4 +9,5 @@ public sealed record ProfileDto(
     string Username,
     string Email,
     bool EmailConfirmed,
-    bool HasPassword);
+    bool HasPassword,
+    string? AvatarUrl = null);

@@ -31,6 +31,23 @@ services:
     volumes:
       - starterkit-seaweedfs-data:/data
 
+  # Opt-in (`docker compose --profile minio up -d minio`): AIStor Free needs a license file, MINIO_LICENSE_FILE
+  # (default ./minio.license, gitignored). Without one the container exits at start-up.
+  minio:
+    image: quay.io/minio/aistor/minio:RELEASE.2026-09-19T17-05-25Z
+    profiles: ["minio"]
+    restart: unless-stopped
+    command: server /data --console-address ":9001" --license /minio.license
+    environment:
+      MINIO_ROOT_USER: starterkit
+      MINIO_ROOT_PASSWORD: starterkit-secret
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Console
+    volumes:
+      - starterkit-minio-data:/data
+      - ${MINIO_LICENSE_FILE:-./minio.license}:/minio.license:ro
+
   prometheus:
     image: prom/prometheus:v3.13.2
     ports:
@@ -58,3 +75,4 @@ services:
 volumes:
   starterkit-postgres-data:
   starterkit-seaweedfs-data:
+  starterkit-minio-data:

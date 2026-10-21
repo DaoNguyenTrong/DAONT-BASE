@@ -36,4 +36,26 @@ public class StoragePathGeneratorTests
 
         Assert.NotEqual(first, second);
     }
+
+    [Fact]
+    public void Generate_WithFolder_PrefixesThePath()
+    {
+        StoragePathGenerator generator = new();
+
+        string path = generator.Generate("a.png", "public/avatars");
+
+        Assert.StartsWith("public/avatars/", path);
+        Assert.EndsWith(".png", path);
+    }
+
+    [Theory]
+    [InlineData("../secrets")]
+    [InlineData("/abs")]
+    [InlineData("a//b")]
+    public void Generate_FolderEscapingTheRoot_Throws(string folder)
+    {
+        StoragePathGenerator generator = new();
+
+        Assert.Throws<ArgumentException>(() => generator.Generate("a.png", folder));
+    }
 }

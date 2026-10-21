@@ -70,7 +70,7 @@ public class RegistrationServiceTests
         // Same rationale as AuthServiceTests: TokenIssuer has no I/O beyond the collaborators already
         // substituted here, so wiring the real implementation preserves VerifyEmailAsync's pre-split
         // token-issuing assertions unchanged.
-        ITokenIssuer tokenIssuer = new TokenIssuer(unitOfWork, jwtTokenService, permissionResolver, jwtOptions);
+        ITokenIssuer tokenIssuer = new TokenIssuer(unitOfWork, jwtTokenService, permissionResolver, jwtOptions, Options.Create(new StorageSettings()));
 
         RegistrationService service = new(
             unitOfWork,

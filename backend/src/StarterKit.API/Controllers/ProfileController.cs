@@ -34,6 +34,38 @@ public sealed class ProfileController(IAccountService accountService) : Controll
         return Ok(profile);
     }
 
+    /// <summary>
+    /// Sets the current user's avatar. Send as multipart/form-data; PNG, JPEG or WebP, 2 MB at most.
+    /// </summary>
+    [HttpPut("avatar")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(ProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ProfileDto>> UploadAvatar(
+        IFormFile avatar,
+        CancellationToken cancellationToken)
+    {
+        await using Stream content = avatar.OpenReadStream();
+
+        ProfileDto profile = await accountService.UploadAvatarAsync(
+            new AvatarUploadRequest(content, avatar.ContentType, avatar.Length),
+            cancellationToken);
+
+        return Ok(profile);
+    }
+
+    /// <summary>Removes the avatar of the currently authenticated user, if any.</summary>
+    [HttpDelete("avatar")]
+    [ProducesResponseType(typeof(ProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ProfileDto>> DeleteAvatar(CancellationToken cancellationToken)
+    {
+        ProfileDto profile = await accountService.DeleteAvatarAsync(cancellationToken);
+
+        return Ok(profile);
+    }
+
     /// <summary>Changes the password of the currently authenticated user.</summary>
     [HttpPut("password")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
