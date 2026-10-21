@@ -16,9 +16,9 @@ public sealed class UnitOfWork(
         where T : BaseEntity<TId>
         where TId : notnull
     {
-        var key = (typeof(T), typeof(TId));
+        (Type, Type) key = (typeof(T), typeof(TId));
 
-        if (!repositories.TryGetValue(key, out var repository))
+        if (!repositories.TryGetValue(key, out object? repository))
         {
             repository = serviceProvider.GetRequiredService<IRepository<T, TId>>();
             repositories[key] = repository;
@@ -30,9 +30,9 @@ public sealed class UnitOfWork(
     public IRepository<T> Repository<T>()
         where T : BaseEntity
     {
-        var key = (typeof(T), typeof(int));
+        (Type, Type) key = (typeof(T), typeof(int));
 
-        if (!repositories.TryGetValue(key, out var repository))
+        if (!repositories.TryGetValue(key, out object? repository))
         {
             repository = serviceProvider.GetRequiredService<IRepository<T>>();
             repositories[key] = repository;

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -32,18 +33,18 @@ public sealed class UserTimeZoneMiddleware(RequestDelegate next)
             return;
         }
 
-        if (!context.Request.Headers.TryGetValue(TimeZoneHeaderName, out var headerValues)
+        if (!context.Request.Headers.TryGetValue(TimeZoneHeaderName, out StringValues headerValues)
             || string.IsNullOrWhiteSpace(headerValues.ToString()))
         {
             await WriteProblemAsync(context, $"Missing required header '{TimeZoneHeaderName}'.");
             return;
         }
 
-        var timeZoneId = headerValues.ToString();
+        string timeZoneId = headerValues.ToString();
 
         try
         {
-            var timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            TimeZoneInfo timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
             context.Items[UserTimeZoneItemKey] = timeZone;
             context.Items[UserTimeZoneIdItemKey] = timeZone.Id;
         }
@@ -63,7 +64,7 @@ public sealed class UserTimeZoneMiddleware(RequestDelegate next)
 
     private static Task WriteProblemAsync(HttpContext context, string detail)
     {
-        var problemDetails = new ProblemDetails
+        ProblemDetails problemDetails = new()
         {
             Status = StatusCodes.Status400BadRequest,
             Title = "Bad Request",

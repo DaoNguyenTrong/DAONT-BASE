@@ -21,9 +21,9 @@ public sealed class JwtTokenService(IOptions<JwtSettings> options) : IJwtTokenSe
             throw new InvalidOperationException("At least one JWT audience is required.");
         }
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.SecretKey));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var claims = new List<Claim>
+        SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(settings.SecretKey));
+        SigningCredentials credentials = new(key, SecurityAlgorithms.HmacSha256);
+        List<Claim> claims = new()
         {
             new(ClaimTypes.NameIdentifier, account.Id.ToString()),
             new(ClaimTypes.Name, account.Username),
@@ -39,7 +39,7 @@ public sealed class JwtTokenService(IOptions<JwtSettings> options) : IJwtTokenSe
 
         claims.Add(new Claim(IJwtTokenService.SessionIdClaimType, sessionId.ToString()));
 
-        var token = new JwtSecurityToken(
+        JwtSecurityToken token = new(
             issuer: settings.Issuer,
             audience: settings.Audiences[0],
             claims: claims,

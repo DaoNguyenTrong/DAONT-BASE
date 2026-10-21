@@ -2,6 +2,9 @@
   <PropertyGroup>
     <BuildInParallel>false</BuildInParallel>
 
+    <!-- Applies the IDE rules in the root .editorconfig at build time, so CI fails on them -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
     <!-- MinVer Configuration -->
     <MinVerTagPrefix>v</MinVerTagPrefix>
     <MinVerDefaultPreReleaseIdentifiers>preview</MinVerDefaultPreReleaseIdentifiers>

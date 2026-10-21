@@ -29,7 +29,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration
@@ -154,7 +154,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // One-shot commands (`-- migrate`, see Commands/ICliCommand.cs) need only configuration and DI: run them right
 // after Build(), before any startup step below touches Postgres, Hangfire or storage, and exit with their code.
