@@ -94,6 +94,10 @@ internal static class AuthExtensions
                     ApiKeyAuthenticationHandler.SchemeName)
                 .Build();
 
+            // Fail closed: an endpoint or middleware path that declares no access requires a signed-in caller.
+            // Anonymous ones opt out with [AllowAnonymous] / .AllowAnonymous() (authentication.md).
+            options.FallbackPolicy = options.DefaultPolicy;
+
             options.AddPolicy(
                 AuthorizationPolicies.OrganizationMember,
                 policy => policy.AddRequirements(new OrganizationMembershipRequirement()));

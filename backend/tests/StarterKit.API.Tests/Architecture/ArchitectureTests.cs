@@ -1,5 +1,8 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Domain.Entities;
 using StarterKit.Domain.Exceptions;
@@ -10,7 +13,7 @@ namespace StarterKit.API.Tests.Architecture;
 /// <summary>
 /// Architecture rules the compiler doesn't enforce (<c>ProjectReference</c>s already fix project direction): no
 /// infrastructure package in an inner layer, no Infrastructure <c>using</c> in a controller, no public entity
-/// constructor, no namespace dependency cycles inside one project.
+/// constructor, no controller action or hub without a declared access, no namespace dependency cycles.
 /// </summary>
 public sealed class ArchitectureTests
 {
@@ -73,6 +76,33 @@ public sealed class ArchitectureTests
     }
 
     /// <summary>
+    /// Every controller action and hub states its access with <c>[Authorize]</c> or <c>[AllowAnonymous]</c>, on
+    /// itself or its class. The fallback policy already denies a forgotten one at run time; this names it in CI.
+    /// </summary>
+    [Fact]
+    public void ControllerActionsAndHubs_DeclareAuthorizeOrAllowAnonymous()
+    {
+        Type[] controllers = [.. Api.GetTypes()
+            .Where(type => type is { IsClass: true, IsAbstract: false } && typeof(ControllerBase).IsAssignableFrom(type))];
+        Assert.NotEmpty(controllers);
+
+        string[] actions = [.. controllers
+            .SelectMany(controller => controller
+                .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Where(action => !action.IsSpecialName && !action.IsDefined(typeof(NonActionAttribute), inherit: true))
+                .Where(action => !DeclaresAccess(action) && !DeclaresAccess(controller))
+                .Select(action => $"{controller.Name}.{action.Name}"))];
+        string[] hubs = [.. new[] { Api, Infrastructure }
+            .SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type is { IsClass: true, IsAbstract: false } && typeof(Hub).IsAssignableFrom(type))
+            .Where(hub => !DeclaresAccess(hub))
+            .Select(hub => hub.Name)];
+
+        Assert.Empty(actions);
+        Assert.Empty(hubs);
+    }
+
+    /// <summary>
     /// Exceptions defined in Domain/Application must go through <see cref="AppException"/> so the middleware maps
     /// them to the right status code and localization key — a bare <see cref="Exception"/> escaping becomes a 500.
     /// </summary>
@@ -123,6 +153,9 @@ public sealed class ArchitectureTests
 
         Assert.Empty(offenders);
     }
+
+    private static bool DeclaresAccess(MemberInfo member) =>
+        member.GetCustomAttributes(inherit: true).Any(attribute => attribute is IAuthorizeData or IAllowAnonymous);
 
     private static bool IsEntity(Type type)
     {

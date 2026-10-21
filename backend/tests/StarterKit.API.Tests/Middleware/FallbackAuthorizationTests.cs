@@ -1,0 +1,65 @@
+using System.Net;
+using Microsoft.Extensions.DependencyInjection;
+using StarterKit.API.Tests.TestSupport;
+using StarterKit.Domain.Entities;
+using StarterKit.Infrastructure.Persistence;
+
+namespace StarterKit.API.Tests.Middleware;
+
+/// <summary>
+/// The fallback policy denies anything that declares no access; the endpoints that are meant to be anonymous
+/// must opt out explicitly, or they turn into 401s.
+/// </summary>
+[Collection(nameof(ApiCollection))]
+public sealed class FallbackAuthorizationTests(ApiFactoryFixture fixture) : IAsyncLifetime
+{
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public Task DisposeAsync() => fixture.ResetAsync();
+
+    private AppDbContext CreateDbContext() =>
+        fixture.Services.CreateScope().ServiceProvider.GetRequiredService<AppDbContext>();
+
+    // Fallback policy
+    [Fact]
+    public async Task UnmappedApiRoute_WithoutToken_ReturnsUnauthorized()
+    {
+        HttpClient client = fixture.CreateTestClient();
+
+        HttpResponseMessage response = await client.GetAsync("/api/does-not-exist");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UnmappedApiRoute_WithToken_ReturnsNotFound()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        Account account;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            account = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "fallback-user", email: "fallback@example.com");
+        }
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(account));
+
+        HttpResponseMessage response = await client.GetAsync("/api/does-not-exist");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    // Anonymous endpoints outside the controllers
+    [Theory]
+    [InlineData("/metrics")]
+    [InlineData("/hangfire")]
+    [InlineData("/hangfire/recurring")]
+    [InlineData("/openapi/v1.json")]
+    [InlineData("/scalar/v1")]
+    public async Task OperationalEndpoint_WithoutToken_IsServed(string path)
+    {
+        HttpClient client = fixture.CreateTestClient();
+
+        HttpResponseMessage response = await client.GetAsync(path);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+}
