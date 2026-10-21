@@ -9,6 +9,10 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-10-21 — Authorization fails closed: fallback policy plus an architecture test
+
+Endpoints were public unless they carried `[Authorize]`, so a forgotten attribute silently exposed data. The fallback policy (the default policy: JWT or API key) makes it a 401 and also covers `Map...` endpoints; the architecture test names the offending action in CI. Cost: anonymous surfaces opt out explicitly — `/metrics` and `/hangfire` no longer skip auth implicitly (supersedes the 2026-08-03 monitoring note), and unmapped routes answer 401 to anonymous callers. Rejected: test only (misses non-controller endpoints), fallback only (silent until someone hits it).
+
 ### 2026-10-20 — Docs-only PRs merge through a gated project command
 
 The repo has no reviewer account, GitHub does not let an author approve their own PR, and branch protection is unavailable on private repos under the Free plan. The merge gate therefore lives in the project's own `/git-accept` command: required CI checks green, agent review with no blocking finding, and docs-only scope. Rejected: manual-only merge (a bottleneck for a solo maintainer) and a GitHub App approver for now (needs a second identity). Code, workflows, rules and auth changes stay manual. The gate runs client-side, so it is not a hard control.
