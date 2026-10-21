@@ -118,7 +118,7 @@ If the superpowers plugin is installed, its skills yield to this file. Where a s
 
 ## Critical Invariants
 
-**Entity Pattern** — private constructor + `static Create(XxxParams p)` factory + `Update(XxxParams p)`. Domain validation lives in `Update`. Never construct entities via EF or Mapperly — always use the factory.
+**Entity Pattern** — entities are built only through their `static Create(XxxParams p)` factory (validation in `Update`), never via EF, Mapperly or by hand. Details: `code-conventions.md` § Entity Pattern; enforced by `ArchitectureTests.cs`.
 
 ## Decision Log
 

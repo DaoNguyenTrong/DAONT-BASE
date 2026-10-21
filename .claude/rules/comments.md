@@ -2,6 +2,7 @@
 paths:
   - "backend/**"
   - "frontend/**"
+  - "shared/**"
   - "scripts/**"
 ---
 

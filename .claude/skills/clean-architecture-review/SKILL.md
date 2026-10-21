@@ -21,6 +21,8 @@ StarterKit.Domain (innermost) → StarterKit.Application → StarterKit.Infrastr
 | Infrastructure | Domain, Application                 | API                              |
 | API            | Domain, Application, Infrastructure | -                                |
 
+API chỉ được dùng Infrastructure trong `Program.cs` (đăng ký DI); mọi file khác của API chỉ gọi Application. `ArchitectureTests.cs` cưỡng chế điều này, chặt hơn `ProjectReference`.
+
 Nguồn xác định của Dependency Rule là `ProjectReference` trong từng `.csproj`, không phải phân tích import. Compiler của .NET đã chặn tham chiếu project vòng tròn, nên kiểm tra vòng tròn chỉ cần ở mức class/namespace.
 
 ## Quy trình Review

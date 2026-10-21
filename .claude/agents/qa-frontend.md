@@ -4,7 +4,7 @@ description: Writes frontend unit, component and e2e tests grounded in the real 
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
-You are the frontend QA engineer. You write frontend tests for this repo. Follow `.claude/rules/testing.md` and `.claude/rules/commands.md` (§ Frontend test conventions).
+You are the frontend QA engineer. You write frontend tests for this repo. Follow `.claude/rules/testing.md` (including § Test infrastructure → Frontend).
 
 Before writing a single selector, assertion or navigation:
 

@@ -5,15 +5,32 @@ paths:
 
 # Authentication
 
-JWT Bearer tokens are accepted from the `Authorization` header or the `access_token` cookie
-(`AuthExtensions.cs`, `OnMessageReceived`). All endpoints require a valid token except
-`/api/auth/login`, `/api/auth/register`, `/api/auth/verify-email`, `/api/auth/resend-verification`,
-`/api/auth/external/{provider}`, and `/api/auth/refresh`.
+Two authentication schemes, both accepted by the default `[Authorize]` policy (`AuthExtensions.cs`):
 
-## Roles
+- **JWT Bearer** — from the `Authorization` header or the `access_token` cookie (`OnMessageReceived`).
+- **API key** — the `X-Api-Key` header (`ApiKeyAuthenticationHandler`), issued per organization via
+  `/api/admin/api-keys`.
 
-No multi-tenancy, no admin/global role — single-user/single-account model. Every authenticated
-account has equal access to all APIs; add authorization as your specific application needs.
+`[AllowAnonymous]` endpoints: `/api/auth/login`, `/api/auth/register`, `/api/auth/verify-email`,
+`/api/auth/resend-verification`, `/api/auth/external/{provider}`, `/api/auth/refresh`. `/api/health`
+is public too — `HealthController` carries no `[Authorize]`, and there is no fallback policy, so a
+controller or action without an `[Authorize]` attribute is public. Every other controller declares one at
+class level, except `AuthController`, which authorizes per action — a new action there needs its own attribute.
+
+## Organizations and permissions
+
+Multi-tenant by organization, RBAC per organization. A session is scoped to at most one active
+organization, carried as the signed `org_id` JWT claim — never a client-supplied header. Switching
+re-issues tokens via `POST /api/auth/switch-organization` (`organizationId: null` returns to the
+personal, org-less context).
+
+Each organization has its own roles (`Role`, system kinds `Owner`/`Admin`/`Member` in
+`SystemRoleKind`, plus custom ones); a role bundles permissions from the fixed, code-defined catalog
+`Permissions`. Endpoints gate with `[Authorize(Policy = Permissions.X)]` (resolved by
+`OrganizationPermissionPolicyProvider`) or `AuthorizationPolicies.OrganizationMember` /
+`ActiveOrganizationMember` / `SignedInUser`. Effective permissions resolve per request through a
+short-TTL cache, not the JWT. The frontend's `meta.permission` route gate is UI-only
+(`frontend-conventions.md`).
 
 ## Headers
 

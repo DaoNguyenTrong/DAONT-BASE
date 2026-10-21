@@ -1,12 +1,6 @@
 # Serena — Symbol Navigation
 
-Call `mcp__serena__initial_instructions` at the start of any coding task to load Serena's working instructions.
-
-**When to reach for Serena:** after CodeGraph has told you *which* module or class is involved. Serena is the drill; CodeGraph is the map. If you don't yet know where to look, orient with CodeGraph first.
-
-Scope của từng tool (backend, frontend, và tool nào bị giới hạn): xem AGENTS.md § Tool Selection. File này chỉ ghi các giới hạn chi tiết không có ở đó.
-
-Serena operates at the LSP/symbol level — precise, file-scoped. For cross-module call graphs and service wiring, use CodeGraph instead.
+When to use Serena vs CodeGraph, and each tool's scope: `AGENTS.md` § Tool Selection. This file records only the detailed limitations behind that table.
 
 ## Known limitation: frontend caller-search and rename are unreliable
 
@@ -16,7 +10,7 @@ Serena operates at the LSP/symbol level — precise, file-scoped. For cross-modu
 - Cross-file function calls, auto-imported (`mapValidationErrors`): 1/3 found, and only by manually chaining two `find_referencing_symbols` calls through the auto-import shim file (`src/typings/auto-imports.d.ts`).
 - Cross-file function calls, **explicitly imported** (`formatDeviceInfo`, real `import` statement, no auto-import involved): 0/1 found — proves the gap is not caused by auto-import.
 
-Root cause: Serena runs `typescript` and `vue` as separate language-server processes; a `find_referencing_symbols` query rooted in one does not see files owned by the other. `find_declaration` (the reverse direction — usage → declaration) is unaffected and resolves correctly across `.ts`/`.vue` in every case tested, which is why the read-only tools above stay accurate — they never need to search across that process boundary.
+Root cause: Serena runs `typescript` and `vue` as separate language-server processes; a `find_referencing_symbols` query rooted in one does not see files owned by the other. `find_declaration` (the reverse direction — usage → declaration) is unaffected and resolves correctly across `.ts`/`.vue` in every case tested, which is why the read-only tools (`find_symbol`, `get_symbols_overview`, `find_declaration`) stay accurate — they never need to search across that process boundary.
 
 **Consequence:** never trust `find_referencing_symbols`/`rename_symbol` for a symbol that might be called from `.vue` — including plain `.ts` functions and utilities, since a `.vue` caller stays invisible even when the query starts from the `.ts` declaration. Use `codegraph_explore`'s blast-radius for impact-check on any frontend symbol instead (verified 100% recall on all three cases above). For a frontend rename, use the blast-radius file list to edit each occurrence manually, then run `bun run --cwd frontend test:run` to confirm nothing was missed.
 

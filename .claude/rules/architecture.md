@@ -13,7 +13,7 @@ Clean Architecture — four layers:
 |----------------|---------------------------|-------------------------------------------------------------------------|
 | Domain         | `StarterKit.Domain`         | Entities, interfaces (`IRepository<T,TId>`), domain exceptions          |
 | Application    | `StarterKit.Application`    | Service interfaces & implementations, DTOs, settings, Mapperly mappings |
-| Infrastructure | `StarterKit.Infrastructure` | EF Core (PostgreSQL), repositories, JWT, AI services                    |
+| Infrastructure | `StarterKit.Infrastructure` | EF Core (PostgreSQL), repositories, JWT/API-key auth, caching, storage, email, Hangfire jobs |
 | API            | `StarterKit.API`            | Controllers, middleware, OpenAPI/Scalar, `Program.cs`                   |
 
 Dependencies flow inward: API → Application → Domain. Infrastructure implements Domain interfaces.
