@@ -9,7 +9,7 @@ Vue 3 + Vite + TypeScript, Pinia, naive-ui, Tailwind, vue-i18n. Package manager 
 
 ## File & Naming Conventions
 
-- Components/views: PascalCase, `*View.vue` suffix for route-level views (`frontend/src/views/ProfileView.vue`).
+- Components/views: PascalCase, `*View.vue` suffix for route-level views (`frontend/src/views/OrganizationsView.vue`).
 - Composables: kebab-case file, `use*` export (`frontend/src/composables/use-sidebar-menu.ts` → `useSidebarMenu`).
 - Stores: kebab-case file, `use*Store` export via Pinia (`frontend/src/stores/auth.ts` → `useAuthStore`).
 - No hand-written per-resource API modules — call the generated client directly (see API Layer below).

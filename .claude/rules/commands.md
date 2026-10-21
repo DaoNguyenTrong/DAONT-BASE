@@ -109,7 +109,7 @@ bun run --cwd frontend test:run
 # E2E tests (playwright — install browsers once with test:e2e:install)
 bun run --cwd frontend test:e2e
 
-# Format (prettier — there is no ESLint config in this project; do not add one without confirming with the user)
+# Format (prettier) — ESLint runs only the layer-boundary rules, see frontend-conventions.md § Formatting & Linting
 bun run --cwd frontend format
 ```
 

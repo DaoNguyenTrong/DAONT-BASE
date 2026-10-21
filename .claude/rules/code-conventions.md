@@ -21,18 +21,13 @@ IRepository<Account, Guid> repository = unitOfWork.Repository<Account, Guid>();
 - **camelCase**: local variables, parameters; also primary-constructor-derived private fields
 - **\_camelCase**: private fields in traditional-constructor classes
 
-```csharp
-// Primary constructor — parameters captured directly, extra fields are camelCase
-public sealed class AuthService(IOptions<JwtSettings> jwtOptions) : IAuthService
-{
-    private readonly JwtSettings jwtSettings = jwtOptions.Value; // camelCase
-}
+Services use primary constructors (no traditional-constructor service exists in `backend/src`), so their private
+fields are camelCase:
 
-// Traditional constructor — fields are _camelCase
-public sealed class SemanticKernelLlmService : ILlmService
+```csharp
+public sealed class AuthController(IOptions<JwtSettings> jwtOptions, ...) : ControllerBase
 {
-    private readonly ILogger<SemanticKernelLlmService> _logger;
-    public SemanticKernelLlmService(ILogger<SemanticKernelLlmService> logger) => _logger = logger;
+    private readonly JwtSettings jwtSettings = jwtOptions.Value; // camelCase, not _jwtSettings
 }
 ```
 
@@ -51,17 +46,17 @@ public sealed class SemanticKernelLlmService : ILlmService
 Entities use **private constructor + `Create(XxxParams)` factory + `Update(XxxParams)`**. All domain validation lives in `Update`.
 
 ```csharp
-public record ProjectParams(string Name, long MonthlyTokenLimit);
+public record OrganizationParams(string Name, string Slug, bool Status = true);
 
-public sealed class Project : BaseEntity
+public sealed class Organization : BaseEntity
 {
-    private Project() { }
-    public static Project Create(ProjectParams p) { Project e = new(); e.Update(p); return e; }
-    public void Update(ProjectParams p) { /* validate then assign */ }
+    private Organization() { }
+    public static Organization Create(OrganizationParams p) { Organization e = new(); e.Update(p); return e; }
+    public void Update(OrganizationParams p) { /* validate then assign */ }
 }
 
 // In service
-Project project = Project.Create(request.ToParams());  // ToParams() = Mapperly extension
+Organization organization = Organization.Create(request.ToParams());  // ToParams() = Mapperly extension
 ```
 
 Never construct entities via EF or Mapperly directly — that bypasses domain validation.
@@ -81,13 +76,13 @@ await repository.AddAsync(entity, ct);
 await unitOfWork.SaveChangesAsync(ct);
 
 // Update — repository.Update() required to re-attach detached entity
-Project project = await repository.GetByIdAsync(id, ct) ?? throw new NotFoundException(...);
-project.Update(request.ToParams());
-repository.Update(project);   // marks ALL columns modified
+Organization organization = await repository.GetByIdAsync(id, ct) ?? throw new NotFoundException(...);
+organization.Update(request.ToParams());
+repository.Update(organization);   // marks ALL columns modified
 await unitOfWork.SaveChangesAsync(ct);
 
 // Delete
-repository.Delete(project);   // handles detached automatically
+repository.Delete(organization);   // handles detached automatically
 await unitOfWork.SaveChangesAsync(ct);
 ```
 
