@@ -9,14 +9,9 @@ public interface INotificationService
     Task NotifyAsync(NotificationParams request, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Stores every broadcast for every recipient in <b>one</b> save and dispatches it in as few background jobs
-    /// as the chunk size allows. A recipient that already has a broadcast's <see cref="NotificationBroadcast.DedupeKey"/>
-    /// is skipped, so a re-run source doesn't notify twice; without a key nothing is deduplicated.
+    /// One save for all broadcasts; skips recipients already holding the <see cref="NotificationBroadcast.DedupeKey"/>
+    /// (null: no dedupe). Racing runs may both pass it; the unique index fails the later save, whose retry re-checks.
     /// </summary>
-    /// <remarks>
-    /// The skip is a check before the write. Two runs racing on the same key can both pass it; the unique index
-    /// then fails the later save, and its caller (e.g. Hangfire's retry) runs again into the check.
-    /// </remarks>
     /// <returns>How many notifications were actually created.</returns>
     Task<int> NotifyManyAsync(IReadOnlyCollection<NotificationBroadcast> broadcasts, CancellationToken cancellationToken);
 

@@ -79,12 +79,8 @@ html {
 }
 
 // --- Naive UI form-item feedback ---
-// NFormItem reserves min-height: var(--n-feedback-height) (~24-26px) unconditionally — naive-ui
-// only gates the *padding* on `:not(:empty)`, not the height — so every field keeps an empty gap
-// below it when valid. There's no GlobalThemeOverrides token for this (same limitation noted for
-// the Alert override in theme/naive-theme.ts), so it's overridden here directly. `!important` is
-// needed because naive-ui injects its own styles into <head> at runtime (after this stylesheet),
-// so normal cascade order can't be relied on to make this rule win.
+// NFormItem reserves the feedback height even when empty, with no theme token to change it;
+// `!important` because naive-ui injects its styles into <head> after this stylesheet.
 .n-form-item-feedback-wrapper {
   min-height: 0 !important;
 

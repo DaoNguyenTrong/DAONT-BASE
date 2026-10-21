@@ -693,10 +693,8 @@ public sealed class AuthControllerTests(ApiFactoryFixture fixture) : IAsyncLifet
     [Fact]
     public async Task ApiKeyHeader_AuthenticatesAgainstCombinedPolicy()
     {
-        // ApiKeyAuthenticationHandler issues no ClaimTypes.NameIdentifier claim and no org_id claim,
-        // so neither a "current user"-scoped endpoint like /sessions nor an organization-scoped one
-        // like ApiKeysController.GetAll can be used here — PermissionsController.GetAll is a static,
-        // org-independent catalog behind bare [Authorize], so it works for either scheme.
+        // The API-key handler issues no NameIdentifier or org_id claim, so user- and org-scoped endpoints won't work;
+        // PermissionsController.GetAll is an org-independent catalog behind bare [Authorize], so either scheme works.
         HttpClient client = fixture.CreateTestClient();
         Guid organizationId;
         string rawKey;

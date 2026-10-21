@@ -21,7 +21,7 @@ Both the backend API and the frontend UI support Vietnamese (`vi`, default) and 
 
 ## Frontend Message Files
 
-vue-i18n, locale files at `frontend/src/locales/{vi,en}.ts` (plus `naive-ui.ts` for the component library's own locale). Add both `vi` and `en` keys whenever adding new user-facing UI text.
+vue-i18n, locale files at `frontend/src/locales/{vi,en}.ts` (plus `naive-ui.ts` for the component library's own locale). Add both `vi` and `en` keys whenever adding new user-facing UI text. Components read text via `useI18n()`; locale switching goes through `useLocaleStore` (`frontend/src/stores/locale-store.ts`), never `i18n.global.locale` directly.
 
 ## Cross-Cutting Rule
 

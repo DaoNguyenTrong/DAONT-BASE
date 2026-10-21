@@ -13,10 +13,8 @@ internal sealed class MemoryCacheService(
     private readonly CacheSettings settings = cacheOptions.Value;
     private readonly ConcurrentDictionary<string, long> scopeGenerations = new();
 
-    // Per-key generation, bumped by RemoveAsync — same reason as the scope generation: a GetOrSetAsync
-    // whose factory was already running when the key was removed must write into a generation nobody
-    // reads anymore, rather than re-publish the just-invalidated value under the live key. Only keys
-    // ever removed get an entry here.
+    // Per-key generation, bumped by RemoveAsync (entries exist only for removed keys): a GetOrSetAsync whose factory
+    // was running when the key was removed then writes into a dead generation instead of re-publishing the stale value.
     private readonly ConcurrentDictionary<string, long> keyGenerations = new();
 
     public Task<T?> GetAsync<T>(string scope, string key, CancellationToken cancellationToken = default)
@@ -47,10 +45,8 @@ internal sealed class MemoryCacheService(
     {
         string physicalKey = PhysicalKey(scope, key);
 
-        // Can't reuse GetAsync + null-check here: for an unconstrained T instantiated with a
-        // value type (e.g. bool), "T?" erases to plain T at runtime, so a cache MISS and a
-        // legitimately cached default(T) (false, 0, ...) are indistinguishable via nullability
-        // alone. TryGetValue's own bool result is the only reliable hit/miss signal for any T.
+        // Not GetAsync + null-check: for a value-type T, "T?" erases to T, so a miss and a cached default(T)
+        // (false, 0) look the same. TryGetValue's bool is the only reliable hit/miss signal for any T.
         if (memoryCache.TryGetValue(physicalKey, out T? cachedValue))
         {
             return cachedValue!;
@@ -98,10 +94,8 @@ internal sealed class MemoryCacheService(
     // U+0001 (SOH) is never expected to appear in a cache scope or key.
     private const char ScopeSeparator = '\u0001';
 
-    // Splices the scope's current generation into the physical key so InvalidateScopeAsync can drop
-    // every entry under a scope with one atomic counter bump instead of enumerating and evicting keys
-    // — the same technique a distributed cache (e.g. Redis, via INCR) uses to make scope invalidation
-    // visible to every instance immediately, unlike per-process key tracking.
+    // Splices the scope's generation into the key, so InvalidateScopeAsync drops a whole scope with one atomic
+    // counter bump instead of enumerating keys — the technique Redis uses via INCR, visible to every instance.
     private string PhysicalKey(string scope, string key)
     {
         long scopeGeneration = scopeGenerations.GetOrAdd(scope, 0);

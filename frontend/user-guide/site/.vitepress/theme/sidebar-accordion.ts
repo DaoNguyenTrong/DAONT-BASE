@@ -1,10 +1,9 @@
 import { nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute } from 'vitepress'
 
-// The sidebar keeps one chapter open at a time. VitePress has no such mode: each group
-// (VPSidebarItem) keeps its own open/closed state, opens itself when it holds the current page and
-// never closes again. That state isn't exposed, so a group is closed by clicking its own caret —
-// the user's path, not a copy of the theme's component. Only level-0 groups exist (chapter › page).
+// One chapter open at a time. VitePress has no such mode and doesn't expose a group's open state,
+// so a group is closed by clicking its own caret rather than by copying the theme's component.
+// Only level-0 groups exist (chapter › page).
 const GROUP = '.VPSidebar .VPSidebarItem.level-0.collapsible'
 
 function caretOf(group: Element) {

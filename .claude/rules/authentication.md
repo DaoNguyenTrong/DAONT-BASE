@@ -5,15 +5,45 @@ paths:
 
 # Authentication
 
-JWT Bearer tokens are accepted from the `Authorization` header or the `access_token` cookie
-(`AuthExtensions.cs`, `OnMessageReceived`). All endpoints require a valid token except
-`/api/auth/login`, `/api/auth/register`, `/api/auth/verify-email`, `/api/auth/resend-verification`,
-`/api/auth/external/{provider}`, and `/api/auth/refresh`.
+Two authentication schemes, both accepted by the default `[Authorize]` policy (`AuthExtensions.cs`):
 
-## Roles
+- **JWT Bearer** — from the `Authorization` header or the `access_token` cookie (`OnMessageReceived`).
+- **API key** — the `X-Api-Key` header (`ApiKeyAuthenticationHandler`), issued per organization via
+  `/api/admin/api-keys`.
 
-No multi-tenancy, no admin/global role — single-user/single-account model. Every authenticated
-account has equal access to all APIs; add authorization as your specific application needs.
+**Deny by default.** `FallbackPolicy` is the default policy, so any endpoint — or middleware path after
+`UseAuthorization` — that declares no access requires a signed-in caller; an unmapped route answers 401 to an
+anonymous caller, 404 to a signed-in one (an `/api` request without `X-TimeZone` gets 400 first). Anonymous
+surfaces opt out explicitly:
+
+- Controllers: `[AllowAnonymous]` on `HealthController` and on `AuthController`'s `login`, `register`,
+  `verify-email`, `resend-verification`, `external/{provider}` and `refresh` (pinned by their controller tests).
+- `Program.cs`: `.AllowAnonymous()` on `/metrics`, `/hangfire` and the dev-only OpenAPI/Scalar routes (pinned by
+  `FallbackAuthorizationTests`). A new `Map...` endpoint meant to be public needs the same call. `/metrics` and
+  `/hangfire` (full job control, no app-level check) rely on the deployment: nginx answers 404 for both and the
+  `api` service publishes no port. A deployment that lets clients reach the API directly exposes them.
+
+Outside deny-by-default — answered before `UseAuthorization`: CORS preflights (`UseCors`) and Local-storage
+files (`UseStaticFiles` on `StorageSettings:PublicUrlBase`), which anyone holding a file's URL can read.
+
+`ArchitectureTests.ControllerActionsAndHubs_DeclareAuthorizeOrAllowAnonymous` also fails CI for a controller
+action (inherited ones included) or hub with neither attribute, on itself or its class — choose one explicitly.
+Controllers declare it at class level except `AuthController`, which authorizes per action.
+
+## Organizations and permissions
+
+Multi-tenant by organization, RBAC per organization. A session is scoped to at most one active
+organization, carried as the signed `org_id` JWT claim — never a client-supplied header. Switching
+re-issues tokens via `POST /api/auth/switch-organization` (`organizationId: null` returns to the
+personal, org-less context).
+
+Each organization has its own roles (`Role`, system kinds `Owner`/`Admin`/`Member` in
+`SystemRoleKind`, plus custom ones); a role bundles permissions from the fixed, code-defined catalog
+`Permissions`. Endpoints gate with `[Authorize(Policy = Permissions.X)]` (resolved by
+`OrganizationPermissionPolicyProvider`) or `AuthorizationPolicies.OrganizationMember` /
+`ActiveOrganizationMember` / `SignedInUser`. Effective permissions resolve per request through a
+short-TTL cache, not the JWT. The frontend's `meta.permission` route gate is UI-only
+(`frontend-conventions.md`).
 
 ## Headers
 

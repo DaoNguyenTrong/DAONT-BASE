@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
 using StarterKit.Application.Common.Interfaces;
 
 namespace StarterKit.Infrastructure.Services.Context;
@@ -17,21 +18,21 @@ public sealed class UserTimeZoneProvider(IHttpContextAccessor httpContextAccesso
 
     public DateTime ConvertToUtc(DateTime localDateTime)
     {
-        var unspecifiedDateTime = DateTime.SpecifyKind(localDateTime, DateTimeKind.Unspecified);
+        DateTime unspecifiedDateTime = DateTime.SpecifyKind(localDateTime, DateTimeKind.Unspecified);
 
         return TimeZoneInfo.ConvertTimeToUtc(unspecifiedDateTime, UserTimeZone);
     }
 
     public DateTime ConvertFromUtc(DateTime utcDateTime)
     {
-        var utc = DateTime.SpecifyKind(utcDateTime, DateTimeKind.Utc);
+        DateTime utc = DateTime.SpecifyKind(utcDateTime, DateTimeKind.Utc);
 
         return TimeZoneInfo.ConvertTimeFromUtc(utc, UserTimeZone);
     }
 
     private TimeZoneInfo ResolveUserTimeZone()
     {
-        var httpContext = httpContextAccessor.HttpContext;
+        HttpContext? httpContext = httpContextAccessor.HttpContext;
 
         if (httpContext is null)
         {
@@ -48,7 +49,7 @@ public sealed class UserTimeZoneProvider(IHttpContextAccessor httpContextAccesso
             return FindTimeZoneOrUtc(timeZoneId);
         }
 
-        if (httpContext.Request.Headers.TryGetValue(TimeZoneHeaderName, out var headerValues))
+        if (httpContext.Request.Headers.TryGetValue(TimeZoneHeaderName, out StringValues headerValues))
         {
             return FindTimeZoneOrUtc(headerValues.ToString());
         }

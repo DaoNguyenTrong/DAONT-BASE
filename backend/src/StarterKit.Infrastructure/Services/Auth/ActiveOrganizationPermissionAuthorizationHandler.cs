@@ -5,10 +5,9 @@ using StarterKit.Application.Common.Interfaces;
 namespace StarterKit.Infrastructure.Services.Auth;
 
 /// <summary>
-/// Claims-based counterpart to <see cref="OrganizationPermissionAuthorizationHandler"/> — resolves
-/// the organization from <see cref="ICurrentTenantProvider"/> (the JWT <c>org_id</c> claim) instead
-/// of an <c>{id}</c> route segment. See <see cref="ActiveOrganizationMembershipAuthorizationHandler"/>
-/// for why these resources aren't nested under <c>/organizations/{id}</c>.
+/// Like <see cref="OrganizationPermissionAuthorizationHandler"/>, but the organization comes from the JWT <c>org_id</c>
+/// claim (<see cref="ICurrentTenantProvider"/>), not an <c>{id}</c> route segment. Why these resources aren't under
+/// <c>/organizations/{id}</c>: see <see cref="ActiveOrganizationMembershipAuthorizationHandler"/>.
 /// </summary>
 internal sealed class ActiveOrganizationPermissionAuthorizationHandler(
     IHttpContextAccessor httpContextAccessor,

@@ -28,7 +28,7 @@ internal sealed class AuditEntry(EntityEntry entry)
 
     public AuditLog ToAuditLog(DateTime timestamp)
     {
-        var entityId = Entry.Properties
+        string entityId = Entry.Properties
             .FirstOrDefault(p => p.Metadata.Name == "Id")?
             .CurrentValue?.ToString() ?? string.Empty;
 

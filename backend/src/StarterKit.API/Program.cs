@@ -29,7 +29,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration
@@ -154,7 +154,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // One-shot commands (`-- migrate`, see Commands/ICliCommand.cs) need only configuration and DI: run them right
 // after Build(), before any startup step below touches Postgres, Hangfire or storage, and exit with their code.
@@ -165,11 +165,9 @@ if (await CliCommands.TryRunAsync(app.Services, args, CancellationToken.None) is
     return commandExitCode;
 }
 
-// The build-time OpenAPI export (-p:OpenApiGenerateDocumentsOnBuild=true) runs this file inside the
-// GetDocument.Insider tool to build the host, then reads the document without starting the server.
-// Every startup step that reaches Postgres or S3 is skipped there, so the export needs no running
-// services and doesn't fail with connection errors that look like contract errors. New startup work
-// that touches an external service belongs behind this flag too.
+// The build-time OpenAPI export (-p:OpenApiGenerateDocumentsOnBuild=true) builds the host in GetDocument.Insider
+// without starting it. Startup steps that reach Postgres or S3 are skipped there so the export needs no services;
+// new startup work that touches an external service belongs behind this flag too.
 bool isOpenApiExport = Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider";
 
 if (!isOpenApiExport)
@@ -187,11 +185,9 @@ if (!isOpenApiExport)
 }
 
 app.UseForwardedHeaders();
-// No UseHttpsRedirection(): no layer in this stack terminates TLS today (nginx in
-// docker-compose.prod.yml only listens on :80; see README "Production (Docker)"). With no HTTPS
-// port ever discoverable, the middleware doesn't actually redirect anything — verified empirically
-// — but it does log a "Failed to determine the https port for redirect" warning on every request
-// that reaches it. Re-add once TLS terminates somewhere in front (nginx or an external LB).
+// No UseHttpsRedirection(): nothing here terminates TLS (nginx in docker-compose.prod.yml listens on :80 only; see
+// README "Production (Docker)"), so it would redirect nothing and log "Failed to determine the https port for
+// redirect" on every request. Re-add once TLS terminates in front (nginx or an external LB).
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging();
 app.UseRequestLocalization();
@@ -206,8 +202,8 @@ app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapOpenApi().AllowAnonymous();
+    app.MapScalarApiReference().AllowAnonymous();
 }
 
 StorageSettings storageSettings = app.Services.GetRequiredService<IOptions<StorageSettings>>().Value;
@@ -230,21 +226,21 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<TenantAccessMiddleware>();
 
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
+app.MapHangfireDashboard("/hangfire", new DashboardOptions
 {
     // Access is restricted at the network layer (internal LAN only, not internet-exposed) —
     // the default LocalRequestsOnlyAuthorizationFilter would incorrectly block real LAN
     // clients once UseForwardedHeaders() rewrites RemoteIpAddress to the real client IP.
     Authorization = []
-});
+}).AllowAnonymous();
 
 app.MapControllers();
 
 app.MapHub<NotificationHub>("/hubs/notifications");
 
-// Not under /api, so it already skips UserTimeZoneMiddleware/rate limiting/auth like /hangfire —
+// Not under /api, so it skips UserTimeZoneMiddleware and rate limiting; anonymous like /hangfire —
 // restrict at the network layer (internal only) the same way, not exposed to the internet.
-app.MapMetrics();
+app.MapMetrics().AllowAnonymous();
 
 app.Run();
 

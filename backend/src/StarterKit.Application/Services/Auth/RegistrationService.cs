@@ -131,10 +131,8 @@ public sealed class RegistrationService(
         await unitOfWork.Repository<EmailVerificationToken, Guid>().AddAsync(token, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Frontend router uses createWebHashHistory() (hash-based routing) — a plain path URL
-        // resolves to "/" before vue-router ever sees "verify-email", tripping the home route's
-        // requiresAuth guard and bouncing the (not-yet-authenticated) user to /login instead of
-        // VerifyEmailView. The route must live after "#/" so vue-router picks it up.
+        // The frontend uses hash routing (createWebHashHistory()): a plain path resolves to "/", whose requiresAuth
+        // guard bounces the not-yet-signed-in user to /login instead of VerifyEmailView, so the route must follow "#/".
         string verificationUrl = $"{emailSettings.FrontendBaseUrl.TrimEnd('/')}/#/verify-email?token={rawToken}";
         // The name is whatever the registrant typed — and anyone can register with someone else's address —
         // so it is encoded like every other value placed in mail HTML (see NotificationEmailTemplates).
@@ -152,10 +150,9 @@ public sealed class RegistrationService(
         }
         catch (Exception exception)
         {
-            // Account + token đã commit — lỗi gửi mail (SMTP chưa cấu hình/đang lỗi) không được
-            // biến 1 RegisterAsync/ResendVerificationEmailAsync thành công thành lỗi phía caller,
-            // nếu không user sẽ bị kẹt: retry đăng ký cùng username thì gặp 409 "đã tồn tại" mà
-            // không có lối thoát. User dùng "Gửi lại email xác thực" để thử lại sau khi SMTP ổn.
+            // Account + token đã commit — lỗi gửi mail (SMTP chưa cấu hình/đang lỗi) không được làm
+            // RegisterAsync/ResendVerificationEmailAsync lỗi phía caller, nếu không đăng ký lại cùng username sẽ gặp
+            // 409 "đã tồn tại" không lối thoát. User dùng "Gửi lại email xác thực" để thử lại khi SMTP ổn.
             logger.LogError(exception, "Failed to send verification email to account {AccountId}", account.Id);
         }
     }

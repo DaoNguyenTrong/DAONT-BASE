@@ -6,11 +6,11 @@ This file provides guidance to Claude Code when working with this repository.
 
 Three top-level trees, each with its own stack and rule surface:
 
-| Path        | Stack                                                                                                    | Relevant rules                                                               |
-| ----------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `backend/`  | .NET 10, Clean Architecture (Domain → Application → Infrastructure → API)                                | `architecture.md`, `code-conventions.md`, `authentication.md`, `commands.md` |
-| `frontend/` | Vue 3 + Vite + TypeScript, Pinia, naive-ui, vue-i18n, Tailwind                                           | `frontend-conventions.md`, `commands.md`                                     |
-| `shared/`   | `openapi/` (contract exported from `backend`, consumed by `frontend`)                                   | `api-contract.md`                                                            |
+| Path        | Stack                                                                     | Relevant rules                                                                              |
+| ----------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `backend/`  | .NET 10, Clean Architecture (Domain → Application → Infrastructure → API) | `architecture.md`, `code-conventions.md`, `authentication.md`, `commands.md`, `comments.md` |
+| `frontend/` | Vue 3 + Vite + TypeScript, Pinia, naive-ui, vue-i18n, Tailwind            | `frontend-conventions.md`, `commands.md`, `comments.md`                                     |
+| `shared/`   | `openapi/` (contract exported from `backend`, consumed by `frontend`)     | `api-contract.md`                                                                           |
 
 `shared/openapi/` is the reason this is a monorepo rather than two separate repos: the backend's OpenAPI export is meant to be the single source of truth the frontend generates its client/types from (see `.claude/decisions.md` — "Monorepo: backend/frontend/shared, overriding..."). Codegen is wired up: `orval` regenerates `frontend/src/api/generated/**` (gitignored) from the committed `openapi.json` on every `bun install` — see `api-contract.md` for the regenerate workflow.
 
@@ -118,7 +118,7 @@ If the superpowers plugin is installed, its skills yield to this file. Where a s
 
 ## Critical Invariants
 
-**Entity Pattern** — private constructor + `static Create(XxxParams p)` factory + `Update(XxxParams p)`. Domain validation lives in `Update`. Never construct entities via EF or Mapperly — always use the factory.
+**Entity Pattern** — entities are built only through their `static Create(XxxParams p)` factory (validation in `Update`), never via EF, Mapperly or by hand. Details: `code-conventions.md` § Entity Pattern; enforced by `ArchitectureTests.cs`.
 
 ## Decision Log
 

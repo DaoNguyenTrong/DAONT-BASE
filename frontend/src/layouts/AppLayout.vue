@@ -38,11 +38,9 @@ onUnmounted(() => {
 
 <template>
   <!--
-    `relative` on the shell and on `main` is load-bearing: an absolutely positioned element with no
-    positioned ancestor (an `sr-only` label, a hidden table caption) takes the page as its containing
-    block, escapes every `overflow` clip and stretches the document — the whole shell then scrolls up
-    and exposes a blank strip. `h-dvh`, not `h-screen`: on mobile `100vh` includes the area under the
-    browser's address bar, hiding the footer.
+    `relative` on the shell and `main` is load-bearing: without a positioned ancestor, an absolute
+    element (an `sr-only` label) escapes every `overflow` clip and the shell scrolls. `h-dvh`, not
+    `h-screen`: mobile `100vh` includes the area under the address bar, hiding the footer.
   -->
   <div
     data-testid="app-shell"

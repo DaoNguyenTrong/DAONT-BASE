@@ -1,13 +1,7 @@
 /**
- * The one gate every `VITE_*` value passes through — no other file reads `import.meta.env.VITE_*`.
- * `getRuntimeConfig()` overlays the deploy-time `/config.json` (see `public/config.example.json`),
- * fetched once by `loadRuntimeConfig()` in `main.ts`'s `bootstrap()`, over the build-time `VITE_*`
- * default, key by key. One built image can therefore enable OAuth/push or point at another backend
- * per environment without a rebuild; local dev keeps working from `.env` alone.
- *
- * Never call `getRuntimeConfig()` at a plain `.ts` module's top level: that freezes the value at
- * first import, possibly before `loadRuntimeConfig()` resolved. Call it inside a function body —
- * a composable, a store action, or `<script setup>` (per-instance setup code, so always safe).
+ * The only reader of `import.meta.env.VITE_*`; deploy-time `/config.json` overrides each key, so
+ * one image serves every environment. Never call `getRuntimeConfig()` at a module's top level: it
+ * can freeze the value before `loadRuntimeConfig()` resolves. Call it inside a function body.
  */
 
 export interface RuntimeConfig {
@@ -58,10 +52,8 @@ function readBuildTimeDefaults(): ResolvedRuntimeConfig {
 let overrides: RuntimeConfig = {}
 
 /**
- * Fetches `/config.json` (a static file, not processed by Vite) and keeps every recognized key whose
- * value is a non-blank string. Never throws: a missing, unreachable or malformed file — or a field
- * that fails validation — just means the build-time default applies for that key. Call once at boot,
- * before any value is read (see `main.ts`).
+ * Keeps each recognized `/config.json` key with a non-blank string value. Never throws: a missing
+ * or malformed file or field falls back to the build-time default. Call once at boot, before reads.
  */
 export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   overrides = await fetchOverrides()

@@ -3,16 +3,10 @@ import { NSelect } from 'naive-ui'
 import type { SelectOption, SelectProps } from 'naive-ui'
 
 /**
- * Drop-in for Naive UI `n-select`, wired in for every `<n-select>` by the components resolver in
- * `vite.config.ts`, so templates keep writing `<n-select>`:
- * - with `deselectable`, picking the selected option of a single select again clears it
- *   (`resolveSelectUpdate`). Opt-in: Naive highlights the current option when the menu opens, so
- *   Enter-to-open then Enter-to-close re-picks it, which must not empty an ordinary form field;
- * - a `filterable` select matches accent-insensitively and in any word order, with typo
- *   tolerance only when no option matches (`createSearchTextMatcher`), unless the caller passes
- *   its own `filter`.
+ * Drop-in for every `<n-select>` (via the `vite.config.ts` resolver); `filterable` uses
+ * `createSearchTextMatcher` unless a `filter` is passed. `deselectable` is opt-in: Naive highlights
+ * the current option on open, so Enter-to-open, Enter-to-close would otherwise empty a form field.
  */
-
 defineOptions({ inheritAttrs: false })
 
 // options and the two field names are props, not attrs, so the matcher below rebuilds when they
@@ -29,10 +23,9 @@ const props = defineProps<{
 }>()
 
 /**
- * Naive UI's own handler type, not a wide union: Naive declares its parameters as an
- * intersection on purpose, so a handler written for the value it actually receives
- * (`(value: string) => void`) stays assignable at the call site. That type can't express the
- * `null` a `deselectable` select emits — its handler must accept `null` itself.
+ * Naive UI's own handler type, not a wide union: its intersection parameters keep narrow handlers
+ * (`(value: string) => void`) assignable. It can't express the `null` a `deselectable` select
+ * emits, so that handler must accept `null` itself.
  */
 type NaiveOnUpdateValue = Extract<
   NonNullable<SelectProps['onUpdateValue']>,

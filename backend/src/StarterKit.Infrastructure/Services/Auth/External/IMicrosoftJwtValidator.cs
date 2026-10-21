@@ -16,10 +16,9 @@ internal interface IMicrosoftJwtValidator
         string credential, string tenantId, string clientId, CancellationToken cancellationToken);
 }
 
-// login.microsoftonline.com/{tenant}/v2.0's discovery document reports its Issuer as the literal
-// template "https://login.microsoftonline.com/{tenantid}/v2.0" when tenant is common/organizations/
-// consumers — there is no single fixed issuer to compare against for those tenants, so the
-// placeholder is turned into a regex instead of relying on TokenValidationParameters.ValidIssuer.
+// For common/organizations/consumers tenants the discovery document's Issuer is the literal template
+// "https://login.microsoftonline.com/{tenantid}/v2.0" — no fixed issuer exists, so the placeholder becomes
+// a regex instead of TokenValidationParameters.ValidIssuer.
 internal sealed class MicrosoftJwtValidator : IMicrosoftJwtValidator
 {
     private static readonly ConcurrentDictionary<string, ConfigurationManager<OpenIdConnectConfiguration>> ConfigManagers = new();
@@ -63,11 +62,8 @@ internal sealed class MicrosoftJwtValidator : IMicrosoftJwtValidator
         return new MicrosoftTokenPayload(subject, email, name);
     }
 
-    // Regex.Escape("{tenantid}") only escapes the opening brace ("\{tenantid}", no backslash
-    // before the closing brace), so a naive Regex.Escape(issuerTemplate).Replace("\\{tenantid\\}", ...)
-    // never matches and silently leaves the literal "{tenantid}" in the pattern — which then never
-    // matches any real issuer, failing every login. Splitting on the raw placeholder before escaping
-    // avoids depending on Regex.Escape's exact output for the braces.
+    // Regex.Escape escapes only the opening brace ("\{tenantid}"), so escaping first and then replacing the
+    // placeholder silently never matches — failing every login. Split on the raw placeholder before escaping.
     internal static Regex BuildIssuerPattern(string issuerTemplate)
     {
         string[] segments = issuerTemplate.Split("{tenantid}");

@@ -1,5 +1,8 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using StarterKit.Application.Common.Interfaces;
 using StarterKit.Domain.Entities;
 using StarterKit.Domain.Exceptions;
@@ -8,10 +11,9 @@ using StarterKit.Infrastructure.Persistence;
 namespace StarterKit.API.Tests.Architecture;
 
 /// <summary>
-/// Architecture rules the compiler doesn't hold for us. <c>ProjectReference</c>s already fix the direction
-/// between projects; these catch what still slips through: an infrastructure package pulled into an inner
-/// layer, an Infrastructure <c>using</c> in a controller, an entity with a public constructor, and dependency
-/// cycles between namespaces inside one project.
+/// Architecture rules the compiler doesn't enforce (<c>ProjectReference</c>s already fix project direction): no
+/// infrastructure package in an inner layer, no Infrastructure <c>using</c> in a controller, no public entity
+/// constructor, no controller action or hub without a declared access, no namespace dependency cycles.
 /// </summary>
 public sealed class ArchitectureTests
 {
@@ -74,6 +76,35 @@ public sealed class ArchitectureTests
     }
 
     /// <summary>
+    /// Every controller action and hub states its access with <c>[Authorize]</c> or <c>[AllowAnonymous]</c>, on
+    /// itself or its class. The fallback policy already denies a forgotten one at run time; this names it in CI.
+    /// </summary>
+    [Fact]
+    public void ControllerActionsAndHubs_DeclareAuthorizeOrAllowAnonymous()
+    {
+        Type[] controllers = [.. Api.GetTypes()
+            .Where(type => type is { IsClass: true, IsAbstract: false } && typeof(ControllerBase).IsAssignableFrom(type))];
+        Assert.NotEmpty(controllers);
+
+        string[] actions = [.. controllers
+            .SelectMany(controller => controller
+                // Not DeclaredOnly: an action inherited from an abstract base controller is still an action.
+                .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                .Where(action => action.DeclaringType != typeof(object) && action.DeclaringType != typeof(ControllerBase))
+                .Where(action => !action.IsSpecialName && !action.IsDefined(typeof(NonActionAttribute), inherit: true))
+                .Where(action => !DeclaresAccess(action) && !DeclaresAccess(controller))
+                .Select(action => $"{controller.Name}.{action.Name}"))];
+        string[] hubs = [.. new[] { Api, Infrastructure }
+            .SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type is { IsClass: true, IsAbstract: false } && typeof(Hub).IsAssignableFrom(type))
+            .Where(hub => !DeclaresAccess(hub))
+            .Select(hub => hub.Name)];
+
+        Assert.Empty(actions);
+        Assert.Empty(hubs);
+    }
+
+    /// <summary>
     /// Exceptions defined in Domain/Application must go through <see cref="AppException"/> so the middleware maps
     /// them to the right status code and localization key — a bare <see cref="Exception"/> escaping becomes a 500.
     /// </summary>
@@ -89,16 +120,10 @@ public sealed class ArchitectureTests
     }
 
     /// <summary>
-    /// No dependency cycles between namespaces (by <c>using</c>, grouped at <c>StarterKit.Layer.X.Y</c>). The
-    /// failure lists every edge inside a cycle — removing one of them (move the shared type to the side that is
-    /// depended on, or split out a new namespace) is enough to break it.
+    /// No namespace cycles by <c>using</c>, grouped at <c>StarterKit.Layer.X.Y</c>; removing one listed edge breaks a
+    /// cycle. Split at segment four (<c>Services.Sessions</c>, not <c>Services.Auth.Sessions</c>); deeper fold in.
+    /// A <c>cref</c> needs a <c>using</c>, which adds an edge: write the relative name instead.
     /// </summary>
-    /// <remarks>
-    /// Child namespaces fold into the parent sharing their first four segments, so splitting part of one out to
-    /// break a cycle must change the fourth segment (<c>Services.Sessions</c>, not <c>Services.Auth.Sessions</c>).
-    /// A reference made only for documentation (<c>cref</c>) needs a <c>using</c> too; write the relative name
-    /// instead of adding one.
-    /// </remarks>
     [Fact]
     public void Namespaces_HaveNoDependencyCycles()
     {
@@ -130,6 +155,9 @@ public sealed class ArchitectureTests
 
         Assert.Empty(offenders);
     }
+
+    private static bool DeclaresAccess(MemberInfo member) =>
+        member.GetCustomAttributes(inherit: true).Any(attribute => attribute is IAuthorizeData or IAllowAnonymous);
 
     private static bool IsEntity(Type type)
     {

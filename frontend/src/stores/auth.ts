@@ -19,9 +19,9 @@ export const useAuthStore = defineStore('auth', () => {
   const account = ref<Account | null>(null)
   const organizationId = ref<string | null>(null)
   const organizationName = ref<string | null>(null)
-  // Active-org permission set — refreshed on login/refreshToken (an organization switch reloads the page, see useOrganizationSwitch), same
-  // staleness characteristics organizationId/organizationName already have. A UI-only gate;
-  // the real authorization boundary is always the server's per-request permission check.
+  // Active-org permissions, refreshed on login/refreshToken; an org switch reloads the page
+  // (useOrganizationSwitch). Same staleness as organizationId/organizationName. UI-only gate:
+  // the server's per-request permission check is the real authorization boundary.
   const permissions = ref<string[]>([])
   const client = getAuth()
 
@@ -92,10 +92,9 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       clearKeepLoginPreference()
       clearAuth()
-      // Synchronously, right after clearAuth: the session-lapse watcher in App.vue reacts to the
-      // same isAuthenticated flip with a reload to login?redirect=<current page>. The logout's
-      // plain login must win (first call wins), or the next account to sign in in this tab is sent
-      // to the previous account's page.
+      // Synchronously after clearAuth: App.vue's session-lapse watcher reloads to
+      // login?redirect=<current page> on the same flip. This plain reload must win (first call
+      // wins), or the next account to sign in here lands on the previous account's page.
       reloadToLogin()
     }
   }

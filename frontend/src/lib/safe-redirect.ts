@@ -1,14 +1,7 @@
 /**
- * A `redirect` value pulled from the URL query is attacker-controllable — a
- * crafted `/login?redirect=https://evil.example` link would otherwise bounce the
- * user off-origin right after they authenticate (open redirect).
- *
- * Only follow the value when it is an app-internal, root-relative path. Reject:
- *  - non-strings / empty
- *  - absolute URLs (`https://…`, `mailto:…`)
- *  - protocol-relative (`//host`) and the backslash form browsers normalise to it
- *  - values that don't start at the root (`foo/bar`)
- *  - the auth screens themselves (avoids a pointless post-login hop back to /login)
+ * `redirect` is attacker-controllable (open redirect): only a root-relative app path is followed.
+ * Rejects non-strings/empty, absolute (`https:`, `mailto:`) and non-root (`foo/bar`) values,
+ * `//host` and the `/\` form browsers normalise to it, and the auth screens (no hop to /login).
  */
 const AUTH_PATHS = ['/login', '/register']
 
@@ -30,13 +23,9 @@ export function safeRedirectTarget(value: unknown): string | null {
 }
 
 /**
- * nginx sends a reader without a session to `/#/guide-auth?next=<path>`, and that view
- * sends them back with a full page load. `next` is attacker-controllable, so only a path
- * inside the user guide is followed; anything else opens the guide's home page. Rejected:
- *  - paths outside `/guide/` (an app route, `/guidex`, absolute and protocol-relative URLs)
- *  - `//` and `\` anywhere (browsers resolve them to another host) and `..`, raw or as `%2e`
- *    (climbs out of the guide)
- *  - control characters, raw or percent-encoded (CR/LF would split the redirect's headers)
+ * `next` from nginx's `/#/guide-auth` is attacker-controllable: a path outside `/guide/`, any `//`
+ * or `\` (another host), `..` raw or as `%2e` (escapes the guide), or a control character raw or
+ * percent-encoded (CR/LF splits the redirect's headers) falls back to the guide's home page.
  */
 export const GUIDE_HOME = '/guide/'
 

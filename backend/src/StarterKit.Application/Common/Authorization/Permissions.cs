@@ -11,10 +11,9 @@ public static class Permissions
     public const string SettingsManage = "settings.manage";
 
     /// <summary>
-    /// Permission codes checked against the caller's active organization (the JWT <c>org_id</c>
-    /// claim, resolved via <c>ICurrentTenantProvider</c>) rather than an <c>{id}</c> route segment —
-    /// see <c>ActiveOrganizationPermissionAuthorizationHandler</c>. Every code here must also
-    /// appear in <see cref="All"/>.
+    /// Permission codes checked against the caller's active organization (the JWT <c>org_id</c> claim, via
+    /// <c>ICurrentTenantProvider</c>) rather than an <c>{id}</c> route segment; see
+    /// <c>ActiveOrganizationPermissionAuthorizationHandler</c>. Every code here must also appear in <see cref="All"/>.
     /// </summary>
     public static readonly IReadOnlyList<string> ActiveOrganizationScoped =
     [

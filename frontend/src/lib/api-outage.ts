@@ -1,13 +1,8 @@
 import { ApiError } from '@/api/types'
 
 /**
- * True when an error means the API itself is unreachable or broken — a 5xx from
- * the API (or the proxy in front of it), or no response at all (network / DNS /
- * connection refused).
- *
- * A 4xx is explicitly NOT an outage: the server is up and answering, so it stays
- * a normal error (e.g. a 401 with no valid session must still route to /login,
- * not to the full-screen ServerErrorScreen).
+ * True when the API is unreachable or broken: a 5xx (from the API or its proxy) or no response.
+ * A 4xx is never an outage — e.g. a 401 must still route to /login, not to ServerErrorScreen.
  */
 export function isServerOutage(error: unknown): boolean {
   const status =

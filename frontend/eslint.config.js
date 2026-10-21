@@ -2,8 +2,9 @@ import boundaries from 'eslint-plugin-boundaries'
 import vueParser from 'vue-eslint-parser'
 import tseslint from 'typescript-eslint'
 
-// Layer boundaries only: no style rules. Dependencies point down the stack. lib and api stay out of state and UI, stores
-// stay out of UI, components never reach routed views or layouts, and views are only routed to.
+// Layer boundaries only, no style rules; dependencies point down the stack. lib and api stay out of
+// state and UI, stores stay out of UI, components never reach routed views or layouts, and views
+// are only routed to.
 const UI = ['components', 'composables', 'layouts', 'views', 'router']
 
 export default [

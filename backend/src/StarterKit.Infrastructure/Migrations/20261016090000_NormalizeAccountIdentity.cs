@@ -7,25 +7,10 @@ using StarterKit.Infrastructure.Persistence;
 namespace StarterKit.Infrastructure.Migrations
 {
     /// <summary>
-    /// Data-only migration (no schema change): brings stored usernames and emails to the canonical
-    /// form <c>Account.NormalizeUsername</c>/<c>NormalizeEmail</c> now apply on every write and lookup
-    /// (trimmed, lower-case). Without it, any existing mixed-case row would stop matching its own
-    /// normalized login.
+    /// Data-only, re-runnable: trims and lower-cases stored usernames/emails to the form <c>Account.Normalize*</c>
+    /// applies. Aborts startup when two accounts differ only by case or padding — finding and resolving them, and why
+    /// every <c>lower()</c> pins the ICU collation: docs/persistence.md § NormalizeAccountIdentity.
     /// </summary>
-    /// <remarks>
-    /// Aborts — and with it startup, since migrations run in <c>Database.MigrateAsync</c> — when two
-    /// accounts differ only by case or padding: merging them silently would hand one person's data to
-    /// another. The message carries counts only (no emails in logs); find the rows with
-    /// <c>SELECT lower(btrim("Email") COLLATE "und-x-icu"), count(*) FROM accounts GROUP BY 1 HAVING count(*) > 1</c>
-    /// (same for "Username"), merge or rename them, then restart. Safe to re-run: normalized rows no
-    /// longer match the UPDATE filters.
-    /// <para>
-    /// Every <c>lower()</c> uses the ICU root collation explicitly: plain <c>lower()</c> follows the
-    /// database's ctype, and under a <c>C</c> locale it leaves non-ASCII letters (<c>É</c>) untouched
-    /// while the application's <c>ToLowerInvariant()</c> lowers them — the row would never match its
-    /// login. Requires a server built with ICU (the official postgres images are).
-    /// </para>
-    /// </remarks>
     [DbContext(typeof(AppDbContext))]
     [Migration("20261016090000_NormalizeAccountIdentity")]
     public partial class NormalizeAccountIdentity : Migration

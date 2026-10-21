@@ -4,10 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace StarterKit.API.Tests.TestSupport;
 
 /// <summary>
-/// Guards the test host's configuration: it must be the committed <c>appsettings.Example.json</c> plus the
-/// fixture's own overrides on every machine, never what a developer's gitignored <c>appsettings.json</c> holds.
-/// Without this a local lockout limit, cookie flag or Redis provider silently changes what the suite tests —
-/// green on one machine, red on CI, or worse, green because it reached a real service.
+/// The test host must run the committed <c>appsettings.Example.json</c> plus fixture overrides on every machine, never
+/// a developer's gitignored <c>appsettings.json</c>: local settings would silently change what the suite tests (green
+/// locally, red on CI, or green only because it reached a real service).
 /// </summary>
 [Collection(nameof(ApiCollection))]
 public sealed class TestHostConfigurationTests(ApiFactoryFixture fixture)

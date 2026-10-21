@@ -5,10 +5,8 @@ using Microsoft.Extensions.Configuration;
 namespace StarterKit.Infrastructure.Persistence;
 
 /// <summary>
-/// Enables <c>dotnet ef</c> without starting the full API host. Reads the same
-/// "ConnectionStrings:DefaultConnection" appsettings key as <c>Program.cs</c> — dotnet-ef sets the
-/// current directory to the startup project (StarterKit.API), so its appsettings.json /
-/// appsettings.{ASPNETCORE_ENVIRONMENT}.json are picked up from there.
+/// Enables <c>dotnet ef</c> without the API host. Reads the same "ConnectionStrings:DefaultConnection" key as
+/// <c>Program.cs</c>; dotnet-ef runs from the startup project (StarterKit.API), so its appsettings files apply.
 /// </summary>
 public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
