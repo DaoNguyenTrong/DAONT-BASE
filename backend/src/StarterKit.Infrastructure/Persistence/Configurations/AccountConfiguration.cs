@@ -17,6 +17,9 @@ public sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
             .HasMaxLength(200)
             .IsRequired();
 
+        builder.Property(account => account.AvatarPath)
+            .HasMaxLength(500);
+
         builder.Property(account => account.Phone)
             .HasMaxLength(20);
 

@@ -37,7 +37,14 @@ public class AccountServiceTests
             .Returns(1);
 
         AccountService service = new(
-            unitOfWork, currentUserService, passwordHasher, passwordAttempts, Options.Create(new LoginLockoutSettings()));
+            unitOfWork,
+            currentUserService,
+            passwordHasher,
+            passwordAttempts,
+            Options.Create(new LoginLockoutSettings()),
+            Substitute.For<IStorageService>(),
+            Options.Create(new StorageSettings()),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<AccountService>.Instance);
 
         return new Fixture(service, accountRepo, unitOfWork, currentUserService, passwordHasher, passwordAttempts);
     }

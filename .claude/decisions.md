@@ -9,6 +9,10 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-10-21 — Public files are served straight from storage; only `public/` is anonymously readable
+
+Streaming avatars through the API puts every image view on the app, and presigned URLs have no Local equivalent and defeat browser caching. All providers instead serve files from `PublicUrlBase`; the S3 providers get an anonymous-read policy scoped to `public/*`, so org-scoped files stay API-only. Cost: anything under `public/` is readable by anyone holding the URL, and `PublicUrlBase` must be browser-reachable per environment.
+
 ### 2026-10-21 — Authorization fails closed: fallback policy plus an architecture test
 
 Endpoints were public unless they carried `[Authorize]`, so a forgotten attribute silently exposed data. The fallback policy (the default policy: JWT or API key) makes it a 401 and also covers `Map...` endpoints; the architecture test names the offending action in CI. Cost: anonymous surfaces opt out explicitly — `/metrics` and `/hangfire` no longer skip auth implicitly (supersedes the 2026-08-03 monitoring note), and unmapped routes answer 401 to anonymous callers. Rejected: test only (misses non-controller endpoints), fallback only (silent until someone hits it).

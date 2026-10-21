@@ -14,7 +14,7 @@ import {
   type PreconditionData,
 } from '../../../user-guide/tools/lib'
 
-const api = 'http://localhost:7000/api'
+const api = 'http://localhost:7100/api'
 
 describe('parseLocales', () => {
   it.each([undefined, '', 'all'])('captures both languages for %j', (value) => {

@@ -55,7 +55,7 @@ Account verification email is required even in the dev environment — there is 
 **Monitoring:** the API exposes Prometheus metrics at `/metrics` (`prometheus-net.AspNetCore`). Grafana (`http://localhost:3000`, `admin`/`admin`) comes pre-provisioned with a Prometheus datasource and a "StarterKit API Overview" dashboard (request rate/errors/latency, process CPU/memory, GC) — see `monitoring/`. Since the API isn't containerized, Prometheus reaches it via `host.docker.internal`, which requires running it bound to all interfaces instead of the default loopback-only bind:
 
 ```bash
-dotnet run --project backend/src/StarterKit.API --urls http://0.0.0.0:7000
+dotnet run --project backend/src/StarterKit.API --urls http://0.0.0.0:7100
 ```
 
 Without this, the Prometheus target reads as `down` and the Grafana dashboard stays empty. Binding to `0.0.0.0` also exposes the API to your LAN while it's running — fine for local monitoring, just don't leave it running unattended.

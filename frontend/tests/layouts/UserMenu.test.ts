@@ -50,6 +50,21 @@ describe('UserMenu', () => {
     })
   })
 
+  it('shows the avatar image instead of the initials when the account has one', async () => {
+    const { wrapper } = await render({
+      id: '1',
+      name: 'Jane Doe',
+      username: 'jane',
+      avatarUrl: 'http://cdn.test/starterkit/public/avatars/a.png',
+    })
+
+    const avatar = wrapper.get('[data-testid="user-menu-avatar"]')
+    expect(avatar.get('img').attributes('src')).toBe(
+      'http://cdn.test/starterkit/public/avatars/a.png',
+    )
+    expect(avatar.text()).toBe('')
+  })
+
   it('shows initials, name and the current organization on the trigger', async () => {
     const { wrapper } = await render(
       { id: '1', name: 'Nguyễn Trọng', username: 'nt', email: 'nt@example.com' },
@@ -232,7 +247,9 @@ describe('UserMenu', () => {
       await profile.trigger('click')
       await flushPromises()
 
-      expect(document.activeElement).toBe(wrapper.get('[data-testid="app-header-user-menu"]').element)
+      expect(document.activeElement).toBe(
+        wrapper.get('[data-testid="app-header-user-menu"]').element,
+      )
     })
 
     it('closes on Tab and hands focus back to the trigger', async () => {

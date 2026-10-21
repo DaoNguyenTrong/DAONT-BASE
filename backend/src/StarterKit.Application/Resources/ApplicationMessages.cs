@@ -12,6 +12,7 @@ public static class ApplicationMessages
     public const string AccountEmailAlreadyExists = nameof(AccountEmailAlreadyExists);
     public const string FileIsRequired = nameof(FileIsRequired);
     public const string FileSizeExceeded = nameof(FileSizeExceeded);
+    public const string AvatarInvalidImage = nameof(AvatarInvalidImage);
     public const string FileContentTypeNotAllowed = nameof(FileContentTypeNotAllowed);
     public const string AuthenticatedUserRequired = nameof(AuthenticatedUserRequired);
     public const string AccountNotFound = nameof(AccountNotFound);

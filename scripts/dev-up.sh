@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Brings up the local stack the Playwright suite and manual testing run against: Postgres, Mailpit and SeaweedFS
-# in Docker, then the API on http://localhost:7000 with its database migrated and seeded (`seed-dev`). Safe to re-run.
+# in Docker, then the API on http://localhost:7100 with its database migrated and seeded (`seed-dev`). Safe to re-run.
 # Logs and the API PID go to verify-output/stack/ (gitignored). Stop it with scripts/dev-down.sh.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-API_URL="http://localhost:7000"
+API_URL="http://localhost:7100"
 STATE_DIR="$ROOT_DIR/verify-output/stack"
 PID_FILE="$STATE_DIR/api.pid"
 LOG_FILE="$STATE_DIR/api.log"
@@ -16,8 +16,8 @@ LOG_FILE="$STATE_DIR/api.log"
 export ASPNETCORE_ENVIRONMENT=Development
 # Overrides appsettings.json, which is per-machine and may point at another Postgres. These match docker-compose.yml.
 export ConnectionStrings__DefaultConnection="Host=localhost;Port=5433;Database=StarterKit_api;Username=dao;Password=12345aA@"
-# Vite dev server (5173) and the `vite preview` that Playwright serves (4173) both call this API.
-export CorsSettings__AllowedOrigins__0="http://localhost:5173"
+# Vite dev server (5175) and the `vite preview` that Playwright serves (4173) both call this API.
+export CorsSettings__AllowedOrigins__0="http://localhost:5175"
 export CorsSettings__AllowedOrigins__1="http://localhost:4173"
 # The default allows 5 sign-ins a minute per IP; the e2e suite and the verify scripts sign in far more often than that.
 export RateLimiterSettings__AuthPermitLimit=1000

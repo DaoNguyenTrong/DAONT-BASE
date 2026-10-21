@@ -75,6 +75,9 @@
   <data name="FileSizeExceeded" xml:space="preserve">
     <value>Kích thước tệp không được vượt quá {0} byte.</value>
   </data>
+  <data name="AvatarInvalidImage" xml:space="preserve">
+    <value>Ảnh đại diện phải là ảnh PNG, JPEG hoặc WebP hợp lệ.</value>
+  </data>
   <data name="FileContentTypeNotAllowed" xml:space="preserve">
     <value>Loại nội dung tệp không được phép.</value>
   </data>

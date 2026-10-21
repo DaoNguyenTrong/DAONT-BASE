@@ -254,4 +254,27 @@ public class AccountTests
 
         Assert.True(account.EmailConfirmed);
     }
+
+    [Fact]
+    public void SetAvatar_StoresTrimmedPath_AndNullClearsIt()
+    {
+        Account account = Account.Create(ValidParams());
+
+        account.SetAvatar("  public/avatars/a.png ");
+        Assert.Equal("public/avatars/a.png", account.AvatarPath);
+
+        account.SetAvatar(null);
+        Assert.Null(account.AvatarPath);
+    }
+
+    [Fact]
+    public void SetAvatar_BlankPath_ClearsIt()
+    {
+        Account account = Account.Create(ValidParams());
+        account.SetAvatar("public/avatars/a.png");
+
+        account.SetAvatar("   ");
+
+        Assert.Null(account.AvatarPath);
+    }
 }

@@ -18,7 +18,7 @@ export default defineConfig({
   outputDir: './.results',
   use: {
     ...devices['Desktop Chrome'],
-    baseURL: process.env.GUIDE_BASE_URL ?? 'http://localhost:5173',
+    baseURL: process.env.GUIDE_BASE_URL ?? 'http://localhost:5175',
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 1,
   },

@@ -8,9 +8,10 @@ internal sealed class StorageService(IStorageProvider storageProvider) : IStorag
         Stream content,
         string fileName,
         string contentType,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? folder = null)
     {
-        return storageProvider.UploadAsync(content, fileName, contentType, cancellationToken);
+        return storageProvider.UploadAsync(content, fileName, contentType, cancellationToken, folder);
     }
 
     public Task<Stream> DownloadAsync(string storagePath, CancellationToken cancellationToken)

@@ -15,6 +15,8 @@ public static partial class AccountMapper
     [MapperIgnoreSource(nameof(Account.PasswordChangeWindowStartedAt))]
     [MapperIgnoreSource(nameof(Account.PasswordChangeLockedUntil))]
     [MapperIgnoreSource(nameof(Account.PasswordHash))]
+    [MapperIgnoreSource(nameof(Account.AvatarPath))]
+    [MapperIgnoreTarget(nameof(AccountDto.AvatarUrl))]
     public static partial AccountDto ToDto(Account account);
 
     [MapperIgnoreSource(nameof(Account.CreatedAt))]
@@ -28,6 +30,8 @@ public static partial class AccountMapper
     [MapperIgnoreSource(nameof(Account.PasswordChangeWindowStartedAt))]
     [MapperIgnoreSource(nameof(Account.PasswordChangeLockedUntil))]
     [MapperIgnoreSource(nameof(Account.Status))]
+    [MapperIgnoreSource(nameof(Account.AvatarPath))]
+    [MapperIgnoreTarget(nameof(ProfileDto.AvatarUrl))]
     [MapProperty(nameof(Account.PasswordHash), nameof(ProfileDto.HasPassword))]
     public static partial ProfileDto ToProfileDto(Account account);
 
