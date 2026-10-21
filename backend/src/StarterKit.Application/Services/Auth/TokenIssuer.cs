@@ -10,9 +10,11 @@ internal sealed class TokenIssuer(
     IUnitOfWork unitOfWork,
     IJwtTokenService jwtTokenService,
     IPermissionResolver permissionResolver,
-    IOptions<JwtSettings> jwtOptions) : ITokenIssuer
+    IOptions<JwtSettings> jwtOptions,
+    IOptions<StorageSettings> storageOptions) : ITokenIssuer
 {
     private readonly JwtSettings jwtSettings = jwtOptions.Value;
+    private readonly StorageSettings storageSettings = storageOptions.Value;
 
     public async Task<Guid?> ResolveDefaultOrganizationIdAsync(Guid accountId, CancellationToken cancellationToken)
     {
@@ -65,7 +67,10 @@ internal sealed class TokenIssuer(
             accessToken,
             refreshToken,
             accessTokenExpiry,
-            AccountMapper.ToDto(account),
+            AccountMapper.ToDto(account) with
+            {
+                AvatarUrl = account.AvatarPath is null ? null : storageSettings.BuildPublicUrl(account.AvatarPath),
+            },
             isPersistent,
             organizationId,
             organizationName,

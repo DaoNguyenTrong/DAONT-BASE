@@ -218,4 +218,97 @@ public sealed class ProfileControllerTests(ApiFactoryFixture fixture) : IAsyncLi
         using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         return body.RootElement.TryGetProperty("code", out JsonElement code) ? code.GetString() : null;
     }
+
+    private static MultipartFormDataContent AvatarForm(byte[] bytes, string fileName, string contentType)
+    {
+        ByteArrayContent file = new(bytes);
+        file.Headers.ContentType = new(contentType);
+
+        return new MultipartFormDataContent { { file, "avatar", fileName } };
+    }
+
+    private static readonly byte[] TinyPng =
+    [
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52
+    ];
+
+    [Fact]
+    public async Task UploadAvatar_Unauthenticated_ReturnsUnauthorized()
+    {
+        HttpClient client = fixture.CreateTestClient();
+
+        HttpResponseMessage response = await client.PutAsync(
+            "/api/profile/avatar", AvatarForm(TinyPng, "a.png", "image/png"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteAvatar_Unauthenticated_ReturnsUnauthorized()
+    {
+        HttpClient client = fixture.CreateTestClient();
+
+        HttpResponseMessage response = await client.DeleteAsync("/api/profile/avatar");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UploadAvatar_Png_ReturnsProfileWithAvatarUrl_AndPersistsPath()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        Account account;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            account = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "avatar-ok-user", email: "avatar-ok@example.com");
+        }
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(account));
+
+        HttpResponseMessage response = await client.PutAsync(
+            "/api/profile/avatar", AvatarForm(TinyPng, "me.png", "image/png"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        string? url = body.RootElement.GetProperty("avatarUrl").GetString();
+        Assert.Contains("/public/avatars/", url);
+        await using AppDbContext verify = CreateDbContext();
+        Account saved = verify.Accounts.Single(a => a.Id == account.Id);
+        Assert.StartsWith("public/avatars/", saved.AvatarPath);
+    }
+
+    [Fact]
+    public async Task UploadAvatar_NotAnImage_ReturnsBadRequest()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        Account account;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            account = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "avatar-bad-user", email: "avatar-bad@example.com");
+        }
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(account));
+
+        HttpResponseMessage response = await client.PutAsync(
+            "/api/profile/avatar", AvatarForm("<svg/>"u8.ToArray(), "me.png", "image/png"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteAvatar_AfterUpload_ClearsAvatarUrl()
+    {
+        HttpClient client = fixture.CreateTestClient();
+        Account account;
+        await using (AppDbContext context = CreateDbContext())
+        {
+            account = await AuthTestHelper.SeedConfirmedAccountAsync(context, username: "avatar-del-user", email: "avatar-del@example.com");
+        }
+        client.DefaultRequestHeaders.Authorization = new("Bearer", AuthTestHelper.MintAccessToken(account));
+        await client.PutAsync("/api/profile/avatar", AvatarForm(TinyPng, "me.png", "image/png"));
+
+        HttpResponseMessage response = await client.DeleteAsync("/api/profile/avatar");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(JsonValueKind.Null, body.RootElement.GetProperty("avatarUrl").ValueKind);
+    }
 }

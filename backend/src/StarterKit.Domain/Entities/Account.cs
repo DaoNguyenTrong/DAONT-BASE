@@ -46,6 +46,12 @@ public sealed class Account : BaseEntity<Guid>
 
     public bool Status { get; private set; } = true;
 
+    /// <summary>Storage path of the profile picture, or <c>null</c> when none is set.</summary>
+    public string? AvatarPath { get; private set; }
+
+    public void SetAvatar(string? path) =>
+        AvatarPath = string.IsNullOrWhiteSpace(path) ? null : path.Trim();
+
     public string Username { get; private set; } = string.Empty;
 
     public string Email { get; private set; } = string.Empty;

@@ -5,6 +5,7 @@ import ProfileDialog from '@/components/ProfileDialog.vue'
 import * as feedback from '@/lib/feedback'
 import { server } from '../helpers/msw/server'
 import { renderComponent } from '../helpers/render'
+import { storeIn } from '../helpers/pinia'
 import type { ProfileDto, SessionDto } from '@/api/types'
 import en from '@/locales/en'
 import i18n from '@/plugins/i18n'
@@ -453,5 +454,170 @@ describe('ProfileDialog', () => {
     expect(revokeOthersCalled).toBe(true)
     expect(wrapper.text()).toContain('Chrome on Linux')
     expect(wrapper.text()).not.toContain('Firefox on macOS')
+  })
+
+  describe('avatar', () => {
+    function pickFile(wrapper: Awaited<ReturnType<typeof openDialog>>['wrapper'], file: File) {
+      const input = wrapper.find<HTMLInputElement>('[data-testid="profile-avatar-input"]')
+      Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
+      return input.trigger('change')
+    }
+
+    function pngFile(size = 10, type = 'image/png') {
+      return new File([new Uint8Array(size)], 'me.png', { type })
+    }
+
+    it('shows the initials and no remove button when there is no avatar', async () => {
+      server.use(http.get('*/api/profile', () => HttpResponse.json(makeProfile())))
+      mockSessions([])
+
+      const { wrapper } = await openDialog()
+
+      expect(wrapper.find('[data-testid="profile-avatar"]').text()).toBe('JD')
+      expect(wrapper.find('[data-testid="profile-avatar-remove"]').exists()).toBe(false)
+    })
+
+    it('shows the avatar image and a remove button when the profile has one', async () => {
+      server.use(
+        http.get('*/api/profile', () =>
+          HttpResponse.json(
+            makeProfile({ avatarUrl: 'http://cdn.test/starterkit/public/avatars/a.png' }),
+          ),
+        ),
+      )
+      mockSessions([])
+
+      const { wrapper } = await openDialog()
+
+      expect(wrapper.find('[data-testid="profile-avatar"] img').attributes('src')).toBe(
+        'http://cdn.test/starterkit/public/avatars/a.png',
+      )
+      expect(wrapper.find('[data-testid="profile-avatar-remove"]').exists()).toBe(true)
+    })
+
+    it('uploads the picked image and shows the returned avatar', async () => {
+      server.use(http.get('*/api/profile', () => HttpResponse.json(makeProfile())))
+      mockSessions([])
+      let uploaded: FormDataEntryValue | null = null
+      server.use(
+        http.put('*/api/profile/avatar', async ({ request }) => {
+          uploaded = (await request.formData()).get('avatar')
+          return HttpResponse.json(
+            makeProfile({ avatarUrl: 'http://cdn.test/starterkit/public/avatars/new.png' }),
+          )
+        }),
+      )
+      const successSpy = vi.spyOn(feedback, 'showSuccessMessage')
+      const { wrapper } = await openDialog()
+
+      await pickFile(wrapper, pngFile())
+      await flushPromises()
+
+      expect(uploaded).toBeInstanceOf(File)
+      expect(wrapper.find('[data-testid="profile-avatar"] img').attributes('src')).toBe(
+        'http://cdn.test/starterkit/public/avatars/new.png',
+      )
+      expect(successSpy).toHaveBeenCalledWith(en.profile.avatarUpdated)
+    })
+
+    it('updates the header avatar after an upload and after a removal', async () => {
+      server.use(http.get('*/api/profile', () => HttpResponse.json(makeProfile())))
+      mockSessions([])
+      server.use(
+        http.put('*/api/profile/avatar', () =>
+          HttpResponse.json(
+            makeProfile({ avatarUrl: 'http://cdn.test/starterkit/public/avatars/new.png' }),
+          ),
+        ),
+        http.delete('*/api/profile/avatar', () => new HttpResponse(null, { status: 204 })),
+      )
+      const { wrapper, pinia } = await openDialog()
+      const auth = storeIn(pinia, useAuthStore)
+      auth.account = { id: '1', name: 'Jane Doe', username: 'jane' } as typeof auth.account
+
+      await pickFile(wrapper, pngFile())
+      await flushPromises()
+      expect(auth.account?.avatarUrl).toBe('http://cdn.test/starterkit/public/avatars/new.png')
+
+      await wrapper.get('[data-testid="profile-avatar-remove"]').trigger('click')
+      await flushPromises()
+      expect(auth.account?.avatarUrl).toBeNull()
+    })
+
+    it('rejects an oversized image without calling the server', async () => {
+      server.use(http.get('*/api/profile', () => HttpResponse.json(makeProfile())))
+      mockSessions([])
+      let called = false
+      server.use(
+        http.put('*/api/profile/avatar', () => {
+          called = true
+          return HttpResponse.json(makeProfile())
+        }),
+      )
+      const errorSpy = vi.spyOn(feedback, 'showErrorMessage')
+      const { wrapper } = await openDialog()
+
+      await pickFile(wrapper, pngFile(2 * 1024 * 1024 + 1))
+      await flushPromises()
+
+      expect(called).toBe(false)
+      expect(errorSpy).toHaveBeenCalledWith(i18n.global.t('profile.avatarTooLarge', { max: 2 }))
+    })
+
+    it('rejects a file that is not a supported image type', async () => {
+      server.use(http.get('*/api/profile', () => HttpResponse.json(makeProfile())))
+      mockSessions([])
+      const errorSpy = vi.spyOn(feedback, 'showErrorMessage')
+      const { wrapper } = await openDialog()
+
+      await pickFile(wrapper, pngFile(10, 'image/gif'))
+      await flushPromises()
+
+      expect(errorSpy).toHaveBeenCalledWith(en.profile.avatarInvalidType)
+    })
+
+    it('reports a server rejection and keeps the current avatar', async () => {
+      server.use(http.get('*/api/profile', () => HttpResponse.json(makeProfile())))
+      mockSessions([])
+      server.use(
+        http.put('*/api/profile/avatar', () =>
+          problemResponse({ title: 'Bad Request', detail: 'Not an image', status: 400 }, 400),
+        ),
+      )
+      const errorSpy = vi.spyOn(feedback, 'showErrorMessage')
+      const { wrapper } = await openDialog()
+
+      await pickFile(wrapper, pngFile())
+      await flushPromises()
+
+      expect(errorSpy).toHaveBeenCalledWith('Bad Request', 'Not an image')
+      expect(wrapper.find('[data-testid="profile-avatar"]').text()).toBe('JD')
+    })
+
+    it('removes the avatar', async () => {
+      server.use(
+        http.get('*/api/profile', () =>
+          HttpResponse.json(
+            makeProfile({ avatarUrl: 'http://cdn.test/starterkit/public/avatars/a.png' }),
+          ),
+        ),
+      )
+      mockSessions([])
+      let deleted = false
+      server.use(
+        http.delete('*/api/profile/avatar', () => {
+          deleted = true
+          return HttpResponse.json(makeProfile())
+        }),
+      )
+      const { wrapper } = await openDialog()
+
+      await wrapper.find('[data-testid="profile-avatar-remove"]').trigger('click')
+      await flushPromises()
+
+      expect(deleted).toBe(true)
+      expect(wrapper.find('[data-testid="profile-avatar"]').text()).toBe('JD')
+      expect(wrapper.find('[data-testid="profile-avatar-remove"]').exists()).toBe(false)
+    })
   })
 })

@@ -8,7 +8,12 @@ import type {
   ProfileUpdateRequest,
   SessionDto,
 } from '@/api/types'
+import { resolveAssetUrl } from '@/lib/asset-url'
 import { formatDeviceInfo } from '@/lib/format-device-info'
+import { initialsOf } from '@/lib/initials'
+
+const AVATAR_MAX_MB = 2
+const AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 
 const visible = defineModel<boolean>('visible', { required: true })
 
@@ -28,6 +33,9 @@ const activeTab = ref<'personalInfo' | 'changePassword' | 'sessions' | 'notifica
   'personalInfo',
 )
 const hasPassword = ref(true)
+const avatarUrl = ref<string | undefined>(undefined)
+const avatarBusy = ref(false)
+const avatarInputRef = ref<HTMLInputElement | null>(null)
 
 const push = usePushNotifications()
 
@@ -87,6 +95,63 @@ function fillProfileForm(data: ProfileDto) {
   profileForm.address = data.address ?? ''
   profileForm.email = data.email
   hasPassword.value = data.hasPassword
+  avatarUrl.value = resolveAssetUrl(data.avatarUrl)
+}
+
+function reportError(error: unknown) {
+  if (error instanceof ApiError) {
+    showErrorMessage(error.problem.title, error.problem.detail ?? t('errors.requestFailed'))
+  } else {
+    showErrorMessage(t('errors.requestFailed'))
+  }
+}
+
+function syncHeaderAvatar(url: string | null | undefined) {
+  if (authStore.account) authStore.account.avatarUrl = url ?? null
+}
+
+async function onAvatarPicked(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || avatarBusy.value) return
+
+  if (!AVATAR_TYPES.includes(file.type)) {
+    showErrorMessage(t('profile.avatarInvalidType'))
+    return
+  }
+  if (file.size > AVATAR_MAX_MB * 1024 * 1024) {
+    showErrorMessage(t('profile.avatarTooLarge', { max: AVATAR_MAX_MB }))
+    return
+  }
+
+  avatarBusy.value = true
+  try {
+    const updated = await profileClient.profileUploadAvatar({ avatar: file })
+    avatarUrl.value = resolveAssetUrl(updated.avatarUrl)
+    syncHeaderAvatar(updated.avatarUrl)
+    showSuccessMessage(t('profile.avatarUpdated'))
+  } catch (error) {
+    reportError(error)
+  } finally {
+    avatarBusy.value = false
+  }
+}
+
+async function removeAvatar() {
+  if (avatarBusy.value) return
+
+  avatarBusy.value = true
+  try {
+    await profileClient.profileDeleteAvatar()
+    avatarUrl.value = undefined
+    syncHeaderAvatar(null)
+    showSuccessMessage(t('profile.avatarRemoved'))
+  } catch (error) {
+    reportError(error)
+  } finally {
+    avatarBusy.value = false
+  }
 }
 
 async function loadProfile() {
@@ -273,6 +338,45 @@ watch(visible, (open) => {
 
     <n-tabs v-else v-model:value="activeTab" type="line" class="pt-1">
       <n-tab-pane name="personalInfo" :tab="t('profile.personalInfo')">
+        <div class="flex items-center gap-4 pt-3">
+          <n-avatar
+            round
+            :size="72"
+            :src="avatarUrl"
+            :alt="t('profile.avatarAlt')"
+            data-testid="profile-avatar"
+          >
+            <template v-if="!avatarUrl">{{ initialsOf(profileForm.name) }}</template>
+          </n-avatar>
+          <div class="flex flex-wrap gap-2">
+            <input
+              ref="avatarInputRef"
+              type="file"
+              class="hidden"
+              accept="image/png,image/jpeg,image/webp"
+              data-testid="profile-avatar-input"
+              @change="onAvatarPicked"
+            />
+            <n-button
+              size="small"
+              :loading="avatarBusy"
+              data-testid="profile-avatar-change"
+              @click="avatarInputRef?.click()"
+            >
+              {{ t('profile.avatarChange') }}
+            </n-button>
+            <n-button
+              v-if="avatarUrl"
+              size="small"
+              quaternary
+              :disabled="avatarBusy"
+              data-testid="profile-avatar-remove"
+              @click="removeAvatar"
+            >
+              {{ t('profile.avatarRemove') }}
+            </n-button>
+          </div>
+        </div>
         <n-form
           ref="profileFormRef"
           :model="profileForm"

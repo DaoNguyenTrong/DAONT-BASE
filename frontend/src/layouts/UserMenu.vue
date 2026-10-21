@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Check, ChevronDown, Language, Logout, User } from '@vicons/tabler'
+import { resolveAssetUrl } from '@/lib/asset-url'
 import { initialsOf } from '@/lib/initials'
 import type { SupportedLocale } from '@/plugins/i18n'
 
@@ -19,6 +20,7 @@ const menuEl = ref<HTMLElement | null>(null)
 
 const displayName = computed(() => auth.account?.name || auth.account?.username || t('common.user'))
 const initials = computed(() => initialsOf(displayName.value))
+const avatarUrl = computed(() => resolveAssetUrl(auth.account?.avatarUrl))
 const organizationLabel = computed(
   () => auth.organizationName ?? t('organizations.personalWorkspace'),
 )
@@ -122,11 +124,13 @@ const itemClass =
       >
         <span
           data-testid="user-menu-avatar"
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+          class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold text-white"
           :class="onBrand ? 'bg-white/20' : 'bg-primary-600'"
           aria-hidden="true"
-          >{{ initials }}</span
         >
+          <img v-if="avatarUrl" :src="avatarUrl" alt="" class="h-full w-full object-cover" />
+          <template v-else>{{ initials }}</template>
+        </span>
         <span class="hidden min-w-0 max-w-40 flex-col text-left leading-tight xl:flex">
           <span class="truncate text-sm font-medium" :title="displayName">{{ displayName }}</span>
           <span
@@ -149,10 +153,13 @@ const itemClass =
     <div ref="menuEl" class="flex flex-col gap-0.5" role="menu" @keydown="onMenuKeydown">
       <div class="flex items-center gap-3 px-2 py-1.5">
         <span
-          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-semibold text-white"
+          data-testid="user-menu-panel-avatar"
+          class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-600 text-sm font-semibold text-white"
           aria-hidden="true"
-          >{{ initials }}</span
         >
+          <img v-if="avatarUrl" :src="avatarUrl" alt="" class="h-full w-full object-cover" />
+          <template v-else>{{ initials }}</template>
+        </span>
         <div class="flex min-w-0 flex-col leading-tight">
           <span class="truncate text-sm font-medium">{{ displayName }}</span>
           <span class="truncate text-xs text-surface-500">{{ auth.account?.email }}</span>

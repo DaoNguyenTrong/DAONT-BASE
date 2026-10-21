@@ -10,15 +10,18 @@ Bản đồ tính năng theo góc nhìn người dùng: vào bằng đâu, code 
 - **Frontend:**
   - Menu: `frontend/src/layouts/UserMenu.vue`
   - Dialog và tab sessions: `frontend/src/components/ProfileDialog.vue`
+  - Avatar: tab Personal information, testid `profile-avatar`, `profile-avatar-input`, `profile-avatar-change`, `profile-avatar-remove`
+  - Avatar ở header: `user-menu-avatar` (nút) và `user-menu-panel-avatar` (trong menu) hiện ảnh từ `auth.account.avatarUrl` (`AccountDto.AvatarUrl`, do `TokenIssuer` dựng lúc đăng nhập/refresh); dialog Profile cập nhật lại giá trị này sau khi tải lên/xóa
   - Testid: `profile-sessions-list` (danh sách phiên), `app-header-user-menu`, `user-menu-profile`, `user-menu-logout`
   - Nút quan trọng: `Sign out other devices` (chỉ hiện khi có phiên khác), xác nhận bằng `Confirm` trong dialog cảnh báo của Naive UI
 - **Backend:**
   - `GET /api/profile`, `PUT /api/profile`, `PUT /api/profile/password` → `ProfileController` → `IAccountService` (`Application/Services/Accounts/AccountService.cs`)
+  - `PUT /api/profile/avatar` (multipart, PNG/JPEG/WebP ≤ 2 MB, loại ảnh lấy từ byte thật), `DELETE /api/profile/avatar` → `AccountService.UploadAvatarAsync` / `DeleteAvatarAsync`. Ảnh nằm ở `public/avatars/` của storage; `ProfileDto.avatarUrl` = `StorageSettings:PublicUrlBase` + đường dẫn, nên mọi provider phát file qua URL công khai thay vì qua API. Provider S3 (SeaweedFS, MinIO): app đặt policy đọc ẩn danh chỉ cho `public/*` lúc khởi động; đặt `PublicUrlBase` thành `http://localhost:9000/starterkit` (MinIO) hoặc `/storage` (Local).
   - `GET /api/auth/sessions`, `DELETE /api/auth/sessions/{id}`, `POST /api/auth/sessions/revoke-others` → `AuthController`
 - **Test đã có:**
   - Backend: `backend/tests/StarterKit.API.Tests/Controllers/ProfileControllerTests.cs`, `AuthControllerTests.cs` (`GetSessions_ReturnsOnlyCallersOwnSessions`, `RevokeSession_NotOwned_ReturnsNotFound`, `RevokeOtherSessions_RevokesAllButCurrent`), `backend/tests/StarterKit.Application.Tests/Services/Accounts/AccountServiceTests.cs`
   - E2E: `frontend/e2e/profile-sessions.spec.ts`
-  - Frontend unit: **chưa có** test cho `ProfileDialog.vue` (`loadSessions`, `confirmRevokeOtherSessions` không có test bao phủ)
+  - Frontend unit: `frontend/tests/components/ProfileDialog.test.ts` (avatar: hiện, upload, chặn ảnh quá lớn/sai loại, lỗi server, xóa); `loadSessions`, `confirmRevokeOtherSessions` vẫn chưa được bao phủ
 - **Dữ liệu test:**
   - Tài khoản role `User`: `E2E_USER_USERNAME` / `E2E_USER_PASSWORD` trong `frontend/.env.e2e` (mẫu ở `frontend/.env.e2e.example`)
   - Spec tự tạo một phiên "thiết bị khác" bằng cách đăng nhập rồi đóng context trong `beforeAll`, nên không cần seed phiên riêng

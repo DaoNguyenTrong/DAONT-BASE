@@ -88,7 +88,7 @@ public class AuthServiceTests
         // TokenIssuer has no I/O beyond the already-substituted collaborators above (IUnitOfWork,
         // IJwtTokenService, IPermissionResolver) — wiring the real implementation here (rather than
         // mocking ITokenIssuer) preserves every pre-split assertion on token-issuing behavior unchanged.
-        ITokenIssuer tokenIssuer = new TokenIssuer(unitOfWork, jwtTokenService, permissionResolver, jwtOptions);
+        ITokenIssuer tokenIssuer = new TokenIssuer(unitOfWork, jwtTokenService, permissionResolver, jwtOptions, Options.Create(new StorageSettings()));
 
         AuthService service = new(
             unitOfWork,
@@ -412,6 +412,35 @@ public class AuthServiceTests
         await f.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         double diffSeconds = Math.Abs((result.AccessTokenExpiry - DateTime.UtcNow.AddMinutes(15)).TotalSeconds);
         Assert.True(diffSeconds < 5, $"Expected access token expiry within 5s tolerance, was off by {diffSeconds}s");
+    }
+
+    [Fact]
+    public async Task LoginAsync_AccountWithAvatar_ReturnsThePublicAvatarUrl()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        account.SetAvatar("public/avatars/a.png");
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+        f.PasswordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+
+        AuthResult result = await f.Service.LoginAsync(new LoginRequest(account.Username, "correct-password"), null, null, CancellationToken.None);
+
+        Assert.Equal("/storage/public/avatars/a.png", result.Account.AvatarUrl);
+    }
+
+    [Fact]
+    public async Task LoginAsync_AccountWithoutAvatar_ReturnsNoAvatarUrl()
+    {
+        Fixture f = CreateFixture();
+        Account account = CreateAccount();
+        f.AccountRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Account, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(account);
+        f.PasswordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+
+        AuthResult result = await f.Service.LoginAsync(new LoginRequest(account.Username, "correct-password"), null, null, CancellationToken.None);
+
+        Assert.Null(result.Account.AvatarUrl);
     }
 
     [Theory]
