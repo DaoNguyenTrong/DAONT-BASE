@@ -47,9 +47,7 @@ const client = getExamples() // call once per component/store, reuse the returne
 const example = await client.examplesGetById(id)
 ```
 
-- `apiClient` / `refreshClient` (`frontend/src/api/client.ts`) already handle auth headers, 401 refresh-and-retry queuing, and mapping backend `ProblemDetails` responses to `ApiError`. Every generated call routes through `apiClient` via `frontend/src/api/mutator.ts` automatically — never hand-roll another axios instance.
-- If a successful call needs a side effect beyond returning data (e.g. updating auth state after login), put it in the owning Pinia store as an action wrapping the generated call (see `stores/auth.ts`'s `login`/`logout`/etc.) — not at the call site, and not in a new `{resource}-api.ts` file.
-- Types for requests/responses live in `frontend/src/api/types.ts`, re-exported from the generated model types under stable names (e.g. `export type { AccountDto as Account } from './generated/model/accountDto'`) — never hand-declared. A few generated-type quirks (int64 fields widened to `number | string`) are normalized back to plain shapes at the point of use — see `api-contract.md`.
+- Never hand-roll another axios instance — every generated call already goes through `apiClient` (`api/mutator.ts`). A success side effect goes in the owning Pinia store, request/response types come from `api/types.ts` re-exports, int64 fields are normalized at the point of use: details in `api-contract.md`.
 - In components, catch errors with `error instanceof ApiError` and prefer `error.problem.detail ?? error.problem.title`, falling back to a localized generic string (`t('errors.requestFailed')`) — see `ProfileDialog.vue` for the pattern.
 
 ## Runtime Configuration
@@ -64,7 +62,7 @@ Logout, session lapse and organization switch end with a **full page reload** (`
 
 ## Localization
 
-vue-i18n, `useI18n()` in components, keys in `frontend/src/locales/{vi,en}.ts`. Locale switching goes through `useLocaleStore` (`frontend/src/stores/locale-store.ts`), not `i18n.global.locale` directly. See `localization.md` for the cross-cutting rule with backend messages.
+See `localization.md` (frontend files, locale switching, the cross-cutting rule with backend messages).
 
 ## Formatting & Linting
 
