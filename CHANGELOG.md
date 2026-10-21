@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.6.3] - 2026-10-21
+
+### Added
+
+- Users can upload and remove a profile picture, shown in the header and the profile dialog. (#69)
+- MinIO is available as a file storage provider next to Local and SeaweedFS. (#69)
+
+### Changed
+
+- Moved the development ports to 7100 (API) and 5175 (frontend). (#69)
+
 ## [v1.6.2] - 2026-10-21
 
 ### Changed
