@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.6.2] - 2026-10-21
+
+### Changed
+
+- Retuned the interface to a vivid violet primary color on a light sky-blue background. (#64)
+- Unknown API routes now answer 401 instead of 404 to signed-out callers. (#66)
+
+### Security
+
+- Endpoints that declare no access now require sign-in instead of being public by default. (#66)
+
 ## [v1.6.1] - 2026-10-20
 
 ### Added
