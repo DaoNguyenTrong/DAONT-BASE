@@ -47,6 +47,21 @@ public sealed class FallbackAuthorizationTests(ApiFactoryFixture fixture) : IAsy
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    // UseCors answers a preflight before UseAuthorization, so the fallback never sees it.
+    [Fact]
+    public async Task CorsPreflight_WithoutToken_IsAnsweredByCors()
+    {
+        using HttpClient client = fixture.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Options, "/api/admin/api-keys");
+        request.Headers.Add("Origin", "http://localhost:5173");
+        request.Headers.Add("Access-Control-Request-Method", "GET");
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal("http://localhost:5173", Assert.Single(response.Headers.GetValues("Access-Control-Allow-Origin")));
+    }
+
     // Anonymous endpoints outside the controllers
     [Theory]
     [InlineData("/metrics")]

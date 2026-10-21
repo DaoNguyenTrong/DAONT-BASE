@@ -11,11 +11,24 @@ Two authentication schemes, both accepted by the default `[Authorize]` policy (`
 - **API key** — the `X-Api-Key` header (`ApiKeyAuthenticationHandler`), issued per organization via
   `/api/admin/api-keys`.
 
-`[AllowAnonymous]` endpoints: `/api/auth/login`, `/api/auth/register`, `/api/auth/verify-email`,
-`/api/auth/resend-verification`, `/api/auth/external/{provider}`, `/api/auth/refresh`. `/api/health`
-is public too — `HealthController` carries no `[Authorize]`, and there is no fallback policy, so a
-controller or action without an `[Authorize]` attribute is public. Every other controller declares one at
-class level, except `AuthController`, which authorizes per action — a new action there needs its own attribute.
+**Deny by default.** `FallbackPolicy` is the default policy, so any endpoint — or middleware path after
+`UseAuthorization` — that declares no access requires a signed-in caller; an unmapped route answers 401 to an
+anonymous caller, 404 to a signed-in one (an `/api` request without `X-TimeZone` gets 400 first). Anonymous
+surfaces opt out explicitly:
+
+- Controllers: `[AllowAnonymous]` on `HealthController` and on `AuthController`'s `login`, `register`,
+  `verify-email`, `resend-verification`, `external/{provider}` and `refresh` (pinned by their controller tests).
+- `Program.cs`: `.AllowAnonymous()` on `/metrics`, `/hangfire` and the dev-only OpenAPI/Scalar routes (pinned by
+  `FallbackAuthorizationTests`). A new `Map...` endpoint meant to be public needs the same call. `/metrics` and
+  `/hangfire` (full job control, no app-level check) rely on the deployment: nginx answers 404 for both and the
+  `api` service publishes no port. A deployment that lets clients reach the API directly exposes them.
+
+Outside deny-by-default — answered before `UseAuthorization`: CORS preflights (`UseCors`) and Local-storage
+files (`UseStaticFiles` on `StorageSettings:PublicUrlBase`), which anyone holding a file's URL can read.
+
+`ArchitectureTests.ControllerActionsAndHubs_DeclareAuthorizeOrAllowAnonymous` also fails CI for a controller
+action (inherited ones included) or hub with neither attribute, on itself or its class — choose one explicitly.
+Controllers declare it at class level except `AuthController`, which authorizes per action.
 
 ## Organizations and permissions
 

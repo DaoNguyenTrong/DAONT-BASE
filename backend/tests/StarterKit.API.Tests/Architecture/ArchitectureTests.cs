@@ -88,7 +88,9 @@ public sealed class ArchitectureTests
 
         string[] actions = [.. controllers
             .SelectMany(controller => controller
-                .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                // Not DeclaredOnly: an action inherited from an abstract base controller is still an action.
+                .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                .Where(action => action.DeclaringType != typeof(object) && action.DeclaringType != typeof(ControllerBase))
                 .Where(action => !action.IsSpecialName && !action.IsDefined(typeof(NonActionAttribute), inherit: true))
                 .Where(action => !DeclaresAccess(action) && !DeclaresAccess(controller))
                 .Select(action => $"{controller.Name}.{action.Name}"))];
