@@ -10,7 +10,7 @@
     "mandatory": "scripts/test-gate.sh"
   },
   "changelogPath": "CHANGELOG.md",
-  "devWrites": "pr",
+  "devWrites": "push",
   "devMergeCommand": "/git-accept",
   "pushAfterRebase": "force-with-lease",
   "prExtraSections": [
