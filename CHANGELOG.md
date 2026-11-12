@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.6.4] - 2026-11-12
+
+### Changed
+
+- The development workflow requires approved user personas before any product requirements are written. (#71)
+
 ## [v1.6.3] - 2026-10-21
 
 ### Added
