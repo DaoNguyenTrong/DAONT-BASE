@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "StarterKit",
+  "classifications": ["StarterKit", "Backend", "Entity"],
+  "identity": "StarterKit.Template.Entity",
+  "name": "StarterKit entity slice",
+  "description": "An entity with its service, controller, EF configuration and tests, across the backend layers.",
+  "shortName": "starterkit-entity",
+  "sourceName": "Sample",
+  "preferNameDirectory": false,
+  "tags": {
+    "language": "C#",
+    "type": "item"
+  },
+  "symbols": {
+    "plural": {
+      "type": "parameter",
+      "datatype": "text",
+      "isRequired": true,
+      "description": "PascalCase plural of the name, for the service folder, the controller and the permission (Widgets).",
+      "replaces": "Samples",
+      "fileRename": "Samples"
+    },
+    "route": {
+      "type": "parameter",
+      "datatype": "text",
+      "isRequired": true,
+      "description": "Lowercase route segment under api/ (widgets, or widget-parts).",
+      "replaces": "samples"
+    },
+    "tableNameSource": {
+      "type": "generated",
+      "generator": "regex",
+      "dataType": "string",
+      "parameters": {
+        "source": "route",
+        "steps": [{ "regex": "-", "replacement": "_" }]
+      },
+      "replaces": "sample_rows"
+    },
+    "org-scoped": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Own the entity by an organization: IHasOrganization, the tenant filter and the tenant tests."
+    },
+    "OrgScoped": {
+      "type": "computed",
+      "value": "org-scoped"
+    }
+  },
+  "constraints": {},
+  "postActions": []
+}

@@ -1,3 +1,9 @@
+---
+paths:
+  - "backend/**"
+  - "frontend/**"
+---
+
 # Serena — Symbol Navigation
 
 When to use Serena vs CodeGraph, and each tool's scope: `AGENTS.md` § Tool Selection. This file records only the detailed limitations behind that table.

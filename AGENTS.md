@@ -1,10 +1,8 @@
 # AGENTS.md
 
-This file provides guidance to Claude Code when working with this repository.
+This file provides guidance to Claude Code and Codex when working with this repository.
 
 ## Monorepo Layout
-
-Three top-level trees, each with its own stack and rule surface:
 
 | Path        | Stack                                                                     | Relevant rules                                                                              |
 | ----------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -12,9 +10,26 @@ Three top-level trees, each with its own stack and rule surface:
 | `frontend/` | Vue 3 + Vite + TypeScript, Pinia, naive-ui, vue-i18n, Tailwind            | `frontend-conventions.md`, `commands.md`, `comments.md`                                     |
 | `shared/`   | `openapi/` (contract exported from `backend`, consumed by `frontend`)     | `api-contract.md`                                                                           |
 
-`shared/openapi/` is the reason this is a monorepo rather than two separate repos: the backend's OpenAPI export is meant to be the single source of truth the frontend generates its client/types from (see `.claude/decisions.md` — "Monorepo: backend/frontend/shared, overriding..."). Codegen is wired up: `orval` regenerates `frontend/src/api/generated/**` (gitignored) from the committed `openapi.json` on every `bun install` — see `api-contract.md` for the regenerate workflow.
+The backend's OpenAPI export (`shared/openapi/openapi.json`, committed) is the single source of truth for the API; `orval` regenerates `frontend/src/api/generated/**` (gitignored) from it on every `bun install` — workflow in `api-contract.md`.
 
-CodeGraph is indexed repo-wide (backend + frontend) and is the tool for cross-file impact-check on both sides. Serena's symbol-navigation LSP covers `backend/` (C#), plus `frontend/` TypeScript and Vue for read-only symbol lookup — but its caller-search/rename tools (`find_referencing_symbols`, `rename_symbol`) are reliable for `backend/` (C#) only; see `serena.md` for why.
+Claude loads each rule from its `paths:` frontmatter. Codex does not. Before editing a path in the table, read the named files under `.claude/rules/`. A session started inside `backend/`, `frontend/` or `shared/` also receives that directory's `AGENTS.md`, which lists the same files.
+
+## Software Lifecycle
+
+Work runs from idea to release, not only from code. Full detail (work sizes S/M/L, gates, change management, traceability): `docs/process/lifecycle.md`; per-module progress: `docs/process/progress.md`.
+
+| Stage              | Output                         | Owner                                                              |
+| ------------------ | ------------------------------ | ------------------------------------------------------------------ |
+| 0 Idea and vision  | module list, priorities        | main session (`brainstorming`) with the user                       |
+| 1 Requirements     | PRD in `docs/prd/`             | `product-manager`, reviewed by `business-analyst`; user approves   |
+| 2 UI design        | boards on the design canvas    | `ui-designer`; user approves                                       |
+| 3 Technical design | `docs/tech/`                   | `tech-lead`; `appsec` reviews it before approval when security-critical |
+| 4 Plan             | `docs/superpowers/plans/`      | main session (`writing-plans`); user approves, may authorize PR    |
+| 5 Implementation   | code, tests, feature-map entry | `implementer`, one plan task per call; review by risk tier (`lifecycle.md` § Hạng kiểm tra) |
+| 6 Review and merge | PR merged into `dev`           | `pr-reviewer` (docs-only PR: `/git-accept`)                        |
+| 7 Release          | tag, changelog                 | `release-kit:git-release`; user approves                           |
+
+The main session orchestrates: it sends every question first to `solution-architect`, which answers on the user's behalf, asks the user only what that agent escalates, relays answers, and calls agents in order. Subagents cannot ask the user or call each other. A business question found at any later stage goes back to the PRD; nothing downstream proceeds on an unapproved upstream document.
 
 ## Common Commands
 
@@ -33,28 +48,11 @@ CI workflows and git hooks (Lefthook): `.claude/reference/ci-and-git-hooks.md`.
 
 ### Pre-Task Protocol
 
-Follow this order for every non-trivial task:
+The step-by-step implementation protocol (memory → live state → CodeGraph/Serena orientation → impact check → feature map → reproduce-first → execute → verify gates → decision log) lives in `.claude/agents/implementer.md` § Pre-Task Protocol, the single source. Code tasks — plan tasks and S-size fixes alike — go to the `implementer` agent, which runs it; the main session does not edit `backend/`, `frontend/` or `shared/` itself. Its orientation steps 1–4 (memory → live state → CodeGraph → Serena) also apply to any agent exploring code.
 
-1. **Memory** — check `.claude/decisions.md` and project memory for relevant prior decisions
-2. **Live state** — run `git status` + `git diff` to understand current working state
-3. **Orient (macro)** — CodeGraph (`codegraph_explore`) to understand module boundaries, data flow, and cross-service relationships across both backend and frontend
-4. **Orient (micro)** — for backend C#, use Serena (`find_symbol`/`get_symbols_overview`) to drill into a specific symbol once CodeGraph has located the module. For frontend, CodeGraph's step-3 response already includes verbatim source — skip a separate Serena call unless you need `find_declaration` to confirm what a specific template-tag usage resolves to.
-5. **Impact check** — before editing, review every caller of the symbol you plan to modify. For backend C# symbols, prefer Serena's `find_referencing_symbols` (exact call sites with line-level snippets); fall back to `codegraph_explore` only when the symbol has dynamic dispatch across multiple implementations (interface/base-class methods). For any frontend symbol (`.ts` or `.vue`), use `codegraph_explore`'s blast-radius — never Serena's `find_referencing_symbols`/`rename_symbol`, which silently miss any caller inside a `.vue` file regardless of import style (verified, not a config gap).
-5b. **Feature map** — for a change to a user-facing flow, read `docs/feature-map.md` for the affected feature: entry path, test accounts, selectors, how to verify. If the feature has no entry, note it and propose one.
-5c. **Reproduce first (bug fixes)** — reproduce the failure before editing: a failing regression test for backend/frontend logic (`testing.md`), or the failing request/UI step through the running stack (`scripts/dev-up.sh`, then `scripts/verify/`). Keep the evidence under `verify-output/`.
-6. **Execute** — make changes in small, atomic steps; one concern per PR. Prefer repo generators/templates over hand-writing structure.
-7. **Verify** — every gate below must pass; never disable or suppress a rule to get there:
-   - a. Unit/integration tests for the side touched (`backend/scripts/test.sh` for `backend/`, `bun run --cwd frontend test:run` for `frontend/` — see `commands.md`)
-   - b. Architecture tests and static checks (`ArchitectureTests.cs`, `bun run --cwd frontend type-check`, and `bun run --cwd frontend lint:boundaries` for frontend import boundaries)
-   - c. For a change to a user-facing flow: start the stack with `scripts/dev-up.sh`, run the matching `scripts/verify/*.sh` and `bun run --cwd frontend test:e2e`, then `scripts/dev-down.sh`. Attach the output paths under `verify-output/` to the report.
-   - d. For a bug fix: show the failure from 5c no longer reproduces
-8. **Log decisions** — record only choices that affect system design (architecture, contracts, security posture) in `.claude/decisions.md`, titled `### YYYY-MM-DD — <decision>`, written in English; skip branding/UI/copy calls and routine bug fixes. **Gate: before writing, show the user the proposed entry and get explicit confirmation — never write to `.claude/decisions.md` unprompted.**
+**Recurring feedback:** if the same correction comes up twice (from a reviewer or from your own earlier work), stop and turn it into a lint rule, architecture test, or generator instead of adding another prose rule. The end-of-module retro enforces this, and process changes wait for it (`docs/process/lifecycle.md` § Lỗi lặp và retro cuối module).
 
-**Recurring feedback:** if the same correction comes up twice (from a reviewer or from your own earlier work), stop and turn it into a lint rule, architecture test, or generator instead of adding another prose rule.
-
-### Worktrees
-
-A git worktree (including an agent's `isolation: "worktree"`) has only tracked files: no `backend/src/StarterKit.API/appsettings*.json`, no `.env*`, no `frontend/node_modules`, `frontend/src/api/generated/` or `frontend/src/typings/` (`bun install --cwd frontend` regenerates `api/generated/`; `typings/` comes from a Vite run and is complete only after `bun run --cwd frontend build-only` — `type-check` fails without it). Copy the gitignored config in before building or testing, and remove the worktree (`git worktree remove <path>`) when done. `isolation: "worktree"` branches from `origin`'s default branch, not the local `HEAD` — an agent there does not see unpushed local commits, so hand it the branch or the diff explicitly.
+**Worktrees** lack every gitignored file (config, generated client, typings); read `.claude/reference/worktrees.md` before creating or working in one.
 
 ### Commits
 
@@ -62,59 +60,64 @@ A git worktree (including an agent's `isolation: "worktree"`) has only tracked f
 - Run `git branch --show-current` before every commit; never commit on `main` (the Lefthook branch guard blocks it) or on a branch you didn't expect.
 - Stage only the files the task changed, by explicit path — never `git add -A`/`git add .`/`git commit -a`; leave changes that predate the task unstaged. Subagents working in parallel each commit their own paths, so one never sweeps up another's half-finished files.
 - A commit rejected by Lefthook (commitlint, prettier, secretlint) means fix the message or re-stage — not `--no-verify`.
-- Push or open a PR only on the user's explicit order.
-- Merge only through `/git-accept`, and only for a docs-only PR that passes its gate (see `.claude/commands/git-accept.md`). Any other merge needs the user's explicit order.
+- Push or open a PR only on the user's explicit order. The user may give that order once for a whole plan when approving it (recorded in the plan and in the brief to `implementer`): each time a plan phase is done and `scripts/test-gate.sh` passes, one PR for that phase into `dev` (size cap and stacking: `docs/process/lifecycle.md` § Quyền push và mở PR). Never for `main`. Asking for a PRD or technical design is also that order, for one draft docs-only PR carrying its versions; it is merged only after the user approves the document (`docs/process/lifecycle.md` § Commit tài liệu).
+- Every PR description has a `## Changelog` section in the `release-kit:git-mr` format (`- Added|Changed|Deprecated|Removed|Fixed|Security: <one reader-facing sentence>`, or just `none` for internal changes), followed by another `## ` section — `git-release` builds the release CHANGELOG from it and reads it up to the next `## ` heading, so trailing free text (the attribution line) would make it invalid.
+- One PR into `dev` at a time: rebase it onto the latest `origin/dev` (then `git push --force-with-lease`; `release-kit:git-sync` does both), merge with `--merge`, delete the merged branch on the remote and locally (`git branch -d`, never `-D`), then rebase the next one — near-linear history with one merge commit per PR (`docs/process/lifecycle.md` § Quyền push và mở PR).
+- Merge into `dev` only through a gate: `/git-accept` for a docs-only PR (see `.claude/commands/git-accept.md`), or the `pr-reviewer` agent for any other PR. `pr-reviewer` allows at most 3 revision rounds, then escalates for a design review; the areas it never merges are listed once, in `pr-reviewer.md` § 4 — those need the user's explicit order, as does any merge outside `dev` (hotfix, release).
 
 ### Tool Selection
 
-Two-tier model: **CodeGraph first** when you need orientation; **Serena next** when you know what to look at. Serena's reliable scope differs per capability — see the Scope column below, not just "is the language server configured."
+Orient with CodeGraph (`codegraph_explore`): how modules connect, what calls what across layers, and what breaks if you change something (its blast radius is the impact check for all frontend symbols). Then drill in with Serena, then `Read`. Never grep first; never open a file to orient.
 
-| When you don't yet know where to look… | Use                                                                                                      |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| How do modules / services connect?     | CodeGraph `codegraph_explore` (natural-language query)                                                   |
-| What calls what across layers?         | CodeGraph `codegraph_explore`                                                                            |
-| What breaks if I change this?          | CodeGraph `codegraph_explore` (blast-radius in the response) — the default for frontend impact-check too |
+| When you already know which symbol to inspect… | Use                                           | Scope                                                  |
+| ---------------------------------------------- | --------------------------------------------- | ------------------------------------------------------ |
+| Read a class or method body                    | Serena `find_symbol` with `include_body=true` | backend + frontend                                     |
+| Confirm what a specific usage resolves to      | Serena `find_declaration`                     | backend + frontend                                     |
+| Scan a file's public surface                   | Serena `get_symbols_overview`                 | backend + frontend                                     |
+| Find every caller / usage of a symbol          | Serena `find_referencing_symbols`             | **backend C# only** — frontend: CodeGraph blast radius |
+| Rename a symbol across the codebase            | Serena `rename_symbol`                        | **backend C# only** — frontend: see `serena.md`        |
+| Broad keyword / file search                    | `grep` (quick), Explore agent (broad)         | —                                                      |
 
-| When you already know which symbol to inspect…   | Use                                                      | Scope                                                                                                                                                                             |
-| ------------------------------------------------ | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Read a class or method body                      | Serena `find_symbol` with `include_body=true`            | backend + frontend                                                                                                                                                                |
-| Confirm what a specific usage resolves to        | Serena `find_declaration`                                | backend + frontend                                                                                                                                                                |
-| Scan a file's public surface                     | Serena `get_symbols_overview`                            | backend + frontend                                                                                                                                                                |
-| Find every caller / usage of a symbol            | Serena `find_referencing_symbols`                        | **backend C# only** — for frontend use CodeGraph's blast-radius (verified 0% recall on `.vue` callers otherwise, even with explicit imports)                                      |
-| Rename a symbol safely across the whole codebase | Serena `rename_symbol`                                   | **backend C# only** — CodeGraph has no rename tool, and no frontend rename tool here is reliable; rename manually against CodeGraph's blast-radius file list, then run `test:run` |
-| Broad keyword / file search                      | `grep` (quick), Explore agent (broad)                    | —                                                                                                                                                                                 |
-| Read implementation line-by-line                 | `Read` — only after CodeGraph/Serena identified the file | —                                                                                                                                                                                 |
-
-Never grep first. Never open a file to orient — orient with CodeGraph, then drill with Serena (backend, or `find_declaration` anywhere), then `Read`.
-
-### Context Layers
-
-| Layer                       | Source                                   | When to access                                                                               |
-| --------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **0 — Persistent memory**   | `.claude/decisions.md`, project memory   | Start of task — check for prior decisions relevant to the task                               |
-| **1 — Always loaded**       | This file                                | Always in context — architecture, constraints, workflow rules                                |
-| **2a — Architecture map**   | CodeGraph                                | Orientation: module graph, data flow, call chains, cross-service wiring (backend + frontend) |
-| **2b — Symbol navigation**  | Serena                                   | Drill-down: symbol bodies, callers, file surfaces                                            |
-| **3 — File implementation** | `Read` tool                              | After Layer 2b identified the exact target                                                   |
-| **4 — Live state**          | `git status`, `git diff`, `dotnet build` | Start of task — understand current working state before acting                               |
-
-CodeGraph sees the codebase as a **graph of relationships** — it answers "what connects to what."
-Serena sees the codebase as a **tree of symbols** — it answers "what does this specific thing contain."
-`Read` is the last resort, not the first instinct.
+Why the frontend limits exist: `.claude/rules/serena.md`.
 
 ### Superpowers Integration
 
 If the superpowers plugin is installed, its skills yield to this file. Where a skill's default disagrees, these win:
 
-- **Where it fits** — brainstorming / systematic-debugging / writing-plans run after Pre-Task steps 1–4: their "explore the context" _is_ memory → live state → CodeGraph → Serena.
-- **Specs and plans** go in `docs/superpowers/{specs,plans}/` (the plugin's default). Root `plans/` holds the earlier numbered plans — don't add new ones there. A spec or plan is **not committed** unless the user says so, whatever the skill's own "commit the design doc" step says.
+- **Where it fits** — brainstorming / systematic-debugging / writing-plans run after the protocol's orientation steps 1–4: their "explore the context" _is_ memory → live state → CodeGraph → Serena.
+- **Documents** — a module's requirements go in `docs/prd/` (PRD, written by `product-manager`) and its technical design in `docs/tech/` (written by `tech-lead`) instead of the plugin's default `docs/superpowers/specs/`; brainstorming interviews feed those, they don't create a spec of their own. Implementation plans go in `docs/superpowers/plans/`. Root `plans/` holds the earlier numbered plans — don't add new ones there. Commit timing follows `docs/process/lifecycle.md` § Commit tài liệu (a PRD or technical design is committed when the user approves it; a plan travels on the feature branch), whatever the skill's own "commit the design doc" step says.
+- **Per-module flow** — the stages in § Software Lifecycle, sized S/M/L per `docs/process/lifecycle.md`. Plan execution: the main session uses `subagent-driven-development` to hand `implementer` one task at a time and reviews by risk tier (`docs/process/lifecycle.md` § Hạng kiểm tra: `code-reviewer` after each tier-2 task only); `implementer` itself uses `executing-plans`, TDD, debugging, verification and `receiving-code-review`.
 - **Requirement gaps stop the run** — subagent-driven development's "rulings, not stalls" covers technical ambiguity only. A missing or conflicting business rule or acceptance criterion means stop and ask; never write a ruling that invents business behavior.
-- **Branch & worktree** — work in the current checkout on one `feature/*` branch cut from `dev`. Don't create a worktree for a skill run: the gitignored config and generated client are missing there (see Worktrees). Subagents that build the backend run one at a time (`-m:1`, shared `obj/`).
-- **Commits** — implementers may commit per task on `feature/*` (local only, never on `dev`/`main`) so per-task review ranges work, following Commits above.
-- **TDD** — follow `superpowers:test-driven-development` within `testing.md` (which layer, which conventions; a bug fix starts from a failing regression test). "Delete the code and start over" applies only to code written in the current task, never to changes already on the branch.
-- **Tests** — baseline and verification use `backend/scripts/test.sh` and `bun run --cwd frontend test:run`.
-- **Finishing** — base is `dev` (`main` only for a hotfix); never merge locally or delete the branch. Without an explicit order to push or open a PR, leave the branch as it is.
-- **Gated side effects** — push/PR and `.claude/decisions.md` (confirmation gate) still need the user, even mid-plan.
+- **Branch & worktree** — work in the current checkout on one `feature/*` branch cut from `dev`. Don't create a worktree for a skill run: the gitignored config and generated client are missing there. Subagents that build the backend run one at a time (`-m:1`, shared `obj/`).
+- **Finishing** — base is `dev` (`main` only for a hotfix); never merge locally or delete an unmerged branch (merged branches are deleted per § Commits), and don't use `superpowers:finishing-a-development-branch` (its local-merge option conflicts with this rule; merging is `pr-reviewer`'s gate). Without an explicit order to push or open a PR, leave the branch as it is.
+
+## Codex
+
+`.claude/` stays the instruction source. Codex reaches it through a thin project layer, because it does not load Claude's `paths:` rules, agent files, slash commands or `settings.json`.
+
+- Spawn a role by the `name` in `.codex/agents/<name>.toml`. Before acting, that agent reads `.claude/agents/<name>.md` and follows it. Do not copy the prompt into the toml.
+- `.codex/hooks.json` runs `scripts/claude-bash-guard.ts` on `PreToolUse` for `Bash`, the same guard as `.claude/settings.json`. A new or changed hook does nothing until it is trusted with `/hooks`.
+- Repo skills live in `.agents/skills/`: `git-accept` (docs-only merge gate; procedure in `.claude/commands/git-accept.md`), `clean-architecture-review` and `new-backend-slice` (the skills under `.claude/skills/`).
+- CodeGraph and Serena are the parent session's MCP servers. This repo does not vendor them into `.codex/config.toml`.
+
+Tool names in the Claude agent files:
+
+| Claude name | Codex |
+| --- | --- |
+| Read, Grep, Glob, Bash, Edit, Write | the built-in file, search, shell and patch tools |
+| Skill | a skill, using the names below |
+| WebSearch, WebFetch | web search |
+| `mcp__codegraph__codegraph_explore` | `codegraph` MCP tool `codegraph_explore` |
+| `mcp__serena__<tool>` | `serena` MCP tool `<tool>` |
+| Artifact | none — stop and say the design canvas cannot be read |
+
+Skill names in the Claude prompts:
+
+| Written as | Codex |
+| --- | --- |
+| `superpowers:<name>` | skill `<name>` when installed; otherwise the copy under `~/.claude/plugins/cache/claude-plugins-official/superpowers/*/skills/<name>/`. Say so when neither exists. |
+| `release-kit:git-commit`, `git-sync`, `git-mr`, `git-release` | skills `git-commit`, `git-sync`, `git-mr`, `git-release`. They read `.claude/release-kit.json`. |
+| `/git-accept` | skill `git-accept` |
 
 ## Critical Invariants
 
@@ -122,6 +125,8 @@ If the superpowers plugin is installed, its skills yield to this file. Where a s
 
 ## Decision Log
 
-Record only decisions that affect **system design** in `.claude/decisions.md` — architecture, module/layer boundaries, API or data contracts, security posture, or other cross-cutting structural choices that carry a real trade-off, an external constraint, a rejected alternative, or would be costly to re-derive later. Out of scope: visual/branding/UI styling, copy/content wording, and one-off bug fixes — even ones that took real investigation — unless the fix itself changed a structural/contract/security decision. Skip routine decisions — following an existing pattern, a standard CRUD addition, a mechanical rename — even if you had to think about them briefly; those add noise without future value. Write only the **why** — the reasoning and rejected alternative — never "what was done" or "how" (that's git log/diff's job; don't restate file names, method names, or a narrative of the change), and only when the why isn't obvious from reading the code. Title format: `### YYYY-MM-DD — <decision>`. Write every entry (title and body) in English, whatever language the conversation is in. Newest entry at top — prepend new entries directly below the header note, do not append at the bottom. Keep each entry under ~80 words (excluding heading).
+Decisions live where their scope lives; none needs a separate approval:
 
-**Gate:** never write to `.claude/decisions.md` without asking first. Draft the proposed entry, show it to the user, and wait for explicit confirmation before prepending it.
+- **Module** (its API, data model, authorization) — only in §12 of that module's `docs/tech/` document, approved with it. A code change with a major deviation from it updates the document in the same PR; a minor one is only declared in the PR (`docs/process/lifecycle.md` § Lệch thiết kế khi triển khai).
+- **Platform / cross-cutting** (infrastructure, deployment, shared auth mechanics, build/test tooling, codegen) — `.claude/decisions.md`, written by whoever makes the change, in the same PR. Append-only; rules in that file's header.
+- **Working process** (agents, gates, review) — rules in `docs/process/lifecycle.md`, decisions in `docs/process/decisions.md`.

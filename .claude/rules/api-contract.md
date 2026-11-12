@@ -13,7 +13,11 @@ Read this when changing a backend endpoint, request/response DTO, or header cont
 
 `shared/openapi/openapi.json` is the committed source of truth, exported from `backend/src/StarterKit.API`'s OpenAPI document at build time (no running server/DB required). The frontend generates its types and typed request functions from it with `orval` — `frontend/src/api/generated/**` is generated output, never hand-edited, and **gitignored** (same convention as `frontend/src/typings/`): it regenerates automatically via a `postinstall` script on every `bun install`, so it's always freshly derived from whatever `openapi.json` is checked out — no risk of committed-generated-code drifting from its source.
 
+DAONT-BASE does not yet have `AuthorizationResponsesOperationTransformer`. Declare the applicable 401 and 403 responses with `ProducesResponseType` on new actions so they appear in the OpenAPI contract. If a transformer is introduced later, remove duplicate declarations only for actions it covers.
+
 ### Regenerating after a backend contract change
+
+`scripts/sync-contract.sh` does both steps below, then `build-only` and `type-check` (so every broken call site shows up), and prints the `openapi.json` diff stat. The raw steps:
 
 ```bash
 # 1. Backend: re-export the spec (writes shared/openapi/openapi.json)
@@ -27,7 +31,7 @@ bun run --cwd frontend codegen
 
 ## How the generated client is wired into the app
 
-There is no hand-written `{resource}-api.ts` wrapper layer — views/components/composables call `frontend/src/api/generated/**` (`mode: 'tags-split'`, one file per controller tag, each exporting a `get*()` factory e.g. `getOrganizations()` → `{ organizationsGetMine, organizationsCreate, ... }`) directly. All generated requests route through `frontend/src/api/mutator.ts`, a thin wrapper around the existing `apiClient` axios instance — so every generated call automatically gets `apiClient`'s interceptors (auth headers, locale, the 401-refresh-and-retry queue) for free, no per-call special-casing needed.
+There is no hand-written `{resource}-api.ts` wrapper layer — views/components/composables call `frontend/src/api/generated/**` (`mode: 'tags-split'`, one file per controller tag, each exporting a `get*()` factory e.g. `getOrganizations()` → `{ organizationsGetMine, organizationsCreate, ... }`) directly. All generated requests route through `frontend/src/api/mutator.ts`, a thin wrapper around the existing `apiClient` axios instance — so every generated call automatically gets `apiClient`'s behaviour (auth cookies via `withCredentials`, the `X-TimeZone` and `X-CSRF-Protection` headers, locale, the 401-refresh-and-retry queue) for free, no per-call special-casing needed.
 
 Side effects the spec can't express live in the Pinia store that owns the relevant state, not at the call site:
 
@@ -48,7 +52,7 @@ Whenever you change a controller route, request/response DTO shape, status code,
 
 1. Regenerate (see command above) — this alone updates `frontend/src/api/generated/**` and surfaces any breakage as TypeScript errors at every call site.
 2. If the change affects error responses, remember the frontend maps errors through `ApiError`/`ProblemDetails` (`frontend/src/api/client.ts`) — check `toProblemDetails`/`toApiError` still handle the shape.
-3. If the change affects headers (`X-TimeZone`, `X-Api-Key`, `Authorization`/`access_token` cookie — see `authentication.md`; the active organization is the JWT `org_id` claim, not a header), check `frontend/src/api/client.ts` still sends them correctly (headers aren't part of the generated contract, they're applied by `apiClient`'s interceptors).
+3. If the change affects headers (`X-TimeZone`, `X-CSRF-Protection`, `X-Api-Key`, `Authorization`/`access_token` cookie — see `authentication.md`; the active organization is the JWT `org_id` claim, not a header), check `frontend/src/api/client.ts` still sends them correctly (headers aren't part of the generated contract, they're applied by `apiClient`'s interceptors).
 4. If a new controller/resource needs cross-cutting side effects on success (analogous to `setAuth`), add them as a Pinia store action wrapping the generated call — don't reintroduce a per-resource `{resource}-api.ts` wrapper file.
 
 ## Controller Route Casing

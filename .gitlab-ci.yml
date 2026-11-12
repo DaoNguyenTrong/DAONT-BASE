@@ -85,6 +85,7 @@ test:frontend:
     - bun run --cwd frontend prettier --check --experimental-cli src/ e2e/
     - bun run --cwd frontend build-only # writes src/typings/, which vue-tsc needs
     - bun run --cwd frontend type-check # vitest doesn't type-check
+    - bun run --cwd frontend lint:boundaries # import-boundary rules only (eslint.config.js)
     - bun run --cwd frontend test:coverage
 
 # The user guide is fed by the app's tokens and logos (frontend/src, frontend/public), so a frontend

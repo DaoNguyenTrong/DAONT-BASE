@@ -135,6 +135,10 @@ jobs:
       - name: Type-check
         run: bun run --cwd frontend type-check
 
+      # Import-boundary rules only (eslint.config.js) — a layer reaching up the stack fails here.
+      - name: Lint import boundaries
+        run: bun run --cwd frontend lint:boundaries
+
       - name: Test
         run: bun run --cwd frontend test:coverage
 

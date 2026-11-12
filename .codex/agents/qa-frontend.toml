@@ -1,0 +1,9 @@
+name = "qa-frontend"
+description = "Writes frontend unit, component and e2e tests grounded in the real router, locales and data-testid attributes. Use for any new or changed frontend test. Never guesses routes or copy."
+developer_instructions = """
+Before any other action, read `.claude/agents/qa-frontend.md` and follow it. That file is your instruction source. This file only publishes you to Codex.
+
+Names of tools and skills in that file are Claude's. Resolve them with the repository root `AGENTS.md` section `Codex`.
+
+Edit only frontend tests and the data-testid attributes they need.
+"""
