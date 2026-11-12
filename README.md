@@ -100,6 +100,10 @@ bun run --cwd frontend format         # prettier — there is no ESLint config i
 
 A freshly registered account has no organization yet, so Files/API keys/audit logs/system settings all return 403 until you create one: `POST /api/organizations` (or use the frontend's Organizations page), then `POST /api/auth/switch-organization` to make it the session's active organization — the creator is seeded as its Owner with every permission.
 
+### AI Tooling (optional)
+
+Working with Claude Code or Codex? See [AI_TOOLS_SETUP.md](AI_TOOLS_SETUP.md) for installing the MCP servers (CodeGraph, Serena) and plugins this repo's agent workflow expects.
+
 ### Git Hooks (once, at the repo root)
 
 ```bash
