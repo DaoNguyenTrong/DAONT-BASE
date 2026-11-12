@@ -25,6 +25,21 @@ The values are on the System boards; these are the rules behind them.
 - **Glass:** glass only on the main floating layers (rail, top bar, panels); at most one glass layer under text; popovers, menus, toasts and dialogs sit on a solid raised surface; every glass level has a solid fallback for reduced transparency; data-heavy pages use the calmer ambient light.
 - **Motion:** 160ms ease (hover, color), 240ms spring (lift, panel open, list↔board), 320ms spring (widget pop). Everything off under `prefers-reduced-motion`.
 
+## Avoid the "AI-generated" look
+
+A screen must look like a working internal tool built by a team that knows its users, not like a generated landing page. These are checkable rules; the tokens still decide every value.
+
+1. **No decoration without a job.** No gradients (especially purple→blue), glows, neon or colored shadows, blurred blobs, sparkle or "magic" imagery. Only the ambient light and glass defined on the System boards. Shadow only to show elevation, one level per layer.
+2. **Structure, not boxes.** Do not wrap every block in a card, and never put a card inside a card. Group with spacing, dividers and table rows. A list of records is a table or list, not a grid of equal cards.
+3. **No template patterns.** No hero section, no row of three equal tiles of "icon in a colored circle + bold title + one-line blurb", no big empty-state illustration on a screen with data, no stat tiles that the PRD does not ask for.
+4. **Icons carry meaning.** One icon set, one stroke weight. An icon only where it speeds recognition (status, type, an icon-only button); not on every label, heading or button.
+5. **Density follows the persona.** Admin and operator screens are dense and scannable: compact rows, left-aligned text and numbers aligned in columns. Do not center-align page content or inflate padding to look "airy".
+6. **Neutral by default, one emphasis.** One primary action per view. Chips and badges are neutral unless color has a meaning from the Design language; never use colored badges for decoration.
+7. **Realistic data.** Vary values and lengths: uneven numbers (not 100%, 1,234, 5.0), mixed Vietnamese names and organizations, long and short titles, some empty and some missing fields, plausible timestamps. Include at least one edge case the PRD names (long text, zero results, error, loading).
+8. **Plain copy.** Labels are the nouns the users and the PRD use. No greetings ("Chào mừng trở lại!"), slogans, exclamation marks, "Hãy bắt đầu…", or a subtitle under every title. Button text is a verb phrase ("Gửi phản hồi"), not "Khám phá ngay".
+9. **Reuse the product's own shapes.** Start from the Components boards and the existing screens in `frontend/src/` (read only); copy their layout, spacing and wording style. Invent a new pattern only when none fits, and then give it a dark board (Rule 1 below).
+10. **Self-check before returning.** For each board: remove color and icons mentally, the hierarchy must still read from weight, spacing and position. If any rule above is broken, fix it before returning; report any deliberate exception in the output.
+
 ## Rules
 
 1. **Light and dark.** The System and Components boards, and every screen that introduces a **new** pattern or interaction, get both a light and a dark board, side by side in the same row: light on the left, dark on the right, 80px apart. Never stack light and dark inside one board, and never split them into canvas pages. Dark is its own palette, not an inversion. A screen built only from existing patterns gets a light board only: the tokens give its dark version, and the board names the dark pattern boards it relies on. When unsure whether a pattern is new, treat it as new.
@@ -46,4 +61,4 @@ The values are on the System boards; these are the rules behind them.
 
 ## Output
 
-Return, in Vietnamese: the canvas link, the boards added or changed, the design calls you made yourself (so the user can check them), and any open questions. Keep it under about 30 lines.
+Return, in Vietnamese: the canvas link, the boards added or changed, the design calls you made yourself (so the user can check them), any deliberate exception to "Avoid the AI-generated look", and any open questions. Keep it under about 30 lines.
