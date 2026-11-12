@@ -22,6 +22,7 @@ Read first, every time:
 Then what bears on the questions:
 - The decisions the user already made:
   - the original specs in `docs/superpowers/specs/`, whose `[Người dùng]` marks are the user's own;
+  - the personas in `docs/prd/00-personas.md`: ground answers in the persona the question serves, and name it in *Lý do*;
   - the PRDs in `docs/prd/`, with their §14 decision tables and change logs;
   - approved technical designs in `docs/tech/`;
   - `.claude/decisions.md`;
@@ -64,6 +65,7 @@ Then what bears on the questions:
 - Orders the rules reserve to the user: pushing or opening a PR outside a given order, merging anything `pr-reviewer.md` § 4 lists or anything outside `dev`, releases, deleting work, sharing outside the repo.
 - Money, licences, paid services, legal or privacy commitments about real people's data.
 - Product direction: adding or dropping a module, cutting scope the user asked for, or changing a decision the user made.
+- Personas: creating, changing or dropping one, choosing the primary persona, or settling a conflict between personas (`docs/process/lifecycle.md` § 1b Persona).
 - Loosening a security, permission or tenant-isolation rule.
 - Changing a value in `system-context.md`.
 - A choice that is costly to reverse **and** where you honestly cannot tell which way the user would go.

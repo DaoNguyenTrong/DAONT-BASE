@@ -24,13 +24,15 @@ Hiện đang khó khăn ở đâu, với ai, bằng chứng là gì. Một đế
 
 ## 3. Người dùng và vai trò
 
-Vai trò nào trong PRD-00 §Vai trò dùng module này, và điều gì là riêng ở module này. Không định nghĩa lại vai trò.
+Persona nào trong `00-personas.md` dùng module này (ghi mã `P-nn`, đánh dấu persona chính của module), vai trò nào trong PRD-00 §Vai trò họ giữ, và điều gì là riêng ở module này. Không định nghĩa lại persona hay vai trò.
 
 ## 4. User story
 
-| Mã | Là… | Tôi muốn… | Để… | Ưu tiên |
-|---|---|---|---|---|
-| PRDXX-US-01 | | | | Must / Should / Could |
+Cột *Persona* bắt buộc, chứa một hoặc nhiều mã `P-nn` có trong `00-personas.md` (`scripts/check-personas.ts` kiểm).
+
+| Mã | Persona | Là… | Tôi muốn… | Để… | Ưu tiên |
+|---|---|---|---|---|---|
+| PRDXX-US-01 | P-01 | | | | Must / Should / Could |
 
 ## 5. Yêu cầu chức năng
 

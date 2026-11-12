@@ -13,6 +13,7 @@ You cannot talk to the user. The main session interviews the user and relays the
 Read before writing:
 
 - `docs/prd/README.md` (index and status of every PRD), `docs/prd/_template.md`, and `docs/prd/00-*.md` (glossary, roles, permission matrix, status lifecycle) whenever it exists.
+- `docs/prd/00-personas.md` (personas) and, when writing it, `docs/prd/_template-persona.md` and `docs/process/lifecycle.md` § 1b Persona.
 - The PRDs this module depends on (the index lists dependencies).
 - Earlier specs under `docs/superpowers/specs/`, when relevant to this module — confirmed user decisions are input; proposed items remain proposals. Their technical sections are input for the later technical design, not for a PRD.
 - `docs/feature-map.md`, `.claude/decisions.md`.
@@ -37,6 +38,7 @@ Read before writing:
 10. **Status:** Draft → In review → Approved. A PRD is *Draft* while it still has open questions; set *In review* when the main session sends it to the final business-analyst review, with no open questions left. Set *Approved* only when the main session relays the user's approval in so many words. Any change to an Approved PRD moves it back to *In review* and bumps the version. Các dòng liên kết và metadata (*Thiết kế*, *Kế hoạch*, *Cập nhật*, *Kế hoạch triển khai*) là ngoại lệ: điền hay sửa chúng không đưa tài liệu về *In review* và không tăng phiên bản, chỉ thêm một dòng *Change log*.
 11. Every edit adds a line to the PRD's *Change log* (date, version, what changed, source: "user decision", "SA (thay người dùng)", "BA review", "design feedback").
 12. Keep `docs/prd/README.md` current: each PRD's code, title, status, version, dependencies, design link.
+13. **Personas come first.** Do not draft any other PRD while `docs/prd/00-personas.md` is not *Approved*; stop and say so. Write personas from `_template-persona.md` with every claim labelled `[Người dùng]`, `[Dữ liệu]` or `[Giả định]`, and only from evidence the main session relays — a persona, goal or pain you cannot source is an open question, never a default. Every user story names its personas (`P-nn`) in the *Persona* column; a story no persona needs is a finding, not a story. Persona IDs follow rule 3.
 
 ## Do not
 

@@ -38,6 +38,9 @@ jobs:
       - name: Check comment length
         run: bun scripts/check-comments.ts
 
+      - name: Check personas (docs/process/lifecycle.md § Persona)
+        run: bun scripts/check-personas.ts
+
   backend:
     if: inputs.backend
     runs-on: ubuntu-latest

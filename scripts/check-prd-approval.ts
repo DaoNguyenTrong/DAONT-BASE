@@ -11,7 +11,7 @@ const VERSION = /^\d+\.\d+$/
 const DATE_ROW = /^\|\s*\d{4}-\d{2}-\d{2}\s*\|/
 
 // `\|` is a literal pipe inside a cell, never a column break.
-const cells = (line: string) =>
+export const cells = (line: string) =>
   line
     .trim()
     .replace(/^\|/, '')
@@ -19,7 +19,7 @@ const cells = (line: string) =>
     .split(/(?<!\\)\|/)
     .map((c) => c.trim())
 
-const plain = (cell: string) => cell.replace(/\*/g, '').trim()
+export const plain = (cell: string) => cell.replace(/\*/g, '').trim()
 
 function headerValue(markdown: string, key: string): string | undefined {
   for (const line of markdown.split('\n')) {
@@ -30,7 +30,7 @@ function headerValue(markdown: string, key: string): string | undefined {
   return undefined
 }
 
-function status(markdown: string): (typeof STATUSES)[number] | undefined {
+export function status(markdown: string): (typeof STATUSES)[number] | undefined {
   const value = headerValue(markdown, 'Trạng thái') ?? ''
   return STATUSES.find((s) => new RegExp(`^${s}\\b`, 'i').test(value))
 }

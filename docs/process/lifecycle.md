@@ -6,7 +6,7 @@ Tài liệu này mô tả đường đi từ ý tưởng đến phát hành, ai 
 
 | # | Giai đoạn | Sản phẩm đầu ra | Người làm | Cổng duyệt | Xong khi |
 |---|---|---|---|---|---|
-| 0 | Ý tưởng và tầm nhìn | Tầm nhìn, danh sách module, thứ tự ưu tiên | Phiên chính (`superpowers:brainstorming`) cùng người dùng | Người dùng | Danh mục module trong `docs/prd/README.md` được chốt |
+| 0 | Ý tưởng và tầm nhìn | Persona (`docs/prd/00-personas.md`), tầm nhìn, danh sách module, thứ tự ưu tiên | Phiên chính (`superpowers:brainstorming`) cùng người dùng; persona do `product-manager` viết, `business-analyst` review (§1b) | Người dùng | Persona ở trạng thái *Approved*, danh mục module trong `docs/prd/README.md` được chốt |
 | 1 | Yêu cầu | PRD trong `docs/prd/` | `product-manager`, review bởi `business-analyst` | Người dùng | PRD ở trạng thái *Approved* |
 | 2 | Thiết kế giao diện | Bảng thiết kế trên canvas, gắn mã yêu cầu | `ui-designer` | Người dùng | Mọi FR có màn hình mới hoặc mẫu tương tác mới đều có bảng; màn hình theo mẫu có sẵn chỉ ghi tên mẫu; bảng tối chỉ cho mẫu mới (`ui-designer.md` quy tắc 1); người dùng duyệt |
 | 3 | Thiết kế kỹ thuật | Tài liệu trong `docs/tech/` | `tech-lead` (`appsec` trước với module nhạy cảm) | Người dùng | Tài liệu *Approved*, mọi FR/AC có mục thiết kế |
@@ -19,6 +19,27 @@ Tài liệu này mô tả đường đi từ ý tưởng đến phát hành, ai 
 Phiên chính là người điều phối: gửi mọi câu hỏi cho `solution-architect` trả lời thay người dùng, chỉ hỏi người dùng những câu agent đó chuyển lên, chuyển câu trả lời cho agent, gọi agent theo thứ tự, và không tự làm thay công việc của agent. Subagent không hỏi được người dùng và không gọi được agent khác.
 
 Để bớt lượt gọi, phiên chính gom câu hỏi của một giai đoạn vào một lượt gọi `solution-architect`. Câu hỏi thuần kỹ thuật đã có mặc định hợp lý thì phiên chính tự quyết và ghi lại trong kế hoạch, không gửi đi.
+
+## 1b. Persona
+
+Persona là chân dung một nhóm người dùng thật, dựng theo mục tiêu và hành vi, không theo tuổi hay chức danh. Persona khác vai trò: persona nói ai dùng và vì sao, vai trò (PRD-00 §Vai trò) nói ai được làm gì. Một sản phẩm mới không bắt đầu PRD nào khi `docs/prd/00-personas.md` chưa *Approved*; `scripts/check-personas.ts` chặn điều này trong `scripts/test-gate.sh` và CI.
+
+**Cách dựng.** Phiên chính điều phối; tài liệu viết từ `docs/prd/_template-persona.md`, nằm trên nhánh tài liệu và đi qua `/git-accept` như PRD (§5).
+1. **Thu bằng chứng.** Phiên chính phỏng vấn người dùng theo `superpowers:brainstorming`, hỏi về người thật và lần gần nhất họ gặp vấn đề. Nguồn theo thứ tự ưu tiên: phỏng vấn người dùng cuối, số liệu hoặc ticket, chuyên gia nghiệp vụ, hiểu biết của người dùng.
+2. **Gom nhóm** theo mục tiêu và hành vi: hai người cùng chức danh nhưng khác mục tiêu là hai persona. Giữ 2–5 persona, chọn đúng một persona chính, và ít nhất một phản persona.
+3. **Viết.** `product-manager` viết theo mẫu; mọi khẳng định gắn nhãn `[Người dùng]`, `[Dữ liệu]` hoặc `[Giả định]`. Chưa có nghiên cứu thì được viết proto-persona, nhưng mỗi `[Giả định]` có cách kiểm chứng ở §6 của tài liệu.
+4. **Phân xử xung đột** giữa persona là quyết định nghiệp vụ: `solution-architect` chuyển lên người dùng, không tự quyết, và không tự dựng persona.
+5. **Review.** `business-analyst` review theo checklist bên dưới, rồi người dùng duyệt; thứ tự này do `scripts/check-prd-approval.ts` kiểm như với PRD.
+
+**Checklist duyệt:** mỗi persona có ít nhất 2 mục tiêu, 2 nỗi đau và 2 tình huống; không có hai persona trùng mục tiêu chính; đúng một persona chính và ít nhất một phản persona; không quá một nửa số dòng của một persona là `[Giả định]`; không mô tả tính năng hay giải pháp; thiết bị và ngôn ngữ đủ rõ để `ui-designer` chọn bố cục.
+
+**Dùng ở hạ nguồn.** Mã persona đi vào chuỗi truy vết (§7):
+- **PRD module:** §3 liệt kê persona dùng module và persona chính của module; mỗi user story ở §4 ghi mã `P-nn`.
+- **Thiết kế:** mỗi bảng ghi persona chính, dùng để chọn thiết bị và mật độ thông tin.
+- **Test e2e:** đặt tên kịch bản theo persona.
+- **`solution-architect`:** dùng persona làm căn cứ khi trả lời thay người dùng.
+
+**Thay đổi.** Sửa persona đã duyệt thì tăng phiên bản và đưa tài liệu về *In review* (§3); các PRD có story của persona bị sửa được xem lại. Phản hồi ở giai đoạn 8 là nguồn chính để cập nhật persona. Retro cuối module (§8) kiểm tra có persona nào không còn story nào phục vụ.
 
 ## 2. Cỡ công việc
 
@@ -115,7 +136,7 @@ Dùng skill `release-kit:git-release` (cấu hình ở `.claude/release-kit.json
 
 ## 7. Truy vết
 
-Mã yêu cầu đi suốt chuỗi: PRD (`PRDxx-FR-nn`) → tiêu đề bảng thiết kế → mục tài liệu kỹ thuật → task trong kế hoạch → test → dòng `PRD:` của feature-map → mô tả PR. Một mã không có hạ nguồn, hoặc một thành phần không có mã thượng nguồn, là một phát hiện ở bất kỳ khâu review nào.
+Mã yêu cầu đi suốt chuỗi: persona (`P-nn`) → user story (`PRDxx-US-nn`) → PRD (`PRDxx-FR-nn`) → tiêu đề bảng thiết kế → mục tài liệu kỹ thuật → task trong kế hoạch → test → dòng `PRD:` của feature-map → mô tả PR. Một mã không có hạ nguồn, hoặc một thành phần không có mã thượng nguồn, là một phát hiện ở bất kỳ khâu review nào.
 
 ## 8. Lỗi lặp và retro cuối module
 
@@ -126,7 +147,7 @@ Cùng một góp ý xuất hiện hai lần thì không thêm quy tắc văn b�
 2. Ghi mỗi nhóm nguyên nhân vào `docs/agent-error-log.md`, và xử lý các ý trong mục *Chờ retro* của tệp đó.
 3. Nhóm gặp từ hai lần trở lên thì biến thành kiểm tra tự động (việc cỡ S cho `implementer`), hoặc ghi lý do không làm được vào mục đó. Mục đã tự động hoá ghi "Đã chuyển thành: …".
 4. Ghi số đo của module vào `progress.md` § Số đo, kèm bảng của `bun scripts/risk-tier.ts --fix-ratio <dải commit của module>` và tổng token agent cộng từ mục `## Verification` của các PR phase.
-5. Gom các thay đổi quy trình của module vào một PR quy trình.
+5. Gom các thay đổi quy trình của module vào một PR quy trình, kèm danh sách persona không còn story nào phục vụ (§1b), nếu có.
 6. Nếu tỉ lệ `fix` của hạng 1 cao hơn của hạng 2, đưa đường dẫn của các commit `fix` hạng 1 vào danh sách hạng 2 của `scripts/risk-tier.ts`, trong PR quy trình ở bước 5.
 
 **Đóng băng quy trình giữa module.** Thay đổi quy trình (tài liệu này, `AGENTS.md`, `.claude/agents/`, `.claude/rules/`) chỉ áp dụng ở retro. Giữa module chỉ sửa lỗi quy trình đang chặn việc, kèm lý do trong một mục của `docs/process/decisions.md`. Ý cải tiến phát sinh giữa module được ghi vào mục *Chờ retro* của `docs/agent-error-log.md`.

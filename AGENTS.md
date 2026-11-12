@@ -20,7 +20,7 @@ Work runs from idea to release, not only from code. Full detail (work sizes S/M/
 
 | Stage              | Output                         | Owner                                                              |
 | ------------------ | ------------------------------ | ------------------------------------------------------------------ |
-| 0 Idea and vision  | module list, priorities        | main session (`brainstorming`) with the user                       |
+| 0 Idea and vision  | personas (`docs/prd/00-personas.md`, required before any PRD), module list, priorities | main session (`brainstorming`) with the user; personas: `product-manager`, reviewed by `business-analyst`; user approves |
 | 1 Requirements     | PRD in `docs/prd/`             | `product-manager`, reviewed by `business-analyst`; user approves   |
 | 2 UI design        | boards on the design canvas    | `ui-designer`; user approves                                       |
 | 3 Technical design | `docs/tech/`                   | `tech-lead`; `appsec` reviews it before approval when security-critical |

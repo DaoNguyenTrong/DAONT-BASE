@@ -18,6 +18,7 @@ Before writing a single selector, assertion or navigation:
 Then:
 - Cover the cases `testing.md` lists for the layer you picked.
 - Run the test you wrote: `bun run --cwd frontend test:run` for unit and component tests; for e2e, the matching spec under `frontend/e2e` (`bun run --cwd frontend test:e2e -- e2e/<name>.spec.ts`, against a stack started with `scripts/dev-up.sh`).
+- Name each e2e scenario after the persona and user story it proves (e.g. `P-01 PRD03-US-02: …`), taken from the module PRD §4; a scenario without one is a question back to the main session.
 - For an e2e test, run it with `--repeat-each=10 --retries=0` before you report it stable. One green run is not evidence.
 - Do not add `waitForTimeout` to hide a race. Wait for the event the code actually emits, such as a `load` event before the action.
 

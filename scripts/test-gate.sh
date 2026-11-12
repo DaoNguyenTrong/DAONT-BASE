@@ -50,6 +50,7 @@ trap 'exit 143' TERM
 # Comment length (.claude/rules/comments.md) — seconds, so it fails fast.
 bun test scripts/
 bun scripts/check-comments.ts
+bun scripts/check-personas.ts
 
 backend/scripts/test.sh
 

@@ -43,7 +43,7 @@ gh pr view <number> --json statusCheckRollup --jq '.statusCheckRollup[] | "\(.na
 
 A docs-only PR is tier 0 (`docs/process/lifecycle.md` § Hạng kiểm tra): no agent review. Instead:
 
-1. Run `bun scripts/check-prd-approval.ts` on every changed `docs/prd/*.md` other than `README.md` and `_template.md`. It checks an *Approved* PRD's change log: a `BA review` row before the last user-approval row of the current version, and only `metadata` rows after it (`docs/prd/README.md` § Quy trình, step 4). Any line it prints is `blocking`.
+1. Run `bun scripts/check-prd-approval.ts` on every changed `docs/prd/*.md` other than `README.md` and the `_template*.md` files. It checks an *Approved* PRD's change log: a `BA review` row before the last user-approval row of the current version, and only `metadata` rows after it (`docs/prd/README.md` § Quy trình, step 4). Any line it prints is `blocking`.
 2. Read the diff (`gh pr diff <number>`) yourself for files, commands, symbols or `§` references that no longer exist. Each one is `blocking`.
 
 Post the script output and "đã đọc diff: <findings or Không có>" as a PR comment so the decision is on record:

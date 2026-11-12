@@ -6,7 +6,7 @@ Giá trị **[Người dùng]** là đã được xác nhận; **[Đề xuất]*
 
 ## Người dùng
 
-Chưa xác định sản phẩm, nhóm người dùng, vai trò và thiết bị mục tiêu. Nền tảng hiện hỗ trợ tiếng Việt và tiếng Anh; xem `.claude/rules/localization.md`.
+Chưa xác định sản phẩm, nhóm người dùng, vai trò và thiết bị mục tiêu. Nhóm người dùng và thiết bị được chốt trong `docs/prd/00-personas.md` (`lifecycle.md` § 1b) trước mọi PRD; khi tệp đó được duyệt, mục này chỉ trỏ tới nó. Nền tảng hiện hỗ trợ tiếng Việt và tiếng Anh; xem `.claude/rules/localization.md`.
 
 ## Quy mô
 

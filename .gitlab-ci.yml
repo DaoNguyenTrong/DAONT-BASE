@@ -114,6 +114,7 @@ test:comments:
   script:
     - bun test scripts/
     - bun scripts/check-comments.ts
+    - bun scripts/check-personas.ts
 
 # $CI_REGISTRY_IMAGE/<service>:X.Y.Z, plus :latest for a stable (non-pre-release) tag.
 images:
