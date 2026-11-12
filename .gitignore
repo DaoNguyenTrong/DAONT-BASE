@@ -21,6 +21,10 @@ pnpm-lock.yaml
 .serena/*
 !.serena/project.yml
 .codex/*
+# Shared Codex wiring. Local Codex state (logs, sessions) stays ignored.
+!.codex/hooks.json
+!.codex/agents/
+!.codex/agents/**
 .claude/worktrees/
 .claude/scheduled_tasks.lock
 .claude/settings.local.json

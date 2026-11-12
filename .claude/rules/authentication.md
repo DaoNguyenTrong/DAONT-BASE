@@ -9,7 +9,9 @@ Two authentication schemes, both accepted by the default `[Authorize]` policy (`
 
 - **JWT Bearer** — from the `Authorization` header or the `access_token` cookie (`OnMessageReceived`).
 - **API key** — the `X-Api-Key` header (`ApiKeyAuthenticationHandler`), issued per organization via
-  `/api/admin/api-keys`.
+  `/api/admin/api-keys`. It is a full, secret credential (accepted by plain `[Authorize]`, exempt from the CSRF
+  check). Never ship one to a browser, and never model a public identifier on it: a public key or widget identifier
+  authenticates nothing; any such surface requires an approved design in `docs/tech/`.
 
 **Deny by default.** `FallbackPolicy` is the default policy, so any endpoint — or middleware path after
 `UseAuthorization` — that declares no access requires a signed-in caller; an unmapped route answers 401 to an
@@ -50,6 +52,10 @@ short-TTL cache, not the JWT. The frontend's `meta.permission` route gate is UI-
 - `X-TimeZone` — required. IANA timezone identifier (e.g. `Asia/Ho_Chi_Minh`). Missing/invalid → 400
   (`UserTimeZoneMiddleware`). Exempt: `/api/health` and `/api/auth/check` (nginx's `auth_request` for the
   user guide forwards only the cookie).
+- `X-CSRF-Protection` — required on every non-GET/HEAD/OPTIONS `/api` request that carries the `access_token`
+  cookie and no `Authorization`/`X-Api-Key` header; missing → 403 (`CsrfProtectionMiddleware`). Any value works:
+  a cross-site form can't set a custom header, so its presence proves the request came from script on an
+  allowed origin.
 
 `GET /api/auth/check` (policy `AuthorizationPolicies.SignedInUser`) accepts only a user's JWT — an API key
 gets 401 there, unlike every other `[Authorize]` endpoint.

@@ -4,12 +4,25 @@
   "devBranch": "dev",
   "mainBranch": "main",
   "versioningNote": "backend via MinVer (git tag); frontend not versioned",
-  "frontendVersionFile": null,
+  "versionFiles": [],
   "gate": {
     "phase1": "scripts/test-gate.sh",
     "mandatory": "scripts/test-gate.sh"
   },
   "changelogPath": "CHANGELOG.md",
-  "ciTriggerNote": ".github/workflows/release.yml (GitHub) / .gitlab-ci.yml (GitLab) trigger on the v* tag push: test, then production images versioned from the tag, then the release; PRs and pushes to dev run the same test gate (.github/workflows/ci.yml); once test / backend and test / frontend are required checks on main, a release PR can merge only after they pass (wait for them, or use gh pr merge --auto)",
-  "modes": ["standard", "quick", "hotfix"]
+  "devWrites": "pr",
+  "devMergeCommand": "/git-accept",
+  "pushAfterRebase": "force-with-lease",
+  "prExtraSections": [
+    "Requirements",
+    "Lệch nhỏ so với thiết kế",
+    "Verification",
+    "Risk tier"
+  ],
+  "ciTriggerNote": ".github/workflows/release.yml (GitHub) / .gitlab-ci.yml (GitLab) trigger on the v* tag push: test, then production images versioned from the tag, then the release; PRs and pushes to dev run the same test gate (.github/workflows/ci.yml); once test / comments, test / backend, test / frontend and test / guide are required checks on main, a release PR can merge only after they pass (wait for them to finish, then merge; never gh pr merge --auto)",
+  "modes": [
+    "standard",
+    "quick",
+    "hotfix"
+  ]
 }

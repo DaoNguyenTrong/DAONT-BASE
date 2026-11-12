@@ -16,7 +16,7 @@ Clean Architecture — four layers:
 | Infrastructure | `StarterKit.Infrastructure` | EF Core (PostgreSQL), repositories, JWT/API-key auth, caching, storage, email, Hangfire jobs |
 | API            | `StarterKit.API`            | Controllers, middleware, OpenAPI/Scalar, `Program.cs`                   |
 
-Dependencies flow inward: API → Application → Domain. Infrastructure implements Domain interfaces.
+Dependencies flow inward: API → Application → Domain. Infrastructure references Application and implements both the Domain interfaces and the Application ports (`Application/Common/Interfaces`, e.g. `IEmailSender`).
 
 All four layer projects live under `backend/src/`; tests mirror the split under `backend/tests/`.
 
