@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.6.5] - 2026-11-12
+
+### Added
+
+- A setup guide (`AI_TOOLS_SETUP.md`) walks new contributors through installing the AI tools and MCP servers this repo uses. (#76)
+
+### Changed
+
+- The UI designer agent follows new rules to avoid generic, AI-looking designs. (#75)
+
 ## [v1.6.4] - 2026-11-12
 
 ### Changed
