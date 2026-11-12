@@ -27,7 +27,7 @@ Doc comments (`///`, JSDoc) only on a public API whose contract the signature do
 | Change history — "was X, now Y", "originally", "promoted from"      | commit message — delete it              |
 | What the next line does, or values visible in the code (hex, names) | nowhere — delete it                     |
 | Task or conversation context — "per user request", "as discussed"   | PR description                          |
-| A system-design reason with a trade-off or rejected alternative     | `.claude/decisions.md` (its own gate)   |
+| A system-design reason with a trade-off or rejected alternative     | `docs/tech/` §12, or `.claude/decisions.md` if platform-wide |
 | A long how-it-works explanation                                     | `docs/`, linked from a one-line comment |
 
 ## Length: at most 3 lines of at most 120 characters

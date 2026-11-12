@@ -50,7 +50,7 @@ dotnet StarterKit.API.dll migrate
 dotnet build backend/src/StarterKit.API/StarterKit.API.csproj --no-restore -m:1 -p:OpenApiGenerateDocumentsOnBuild=true
 ```
 
-Run after any controller/DTO change, then `bun run --cwd frontend codegen` — why it's opt-in and the full contract-sync workflow: `api-contract.md`.
+Run after any controller/DTO change, then `bun run --cwd frontend codegen` — or `scripts/sync-contract.sh`, which runs both plus the frontend `build-only` and `type-check`. Why it's opt-in and the full contract-sync workflow: `api-contract.md`.
 
 The export builds the real host from `Program.cs` inside the `GetDocument.Insider` tool. `Program.cs` detects that (`isOpenApiExport`) and skips every startup step that reaches Postgres or S3 (migrations, Hangfire recurring-job registration, bucket creation) — any new startup step that touches an external service must go behind the same flag, or the export fails with connection errors that read like contract errors. With no database running, one `[ERR] ... connection to database` line from DataProtection's background key-ring load is still logged; it is harmless, the build succeeds.
 

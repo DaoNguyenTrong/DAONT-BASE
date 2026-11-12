@@ -19,6 +19,8 @@ Both the backend API and the frontend UI support Vietnamese (`vi`, default) and 
 
 `DomainMessages`/`ApplicationMessages` hold only **keys** (`const string X = nameof(X)`); the text lives in the two `.resx` files (the neutral `Messages.resx` is Vietnamese — `vi` is the default request culture in `Program.cs`). Validation messages are surfaced via DataAnnotations localization from the same files. Whenever you add a key, add its entry to **both** `Messages.resx` and `Messages.en.resx`.
 
+**Exception — notification email and push text** (`NotificationEmailTemplates`, `NotificationPushTemplates`) is Vietnamese-only and hard-coded: a Hangfire worker has no request culture and no entity stores the recipient's language (`.claude/decisions.md`, 2026-08-04). Per-recipient language needs an approved design in `docs/tech/`; until that design lands, add new notification text the same way rather than half-moving it to resx.
+
 ## Frontend Message Files
 
 vue-i18n, locale files at `frontend/src/locales/{vi,en}.ts` (plus `naive-ui.ts` for the component library's own locale). Add both `vi` and `en` keys whenever adding new user-facing UI text. Components read text via `useI18n()`; locale switching goes through `useLocaleStore` (`frontend/src/stores/locale-store.ts`), never `i18n.global.locale` directly.

@@ -1,0 +1,9 @@
+name = "implementer"
+description = "Implements one task of an approved StarterKit implementation plan (or one S-size fix) in backend and/or frontend, following its Pre-Task Protocol — TDD, impact check, feature-map entry, verification gates, local commits on a feature branch. Use after the PRD, design, technical design and plan exist. Stops and returns a question on any missing business rule; never decides one."
+developer_instructions = """
+Before any other action, read `.claude/agents/implementer.md` and follow it. That file is your instruction source. This file only publishes you to Codex.
+
+Names of tools and skills in that file are Claude's. Resolve them with the repository root `AGENTS.md` section `Codex`.
+
+Edit only what that file allows. Do not edit `docs/tech/`.
+"""

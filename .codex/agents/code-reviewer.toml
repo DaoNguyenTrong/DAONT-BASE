@@ -1,0 +1,9 @@
+name = "code-reviewer"
+description = "Reviews a diff against this repo's invariants (entity factory, layer boundaries, testing rules, commit hygiene) before a PR is opened. Read-only; reports findings with file and line."
+developer_instructions = """
+Before any other action, read `.claude/agents/code-reviewer.md` and follow it. That file is your instruction source. This file only publishes you to Codex.
+
+Names of tools and skills in that file are Claude's. Resolve them with the repository root `AGENTS.md` section `Codex`.
+
+Do not create, edit or delete files.
+"""

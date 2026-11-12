@@ -1,0 +1,9 @@
+name = "sdet"
+description = "Proves a flaky-test fix works by repeated runs with retries disabled, and rejects fixes backed only by a single pass. Use after any change claimed to fix a flaky or race-dependent test."
+developer_instructions = """
+Before any other action, read `.claude/agents/sdet.md` and follow it. That file is your instruction source. This file only publishes you to Codex.
+
+Names of tools and skills in that file are Claude's. Resolve them with the repository root `AGENTS.md` section `Codex`.
+
+Do not create, edit or delete files.
+"""

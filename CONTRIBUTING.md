@@ -59,17 +59,21 @@ git push origin feature/your-feature-name
 
 Then create PR to `dev` branch on GitHub. CI (`.github/workflows/ci.yml`) runs the test gate on the PR — backend tests and an OpenAPI-export drift check when `backend/` or `shared/openapi/` changes, frontend formatting, type-check and unit tests when `frontend/` or `shared/openapi/` changes, and the user-guide checks when `frontend/` changes. A part the change doesn't touch reports as skipped, which counts as passing. A red check means fix it before review. `scripts/test-gate.sh` runs the same checks locally.
 
-**Repository setup (once, by a maintainer):** add a ruleset for `main` that requires a pull request and the status checks `test / comments`, `test / backend`, `test / frontend` and `test / guide`. Don't require status checks on `dev` without a bypass for the maintainer role: `/git-release` pushes the CHANGELOG commit to `dev` directly and the post-release reconcile is a direct `git push`, both of which a required-check rule rejects. On GitLab, enable *Settings → Merge requests → Pipelines must succeed*.
+**Repository setup (once, by a maintainer):** add a ruleset for `main` that requires a pull request and the status checks `test / comments`, `test / backend`, `test / frontend` and `test / guide`. Requiring status checks on `dev` is fine too: nothing reaches `dev` without a PR — the release CHANGELOG is written on `release/vX.Y.Z`, quick release's CHANGELOG goes through a PR, and the post-release reconcile is a PR. On GitLab, enable *Settings → Merge requests → Pipelines must succeed*.
 
-### 4. Update CHANGELOG
+### 4. Changelog entry
 
-When your PR is merged, add entry to `CHANGELOG.md` under `[Unreleased]`:
+Don't edit `CHANGELOG.md`. Put a `## Changelog` section in the PR description instead (the `release-kit:git-mr` format) — `/git-release` compiles the release's CHANGELOG from those sections:
 
 ```markdown
-## [Unreleased]
-### Added
-- Your new feature description
+## Changelog
+- Added: Users can complete the new workflow described in the PR.
+
+## Verification
+<checks run>
 ```
+
+Write just `none` for a change no user would notice (refactor, tooling, tests, docs).
 
 ## Release Process
 
@@ -78,36 +82,29 @@ Two phases, handled by the `git-release` skill (`/git-release`, from the `releas
 ### Phase 1 — Cut (on `dev`)
 
 1. Ensure all features for this release are merged to `dev`.
-2. `/git-release` on `dev` — the skill renames `## [Unreleased]` to `## [vX.Y.Z] - YYYY-MM-DD` and adds a fresh empty `## [Unreleased]` above it, commits and pushes to `dev`, then cuts and pushes `release/vX.Y.Z` from that commit.
-   **That `## [vX.Y.Z]` entry is never edited again on the release branch** — it keeps the `release/vX.Y.Z → main` merge clean.
+2. `/git-release` on `dev` — the skill runs the fail-fast gate, cuts and pushes `release/vX.Y.Z`, then compiles the `## [vX.Y.Z] - YYYY-MM-DD` section **on the release branch** from the `## Changelog` sections of the PRs merged into `dev` since the last tag, shows you the draft, and commits it there. Nothing is committed to `dev`.
 
-QA stabilizes on `release/vX.Y.Z` from here. Bugs found during stabilization go through `fix/*` branched off `release/vX.Y.Z` and merged back into it via PR.
+QA stabilizes on `release/vX.Y.Z` from here. Bugs found during stabilization go through `fix/*` branched off `release/vX.Y.Z` and PR'd back into it; `pr-reviewer` reviews them and you merge them (`docs/process/lifecycle.md` § Phát hành, ổn định và hotfix). Their `## Changelog` sections are added to the release section when you ship.
 
 ### Phase 2 — Ship (on `release/vX.Y.Z`)
 
-3. `/git-release` on `release/vX.Y.Z` — the skill pulls any hotfix that reached `main` during stabilization, runs the mandatory test suite (a `fix/*` PR may have landed since the cut, so this can't be skipped), opens and merges the `release/vX.Y.Z` → `main` PR, then tags `origin/main`. The tag's pipeline (`.github/workflows/release.yml`, or `.gitlab-ci.yml` on GitLab) runs the tests, builds and pushes the production images versioned from the tag, then creates the release. Protect `v*` tags so only maintainers can push one.
+3. `/git-release` on `release/vX.Y.Z` — the skill pulls any hotfix that reached `main` during stabilization, adds the fix PRs to the CHANGELOG section and sets the ship date, runs the mandatory test suite (a `fix/*` PR may have landed since the cut, so this can't be skipped), opens and merges the `release/vX.Y.Z` → `main` PR, then tags `origin/main`. The tag's pipeline (`.github/workflows/release.yml`, or `.gitlab-ci.yml` on GitLab) runs the tests, builds and pushes the production images versioned from the tag, then creates the release. Protect `v*` tags so only maintainers can push one.
 
 ### Phase 3 — Reconcile (on `dev`)
 
-4. After shipping, merge `main` back into `dev` so the stabilization fixes and the tag reach `dev`:
-
-   ```bash
-   git checkout dev && git pull && git merge origin/main && git push
-   ```
-
-   The merge is clean: `main`'s changes since the cut are `fix/*` commits and their bullets *inside* the frozen `## [vX.Y.Z]` section, while `dev`'s changes are new `## [Unreleased]` entries *above* it — two disjoint regions.
+4. After shipping, `main` comes back into `dev` through a PR — nothing is pushed to `dev` directly (`devWrites: "pr"` in `.claude/release-kit.json`). `/git-release` opens a `chore/reconcile-main-vX.Y.Z` PR into `dev` at the end of the ship and never merges it; merge it with a merge commit, so the stabilization fixes, the CHANGELOG section and the tag reach `dev`.
 
 ### Quick release (on `dev`)
 
-For a small release that needs no stabilization window, `/git-release quick` on `dev` does it in one pass: it runs the mandatory test gate, compiles the `## [vX.Y.Z]` CHANGELOG section on `dev`, opens and merges a `dev` → `main` PR, then tags `origin/main`. There is no `release/vX.Y.Z` branch, so nothing gets QA'd on its own first; use the two-phase release above whenever QA has to sign off.
+For a small release that needs no stabilization window, `/git-release quick` on `dev` does it in one pass, without writing to `dev` directly: the CHANGELOG section goes through a `chore/release-vX.Y.Z-changelog` PR into `dev`, which you merge with `/git-accept` (`devMergeCommand`); then the skill runs the mandatory gate, opens and merges the `dev → main` PR after you confirm, tags `origin/main`, and opens the reconcile PR. There is no `release/vX.Y.Z` branch, so nothing gets QA'd on its own first; use the two-phase release whenever QA has to sign off.
 
 ## Hotfix Process
 
 For an emergency production fix that can't wait for `dev`'s next `[Unreleased]` to ship:
 
-1. Branch `hotfix/vX.Y.Z` from `main`, fix, test, commit.
+1. Branch `hotfix/<name>` from `main`; the fix is made by `implementer` and reviewed by `code-reviewer` on `origin/main...hotfix/<name>`.
 2. `/git-release` on the hotfix branch handles the rest: it inserts the new `## [vX.Y.Z]` section directly above the previous release entry (**never** touching `dev`'s `[Unreleased]`), runs the mandatory test suite, PRs `hotfix/vX.Y.Z` → `main`, merges, and tags `origin/main`.
-3. Reconcile: merge `main` back into `dev` (`git checkout dev && git pull && git merge origin/main && git push`) so the fix and its CHANGELOG section reach `dev`. Keep the hotfix's `## [vX.Y.Z]` section above the previous release; leave `dev`'s `## [Unreleased]` untouched.
+3. Reconcile: `/git-release` opens the `main → dev` PR, as in Phase 3 above; so the fix and its CHANGELOG section reach `dev`. Keep the hotfix's `## [vX.Y.Z]` section above the previous release; leave `dev`'s `## [Unreleased]` untouched.
 
 ## Versioning (SemVer)
 

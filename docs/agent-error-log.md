@@ -1,10 +1,16 @@
 # Nhật ký lỗi agent lặp lại
 
-Ghi lại các lỗi agent mắc phải khi làm việc trên repo này. Mục tiêu theo `agent-automation-playbook.md` (mục 4.4): sau 2–3 tuần, mỗi lỗi lặp lại phải được chuyển thành lint rule, test kiến trúc, test hồi quy, hoặc generator, không chỉ thêm một dòng vào prompt.
+Ghi lại các lỗi agent mắc phải khi làm việc trên repo này. Mục tiêu theo `docs/process/lifecycle.md` § Lỗi lặp và retro cuối module: sau 2–3 tuần, mỗi lỗi lặp lại phải được chuyển thành lint rule, test kiến trúc, test hồi quy, hoặc generator, không chỉ thêm một dòng vào prompt.
 
 Mỗi mục có: ngày, việc đang làm, lỗi, nguyên nhân, và hành động đã làm hoặc cần làm.
 
-Quy ước: thêm mục mới ở trên cùng. Khi một lỗi đã được tự động hóa, ghi "Đã chuyển thành: …" vào mục đó.
+Quy ước: thêm mục mới ở trên cùng. Khi một lỗi đã được tự động hóa, ghi "Đã chuyển thành: …" vào mục đó. Retro cuối mỗi module (`docs/process/lifecycle.md` § Lỗi lặp và retro cuối module) phân loại commit `fix` của module và thêm mục vào đây.
+
+## Chờ retro
+
+Ý cải tiến quy trình phát sinh giữa module ghi ở đây, mỗi ý một dòng kèm ngày. Retro cuối module xử lý rồi xoá chúng.
+
+_(trống)_
 
 ---
 
