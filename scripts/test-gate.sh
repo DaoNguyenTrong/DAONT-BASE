@@ -51,6 +51,7 @@ trap 'exit 143' TERM
 bun test scripts/
 bun scripts/check-comments.ts
 bun scripts/check-personas.ts
+bun scripts/check-release-plan.ts
 
 backend/scripts/test.sh
 

@@ -10,6 +10,10 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-11-25 — Release plan checker in the test gate
+
+Release plans and sprint plans reference PRD ids across files, so a stale story, a dropped Must story or an unapproved plan would go unnoticed unless a tool fails the build. It gets its own script in the same gate and CI jobs as the persona check. Rejected: extending `check-prd-approval.ts`, which checks one document's approval order per path; cross-document coverage would mix two contracts in one script.
+
 ### 2026-10-21 — Public files are served straight from storage; only `public/` is anonymously readable
 
 Streaming avatars through the API puts every image view on the app, and presigned URLs have no Local equivalent and defeat browser caching. All providers instead serve files from `PublicUrlBase`; the S3 providers get an anonymous-read policy scoped to `public/*`, so org-scoped files stay API-only. Cost: anything under `public/` is readable by anyone holding the URL, and `PublicUrlBase` must be browser-reachable per environment.
