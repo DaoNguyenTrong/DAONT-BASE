@@ -152,13 +152,15 @@ grep -r "using StarterKit.Infrastructure\|using StarterKit.API" backend/src/Star
 ### Tìm fat interfaces với Serena
 
 ```
-find_symbol({name: "I*"})
+# serena_repl
+s.lsp.find_symbol("I", substring_matching=True, include_kinds=[11], relative_path="backend/src/StarterKit.Application", depth=1)
 # Kiểm tra interface nào có > 5 methods
 ```
 
 ### Tìm god classes
 
 ```
-get_symbols_overview({path: "backend/src/StarterKit.Application/Features"})
+# serena_repl — get_symbols_overview nhận một file, không nhận thư mục
+s.lsp.find_symbol("Service", substring_matching=True, include_kinds=[5], relative_path="backend/src/StarterKit.Application/Features", depth=1)
 # Class nào có > 5 injected dependencies trong constructor
 ```

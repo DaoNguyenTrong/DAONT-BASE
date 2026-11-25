@@ -82,14 +82,19 @@ The `.codegraph/` directory is local to your machine; never commit it.
 Language-server-backed symbol navigation and editing for C#, Vue and TypeScript. Project config is committed in `.serena/project.yml`; machine-specific overrides go in `.serena/project.local.yml` (ignored).
 
 ```bash
-# 1. Install if `serena --version` fails (requires uv, see section 1)
+# 1. Install if `serena --version` fails (requires uv, see section 1); needs 2.1 or later
 uv tool install -p 3.13 serena-agent
 serena init               # one-time setup
 serena --version
 
+# Upgrading from 1.x
+uv tool upgrade serena-agent
+
 # 2. Register it as an MCP server for Claude Code
 claude mcp add --scope user serena -- serena start-mcp-server --context=claude-code --project-from-cwd
 ```
+
+`.serena/project.yml` pins `agent_interface: REPL`: Serena exposes only `initial_instructions` and `serena_repl`, and agents call its operations as Python (`s.lsp.find_symbol(...)`). The file uses Serena 2 keys (`language_servers`, `agent_interface`, `excluded_apis`); upgrade, then restart Claude Code. The interface is fixed when the server starts, so the project setting applies only with `--project-from-cwd` (the project is active at startup).
 
 Install Serena with `uv` as above — not through an MCP or plugin marketplace. Other clients and options: <https://oraios.github.io/serena/02-usage/030_clients.html>.
 
