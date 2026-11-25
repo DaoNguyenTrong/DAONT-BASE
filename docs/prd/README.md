@@ -11,7 +11,7 @@ Mỗi module một PRD, viết từ `_template.md` bởi agent `product-manager`
 4. **Review cuối và duyệt**: hết câu hỏi mở thì `product-manager` đặt trạng thái *In review*; `business-analyst` review lại; người dùng duyệt PRD cùng bảng *Mặc định đề xuất* (gồm cả mức ưu tiên). Trạng thái thành *Approved*; phiên chính commit bản duyệt lên nhánh tài liệu của module; PR nháp của module merge một lần khi cả PRD và tài liệu kỹ thuật đã duyệt (`docs/process/lifecycle.md` § Commit tài liệu). Sau dòng người dùng duyệt, lịch sử thay đổi của phiên bản đó chỉ được thêm dòng sửa liên kết hoặc metadata, với cột *Nguồn* ghi đúng `metadata`; `scripts/check-prd-approval.ts` kiểm thứ tự này khi merge.
 5. **Thiết kế**: `ui-designer` thiết kế theo PRD đã duyệt, ghi mã yêu cầu lên từng bảng. Câu hỏi nghiệp vụ phát sinh khi thiết kế quay lại sửa PRD.
 6. **Thiết kế kỹ thuật**: `tech-lead` viết tài liệu trong `docs/tech/` từ PRD và thiết kế đã duyệt. Câu hỏi nghiệp vụ phát sinh quay lại sửa PRD.
-7. **Kế hoạch và triển khai**: kế hoạch triển khai dẫn chiếu mã FR/AC của PRD và các mục của tài liệu kỹ thuật; feature-map cập nhật cùng PR; `pr-reviewer` kiểm tra rồi merge vào `dev`.
+7. **Kế hoạch phát hành và vòng sprint**: ngay khi PRD được duyệt, trước bước 5 và 6, lập kế hoạch phát hành trong `docs/backlog/` (`docs/process/lifecycle.md § Kế hoạch phát hành`). Sau đó thiết kế, tài liệu kỹ thuật và triển khai đi theo từng bản giao trong vòng sprint (`docs/process/lifecycle.md § Vòng sprint`): kế hoạch sprint dẫn chiếu mã FR/AC của PRD và các mục của tài liệu kỹ thuật; feature-map cập nhật cùng PR; `pr-reviewer` kiểm tra rồi merge vào `dev`.
 
 Mọi thay đổi trên PRD đã duyệt đưa PRD về *In review*.
 
