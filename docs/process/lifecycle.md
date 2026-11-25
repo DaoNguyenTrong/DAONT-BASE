@@ -59,6 +59,7 @@ Sau khi PRD *Approved*, module có một tệp `docs/backlog/PRDxx-<tên>.md`, v
 - **Giao một phần story:** một story được chia qua nhiều bản giao hoặc nhiều sprint theo tập AC của nó, ghi dạng `PRDxx-US-03 (AC-07, AC-08)`. PRD không đổi. Story chỉ *Done* khi mọi AC của nó *Done*.
 - Sửa kế hoạch phát hành (đổi thứ tự, dời story) tăng phiên bản của chính nó và người dùng duyệt lại; PRD **không** về *In review*. Thêm hay đổi hành vi thì vẫn phải sửa PRD (cỡ M).
 - Thứ tự bản giao là quyết định nghiệp vụ: `solution-architect` đề xuất được nhưng phải chuyển lên người dùng.
+- Khi kế hoạch phát hành đã *Approved*, mã `REL` không bao giờ được đánh số lại hay dùng lại: các kế hoạch sprint cũ còn tham chiếu nó, và bộ kiểm tra báo lỗi khi gặp mã `REL` không có.
 
 **Ước lượng hai mức**, mỗi mức nằm đúng một nơi, không chép sang nơi kia:
 - **Cỡ áo (S/M/L/XL) theo bản giao**, trong kế hoạch phát hành. `tech-lead` ghi ở giai đoạn 1b, khi chưa có kiến trúc, chỉ để dự báo thô. Cỡ áo không đổi trừ khi kế hoạch được sửa vì lý do khác; không có PR tài liệu nào chỉ để đổi cỡ áo.
@@ -140,6 +141,8 @@ Repo là nguồn sự thật của nội dung; Plane là nơi team xem tiến đ
 | Sprint | Cycle `SPR-YYYY-MM-Sn` |
 | Điểm | Estimate point |
 | Lỗi (cỡ S) | Work item gắn label `bug` |
+
+Nếu bản Plane đang dùng không cho ghi điểm estimate qua MCP (spec `docs/superpowers/specs/2026-11-25-agile-planning-design.md` § 10), điểm được ghi bằng label `pt-1`, `pt-2`, `pt-3`, `pt-5`, `pt-8`, `pt-13`.
 
 Mô tả work item chỉ có link tới mục PRD, bảng thiết kế và mục tech; AC không chép sang Plane. Link PR gắn vào work item bằng `workitem_link`. Mục `## Requirements` của mô tả PR có dòng `Plane: KNX-12, KNX-15`, liệt kê các work item mà PR phục vụ.
 
