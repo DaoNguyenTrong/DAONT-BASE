@@ -150,7 +150,7 @@ Mô tả work item chỉ có link tới mục PRD, bảng thiết kế và mục
 
 | Mốc trong repo | Trạng thái Plane |
 |---|---|
-| PRD và kế hoạch phát hành *Approved* | Tạo work item ở *Backlog*, gắn Module, label và điểm |
+| PRD và kế hoạch phát hành *Approved* | Tạo work item ở *Backlog*, gắn Module và label (điểm gắn sau, ở refinement) |
 | Story đạt DoR | *Todo* |
 | `implementer` bắt đầu task của story | *In Progress* |
 | PR của story được mở | *Ready For Testing* |
