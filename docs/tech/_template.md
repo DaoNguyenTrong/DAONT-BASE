@@ -5,7 +5,7 @@
 | Mã | `TECHXX` |
 | PRD | `PRDXX` (phiên bản đã duyệt) |
 | Thiết kế giao diện | <link canvas và tên các bảng> |
-| Trạng thái | Draft / In review / Approved |
+| Trạng thái theo bản giao | Bảng ngay dưới |
 | Phiên bản | 0.1 |
 | Cần appsec review | Có / Không (module nhạy cảm: định danh, token, cookie, phiên, link riêng, khoá công khai) |
 | Người duyệt | <người duyệt> |
@@ -13,9 +13,18 @@
 | Phụ thuộc | TECH-00, … |
 | Kế hoạch triển khai | <đường dẫn, khi đã có> |
 
+Trạng thái tính theo bản giao (`docs/process/lifecycle.md § Nền kiến trúc`):
+
+| Phần | Trạng thái | Duyệt ở phiên bản |
+|---|---|---|
+| Chung | Draft / In review / Approved | 1.0 |
+| REL-1 | Draft / In review / Approved | 1.0 |
+
 ## 1. Phạm vi và truy vết
 
 Các mã FR/AC mà tài liệu này bao phủ, và những gì cố ý chưa làm. Bảng truy vết ở mục 13.
+
+Mục 2, 3, 5, 7, 12 là phần chung cho cả module; mục 4, 6, 8, 11 được viết thêm theo từng bản giao (`REL-n`).
 
 ## 2. Kiến trúc
 
@@ -70,9 +79,9 @@ Với từng AC: kiểm thử ở tầng nào (Domain, Application, Infrastructu
 
 ## 13. Truy vết
 
-| Mã PRD | Phần thiết kế đáp ứng | Test |
-|---|---|---|
-| PRDXX-FR-01 | mục 3, 4 | AC-01 |
+| Mã PRD | REL | Phần thiết kế đáp ứng | Test |
+|---|---|---|---|
+| PRDXX-FR-01 | REL-1 | mục 3, 4 | AC-01 |
 
 ## 14. Câu hỏi mở
 

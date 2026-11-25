@@ -115,6 +115,56 @@ test:comments:
     - bun test scripts/
     - bun scripts/check-comments.ts
     - bun scripts/check-personas.ts
+    - bun scripts/check-release-plan.ts
+
+# The twin of .github/workflows/plane-sync.yml (docs/process/lifecycle.md § Plane): an MR into dev is
+# `opened`, a push to dev is `merged`. GitLab starts no pipeline for an MR closed unmerged, so that
+# item is moved back by hand. Fork and draft MRs are skipped.
+# SECURITY: anyone who can push a branch can read PLANE_API_KEY. Never run a fork MR's pipeline in
+# this project: it runs the fork's CI file with these variables, so the fork rule below does not
+# protect them. Variable setup and rotation: docs/process/lifecycle.md § Plane.
+plane:sync:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  environment:
+    name: plane
+    action: access
+  allow_failure: true
+  timeout: 10m
+  variables:
+    GIT_DEPTH: "0" # the commit range below must exist
+  rules:
+    # Not CI_PROJECT_ID: a pipeline running in the fork has the fork's own id there.
+    - if: $CI_MERGE_REQUEST_SOURCE_PROJECT_ID && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_MERGE_REQUEST_PROJECT_ID
+      when: never
+    - if: $CI_MERGE_REQUEST_DRAFT == "true"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"
+      exists: [.claude/plane.json]
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
+      exists: [.claude/plane.json]
+  # Not .bun: a job holding the token runs no unverified installer. The checksum is bun 1.3.14's
+  # bun-linux-x64.zip line in that release's SHASUMS256.txt; change it together with the version.
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends unzip
+    - BUN_DIR="$(mktemp -d)"
+    - curl -fsSL -o "$BUN_DIR/bun-linux-x64.zip" https://github.com/oven-sh/bun/releases/download/bun-v1.3.14/bun-linux-x64.zip
+    - echo "951ee2aee855f08595aeec6225226a298d3fea83a3dcd6465c09cbccdf7e848f  $BUN_DIR/bun-linux-x64.zip" | sha256sum -c -
+    - unzip -q "$BUN_DIR/bun-linux-x64.zip" -d "$BUN_DIR"
+    - export PATH="$BUN_DIR/bun-linux-x64:$PATH"
+  script:
+    - |
+      if [ "$CI_PIPELINE_SOURCE" = merge_request_event ]; then
+        export PLANE_PR_URL="$CI_PROJECT_URL/-/merge_requests/$CI_MERGE_REQUEST_IID"
+        # SOURCE_BRANCH_SHA is set in merged-results pipelines, where CI_COMMIT_SHA is the merge ref.
+        git log --format=%B "$CI_MERGE_REQUEST_DIFF_BASE_SHA..${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}" |
+          bun scripts/plane-sync.ts opened
+      elif echo "$CI_COMMIT_BEFORE_SHA" | grep -qE '^0+$'; then
+        # A new dev branch: its whole history is not one merge.
+        echo "warning: plane-sync: no previous commit on dev, nothing synced"
+      else
+        git log --format=%B "$CI_COMMIT_BEFORE_SHA..$CI_COMMIT_SHA" | bun scripts/plane-sync.ts merged
+      fi
 
 # $CI_REGISTRY_IMAGE/<service>:X.Y.Z, plus :latest for a stable (non-pre-release) tag.
 images:

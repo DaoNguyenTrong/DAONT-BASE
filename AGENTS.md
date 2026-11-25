@@ -18,16 +18,23 @@ Claude loads each rule from its `paths:` frontmatter. Codex does not. Before edi
 
 Work runs from idea to release, not only from code. Full detail (work sizes S/M/L, gates, change management, traceability): `docs/process/lifecycle.md`; per-module progress: `docs/process/progress.md`.
 
-| Stage              | Output                         | Owner                                                              |
-| ------------------ | ------------------------------ | ------------------------------------------------------------------ |
-| 0 Idea and vision  | personas (`docs/prd/00-personas.md`, required before any PRD), module list, priorities | main session (`brainstorming`) with the user; personas: `product-manager`, reviewed by `business-analyst`; user approves |
-| 1 Requirements     | PRD in `docs/prd/`             | `product-manager`, reviewed by `business-analyst`; user approves   |
-| 2 UI design        | boards on the design canvas    | `ui-designer`; user approves                                       |
-| 3 Technical design | `docs/tech/`                   | `tech-lead`; `appsec` reviews it before approval when security-critical |
-| 4 Plan             | `docs/superpowers/plans/`      | main session (`writing-plans`); user approves, may authorize PR    |
-| 5 Implementation   | code, tests, feature-map entry | `implementer`, one plan task per call; review by risk tier (`lifecycle.md` § Hạng kiểm tra) |
-| 6 Review and merge | PR merged into `dev`           | `pr-reviewer` (docs-only PR: `/git-accept`)                        |
-| 7 Release          | tag, changelog                 | `release-kit:git-release`; user approves                           |
+| Stage               | Output                                                                                 | Owner                                                              |
+| ------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| 0 Idea and vision   | personas (`docs/prd/00-personas.md`, required before any PRD), module list, priorities | main session (`brainstorming`) with the user; personas: `product-manager`, reviewed by `business-analyst`; user approves |
+| 1 Requirements      | PRD in `docs/prd/`                                                                     | `product-manager`, reviewed by `business-analyst`; user approves   |
+| 1b Release plan     | `docs/backlog/`                                                                        | `product-manager`, sizes by `tech-lead`, reviewed by `business-analyst`; user approves |
+| 1c-UI UI of `REL-1` | boards on the design canvas                                                            | `ui-designer`; user approves                                       |
+| 1c Runway           | `docs/tech/` v1.0: common part and `REL-1`                                             | `tech-lead`; `appsec` reviews it before approval when security-critical; user approves |
+| 2 UI design         | boards for the next REL                                                                | `ui-designer`; user approves                                       |
+| 3 Technical design  | the next REL added to `docs/tech/`                                                     | `tech-lead`; `appsec` when security-critical; user approves        |
+| 4 Sprint planning   | sprint plan in `docs/superpowers/plans/`                                               | main session (`writing-plans`); user approves, may authorize PR    |
+| 5 Implementation    | code, tests, feature-map entry                                                         | `implementer`, one plan task per call; review by risk tier (`lifecycle.md` § Hạng kiểm tra) |
+| 6 Review and merge  | PR merged into `dev`                                                                   | `pr-reviewer` (docs-only PR: `/git-accept`)                        |
+| 6b Sprint review    | demo per story, PO acceptance                                                          | main session prepares; user accepts                                |
+| 6c Sprint retro     | sprint numbers, improvement ideas                                                      | main session                                                       |
+| 7 Release           | tag, changelog                                                                         | `release-kit:git-release`; user approves                           |
+
+Stages 1c-UI and 1c prepare the first sprint; stages 2 to 6c repeat every sprint (`docs/process/lifecycle.md` § Vòng sprint). Only the main session writes to Plane (`docs/process/lifecycle.md` § Plane).
 
 The main session orchestrates: it sends every question first to `solution-architect`, which answers on the user's behalf, asks the user only what that agent escalates, relays answers, and calls agents in order. Subagents cannot ask the user or call each other. A business question found at any later stage goes back to the PRD; nothing downstream proceeds on an unapproved upstream document.
 

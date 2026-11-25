@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.6.6] - 2026-11-25
+
+### Added
+
+- Release planning, a sprint loop with definition of ready and done, and Plane tracking join the development process. (#81)
+- Continuous integration links each pull request into dev to its Plane work items and moves their state. (#82)
+
+### Fixed
+
+- Story status without Plane, sprint-result recording, and a pull request that lists no Plane work item are now defined. (#82)
+
 ## [v1.6.5] - 2026-11-12
 
 ### Added

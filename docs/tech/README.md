@@ -1,8 +1,10 @@
 # Thiết kế kỹ thuật
 
-Mỗi module một tài liệu, viết từ `_template.md` bởi agent `tech-lead`, sau khi PRD của module đã *Approved* và thiết kế giao diện đã duyệt. Tài liệu này trả lời "làm theo kiến trúc nào"; việc chia thành task nhỏ là của kế hoạch triển khai (`docs/superpowers/plans/`).
+Mỗi module một tài liệu, viết từ `_template.md` bởi agent `tech-lead`, sau khi PRD và kế hoạch phát hành của module đã *Approved* và thiết kế giao diện của bản giao đang làm đã duyệt. Tài liệu này trả lời "làm theo kiến trúc nào"; việc chia thành task nhỏ là của kế hoạch triển khai (`docs/superpowers/plans/`).
 
 ## Quy trình
+
+Tài liệu lớn dần theo bản giao (`docs/process/lifecycle.md § Nền kiến trúc`): phiên bản 1.0 gồm phần chung cho cả module và phần của `REL-1`; mỗi bản giao sau là một phiên bản phụ (1.1, 1.2…). Các bước dưới đây áp cho cả hai.
 
 1. **Soạn**: `tech-lead` soạn từ PRD, thiết kế giao diện và code hiện có; trả về câu hỏi mở, câu hỏi cho PRD và các quyết định cần ghi.
 2. **Câu hỏi nghiệp vụ** quay về `product-manager` để sửa PRD, không quyết ở đây.
@@ -12,7 +14,7 @@ Mỗi module một tài liệu, viết từ `_template.md` bởi agent `tech-lea
 
 Ngoại lệ về thứ tự: module nhạy cảm có thể viết tài liệu kỹ thuật song song với thiết kế giao diện khi người dùng cho phép và phạm vi ngoại lệ được ghi trong tài liệu module.
 
-Mọi thay đổi trên tài liệu đã duyệt đưa nó về *In review*.
+Trạng thái tính theo bản giao, ghi ở bảng *Trạng thái theo bản giao* đầu tài liệu. Thêm mục cho một bản giao sau, hoặc sửa mục đã duyệt của một bản giao, chỉ đưa dòng của bản giao đó về *In review*. Sửa phần chung là thay đổi lớn: tăng phiên bản chính và mọi dòng về *In review*.
 
 ## Ràng buộc đã biết
 
@@ -25,5 +27,5 @@ Mọi thay đổi trên tài liệu đã duyệt đưa nó về *In review*.
 
 Chưa có tài liệu kỹ thuật module theo quy trình mới.
 
-| Mã | Module | PRD | Trạng thái | Phiên bản | appsec |
+| Mã | Module | PRD | Trạng thái theo bản giao | Phiên bản | appsec |
 |---|---|---|---|---|---|
