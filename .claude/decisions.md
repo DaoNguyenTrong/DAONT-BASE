@@ -12,7 +12,7 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ### 2026-11-25 — CI syncs work item state to Plane
 
-State updated only by hand from a session drifts when PRs move elsewhere. Accepted exposure: on both hosts, anyone who can push a branch can read the Plane token, because the pipeline definition comes from that branch; hence a low-privilege bot account. `pull_request_target` is not adopted yet, pending the user's choice. Rejected: failing the build on Plane errors, letting an outage block merges. Cost: fork PRs are not synced, and a silent gap needs manual repair.
+State updated only by hand from a session drifts when PRs move elsewhere. Accepted exposure: on both hosts, anyone who can push a branch can read the Plane token, since that branch can define its own pipeline; hence a low-privilege bot account. `pull_request_target` alone would not close this and is not adopted, pending the user's choice. Rejected: failing the build on Plane errors, letting an outage block merges. Cost: fork PRs are not synced, and a silent gap needs manual repair.
 
 ### 2026-11-25 — Release plan checker in the test gate
 

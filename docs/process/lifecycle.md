@@ -131,7 +131,15 @@ Repo là nguồn sự thật của nội dung; Plane là nơi team xem tiến đ
 
 **Cấu hình.** Mỗi sản phẩm dùng DAONT-BASE chép `.claude/plane.example.json` thành `.claude/plane.json` và điền: `baseUrl` (địa chỉ `https` của Plane), `workspaceSlug`, id và identifier của project, id của từng trạng thái, id của label tầng (`BE`, `FE`, `Mobile`) và label `bug`. Label bản giao `PRDxx-REL-n` được tạo khi cần, không liệt kê trong tệp. Không có `.claude/plane.json` thì bỏ qua mọi bước Plane; khi đó điểm và trạng thái story ghi ở bảng *Story* của `progress.md` (§ Tiến độ module). Bản thân DAONT-BASE không có tệp này.
 
-**Cấu hình CI.** Đặt secret `PLANE_API_KEY` trên GitHub, hoặc biến CI/CD cùng tên trên GitLab; token phải là của một tài khoản bot quyền thấp, vì **trên cả GitHub lẫn GitLab, ai push được một nhánh đều đọc được `PLANE_API_KEY`**: GitHub chạy tệp workflow lấy từ chính ref của PR, còn job MR của GitLab chạy script và `plane.json` của nhánh nguồn. Việc GitHub checkout commit base chỉ cố định script nào chạy khi workflow không bị sửa. Trên GitLab biến phải *masked* và, vì pipeline MR của nhánh không được bảo vệ cần nó, không được đặt *protected*.
+**Cấu hình CI.** Đặt secret `PLANE_API_KEY` trên GitHub, hoặc biến CI/CD cùng tên trên GitLab. **Trên cả GitHub lẫn GitLab, ai push được một nhánh đều đọc được `PLANE_API_KEY`**:
+- GitHub: mọi workflow trên mọi nhánh được push (ví dụ một tệp mới chạy `on: push`) đều đọc được secret của repo, không chỉ qua PR. Vì vậy chuyển sang `pull_request_target` thôi thì không đóng được lỗ này, và việc checkout commit base chỉ cố định script nào chạy khi workflow không bị sửa.
+- GitLab: job MR chạy script và `plane.json` của nhánh nguồn. Biến phải *masked* và giới hạn *environment scope* là `plane` (job `plane:sync` khai báo environment đó), vì biến không giới hạn scope tới được mọi job. Biến không được đặt *protected*, vì pipeline MR của nhánh không được bảo vệ cần nó. Scope không chặn được người push được nhánh: họ vẫn viết được một job khai báo environment `plane` để đọc biến.
+
+Quy tắc bắt buộc:
+- Token là của một tài khoản bot quyền thấp, chỉ là thành viên của đúng project đó, và có ngày hết hạn nếu Plane cho phép.
+- **Không bao giờ chạy pipeline của MR từ fork trong project cha** (GitLab): pipeline đó chạy tệp CI của fork với biến của project cha. Luật bỏ qua fork trong `.gitlab-ci.yml` không bảo vệ được, vì fork sửa được nó.
+- Thay (rotate) `PLANE_API_KEY` khi một người mất quyền push (GitLab: quyền Developer trở lên), hoặc sau khi một pipeline của fork đã chạy trong project cha.
+- PR từ fork trên GitHub không nhận được secret chỉ khi cài đặt repo gửi secret cho workflow của PR từ fork đang tắt (cài đặt này chỉ có ở repo private).
 
 **Ánh xạ:**
 

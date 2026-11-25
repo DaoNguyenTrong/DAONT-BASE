@@ -1,11 +1,10 @@
 # Links each PR into dev to its Plane work items and moves their state (docs/process/lifecycle.md § Plane).
 # Never a required check, and it never fails a PR. .gitlab-ci.yml's plane:sync is the GitLab twin.
 #
-# SECURITY: anyone who can push a branch can read PLANE_API_KEY, so it belongs to a low-privilege bot.
-# With pull_request this file is read from the PR's own ref (on GitLab the MR job likewise runs the
-# source branch's script and plane.json). Checking out the base commit only fixes which script runs
-# while this file is unedited. pull_request_target is not adopted yet; hardening is not decided.
-# Forks get no secret, so they are skipped.
+# SECURITY: anyone who can push a branch can read PLANE_API_KEY, through any workflow on that branch,
+# so pull_request_target alone would not close it (not adopted; hardening is not decided). Checking
+# out the base commit only fixes which script runs while this file is unedited. Fork PRs are skipped.
+# Token rules and the repo setting for fork secrets: docs/process/lifecycle.md § Plane.
 name: Plane sync
 
 on:
