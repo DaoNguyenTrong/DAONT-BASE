@@ -2,6 +2,10 @@
 
 Nhật ký của DAONT-BASE, mới nhất ở trên. Quy tắc đang áp dụng nằm trong `lifecycle.md`; các quyết định từ dự án nguồn được giữ riêng ở `reference/feedback-hub-decisions.md` để tra lý do, không phải lịch sử thực hiện của DAONT-BASE.
 
+### 2026-11-25 — Mẫu title và mô tả work item trên Plane
+
+Người dùng yêu cầu item ngắn gọn, dễ hiểu và dùng tiếng Việt; quy tắc ở `lifecycle.md` § Plane. Mô tả story lặp lại một câu "Là…, tôi muốn…, để…" của PRD để đọc hiểu ngay trên Plane; AC vẫn không chép vì hay đổi và dễ lệch. Áp dụng ngoài retro vì chưa có module nào đang chạy.
+
 ### 2026-11-25 — CI đồng bộ Plane và trailer `Plane:` trong commit
 
 Theo lệnh của người dùng, bổ sung vào PR #82. CI gắn link và chuyển trạng thái theo PR, và commit phục vụ work item mang trailer `Plane:`. Lý do: cập nhật tay dễ sót, và push vào `dev` trên GitLab chỉ có commit message để lấy id. Quy tắc nằm ở `lifecycle.md` § Plane.

@@ -146,7 +146,7 @@ Quy tắc bắt buộc:
 | Repo | Plane |
 |---|---|
 | Module (PRD) | Module `[PRDxx] <tên tính năng>` (chia theo tính năng, không theo tầng) |
-| Story `PRDxx-US-nn`, hoặc một phần theo tập AC | Work item `PRDxx-US-nn — <tiêu đề>`, `external_source = daont-base`, `external_id = PRDxx-US-nn` (giao một phần thì thêm `#AC-07,AC-08`) |
+| Story `PRDxx-US-nn`, hoặc một phần theo tập AC | Work item (title và mô tả: *Nội dung work item* bên dưới), `external_source = daont-base`, `external_id = PRDxx-US-nn` (giao một phần thì thêm `#AC-07,AC-08`) |
 | Bản giao `REL-n` | Label `PRDxx-REL-n` |
 | Tầng kỹ thuật | Label `BE` / `FE` / `Mobile` |
 | Sprint | Cycle `SPR-YYYY-MM-Sn` |
@@ -155,7 +155,27 @@ Quy tắc bắt buộc:
 
 Nếu bản Plane đang dùng không cho ghi điểm estimate qua MCP (spec `docs/superpowers/specs/2026-11-25-agile-planning-design.md` § 10), điểm được ghi bằng label `pt-1`, `pt-2`, `pt-3`, `pt-5`, `pt-8`, `pt-13`.
 
-Mô tả work item chỉ có link tới mục PRD, bảng thiết kế và mục tech; AC không chép sang Plane. Link PR gắn vào work item bằng `workitem_link`. Mục `## Requirements` của mô tả PR có dòng `Plane: KNX-12, KNX-15`, liệt kê các work item mà PR phục vụ. PR không phục vụ work item nào (ví dụ PR quy trình ở retro, tooling, tài liệu) ghi `Plane: none (<lý do>)`; PR triển khai một story hoặc một item `bug` bắt buộc liệt kê id.
+**Nội dung work item.** Mọi nội dung viết trên Plane (title, mô tả, comment, mục tiêu Cycle) dùng tiếng Việt, ngắn gọn, theo lời người dùng cuối; giữ nguyên mã và tên riêng. Mô tả tối đa khoảng 8 dòng.
+
+*Story.* Title `PRDxx-US-nn — <động từ + đối tượng>`: phần sau dấu gạch tối đa khoảng 60 ký tự, không dùng thuật ngữ kỹ thuật (API, DTO, endpoint); giao một phần story thì thêm `(phần 1)`, `(phần 2)`. Ví dụ `PRD03-US-02 — Lọc hồ sơ theo trạng thái`. Mô tả:
+
+```
+Là <persona>, tôi muốn <việc> để <lợi ích>.
+
+Phạm vi lần này: <một câu; chỉ ghi khi giao một phần>
+
+PRD: <link> · Thiết kế: <link> · Tech: <link>
+```
+
+*Bug.* Title `[Bug] <cái gì sai> khi <lúc nào>`, ví dụ `[Bug] Mất bộ lọc khi tải lại trang hồ sơ`. Mô tả:
+
+```
+Hiện tại: <điều đang xảy ra>
+Mong đợi: <điều đúng ra phải xảy ra>
+Cách tái hiện: <tối đa 3 bước>
+```
+
+AC không chép sang Plane: chi tiết nằm ở PRD. Link PR gắn vào work item bằng `workitem_link`. Mục `## Requirements` của mô tả PR có dòng `Plane: KNX-12, KNX-15`, liệt kê các work item mà PR phục vụ. PR không phục vụ work item nào (ví dụ PR quy trình ở retro, tooling, tài liệu) ghi `Plane: none (<lý do>)`; PR triển khai một story hoặc một item `bug` bắt buộc liệt kê id.
 
 Commit phục vụ một story hoặc một `bug` kết thúc bằng trailer `Plane: KNX-12`; commit không phục vụ work item nào thì không cần. Tên nhánh không đổi.
 
