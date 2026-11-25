@@ -218,3 +218,76 @@ test('planWithUnknownRel_fails', () =>
 
 test('validSprintPlan_passes', () =>
   expect(checkPlan(plan(LINE, 'PRD01-REL-1: PRD01-US-01 (AC-01).'), 'Approved', SPRINT)).toEqual([]))
+
+const OTHER_ROWS = PRD_ROWS.map((r) => r.replaceAll('PRD01', 'PRD02'))
+const OTHER_PRD = ['# PRD-02', '', ...header('Approved', ['| Mã | `PRD02` |']), ...OTHER_ROWS, ''].join('\n')
+const otherReleasePlan = (status: string) =>
+  releasePlan(status, ['| PRD02-REL-1 | x | PRD02-US-01; PRD02-US-02 | P-01 | — | M |'], APPROVED_LOG, 'PRD02')
+
+const checkTwoModules = (text: string, other?: string, otherPrd = OTHER_PRD) =>
+  check({
+    prds: { '01-x.md': prd('Approved'), '02-y.md': otherPrd },
+    backlog: {
+      'PRD01-x.md': releasePlan('Approved', FULL),
+      ...(other === undefined ? {} : { 'PRD02-y.md': otherReleasePlan(other) }),
+    },
+    plans: { 'p.md': plan(LINE, text) },
+  })
+
+test('planNamingModuleWithoutReleasePlan_fails', () =>
+  expect(checkTwoModules('Làm PRD02-US-01, PRD02-AC-01.')).toEqual(['p.md: no release plan for PRD02']))
+
+test('planNamingOtherModuleInInlineCode_fails', () =>
+  expect(checkTwoModules('Làm `PRD02-FR-01`.')).toEqual(['p.md: no release plan for PRD02']))
+
+test('planNamingOtherModuleInFence_passes', () =>
+  expect(checkTwoModules(['```', 'PRD02-US-01 PRD02-REL-9', '```'].join('\n'))).toEqual([]))
+
+test('planNamingModuleWithDraftReleasePlan_fails', () =>
+  expect(checkTwoModules('PRD02-US-01', 'Draft')).toEqual([
+    'p.md: release plan docs/backlog/PRD02-y.md is not Approved',
+  ]))
+
+test('planNamingModuleWithUnapprovedPrd_fails', () =>
+  expect(checkTwoModules('PRD02-US-01', 'Approved', OTHER_PRD.replace('| Approved |', '| In review |'))).toEqual([
+    'p.md: PRD PRD02 is not Approved',
+  ]))
+
+test('planNamingTwoApprovedModules_passes', () =>
+  expect(checkTwoModules('PRD01-US-01, PRD02-REL-1.', 'Approved')).toEqual([]))
+
+test('releasePlanLineInFence_isIgnored', () =>
+  expect(checkPlan(plan('```', LINE, '```', 'Làm PRD01-US-01.'))).toEqual([
+    'p.md: mentions PRD ids but has no **Release plan:** line',
+  ]))
+
+const checkWithNotes = (...notes: string[]) =>
+  check({ backlog: { 'PRD01-x.md': [releasePlan('Draft', FULL), ...notes].join('\n') } })
+
+test('unknownIdsOutsideRelRows_fail', () =>
+  expect(checkWithNotes('- PRD01-US-09 — x', '- `PRD01-AC-09`, US-08, (AC-07)', '- PRD01-US-09 lại')).toEqual(
+    inBacklog(
+      'PRD01-US-09 is not in PRD01',
+      'PRD01-AC-09 is not in PRD01',
+      'PRD01-US-08 is not in PRD01',
+      'PRD01-AC-07 is not in PRD01',
+    ),
+  ))
+
+test('knownIdsOutsideRelRows_pass', () =>
+  expect(checkWithNotes('- PRD01-US-03, US-01, AC-04, PRD01-AC-01; PRDXX-US-nn; P-01.')).toEqual([]))
+
+test('mistypedBacklogStatus_fails', () =>
+  expect(checkRels(FULL, 'Aproved')).toEqual(inBacklog('no recognised Trạng thái (Draft, In review, Approved)')))
+
+test('twoReleasePlansForOnePrd_fail', () =>
+  expect(
+    check({
+      backlog: { 'PRD01-x.md': releasePlan('Approved', FULL), 'PRD01-y.md': releasePlan('Draft', FULL) },
+    }),
+  ).toEqual(['PRD01-y.md: PRD01 already has a release plan: PRD01-x.md']))
+
+test('fileNamePrefixDiffersFromHeader_fails', () =>
+  expect(check({ backlog: { 'PRD02-x.md': releasePlan('Approved', FULL) } })).toEqual([
+    'PRD02-x.md: file name prefix PRD02 differs from header PRD PRD01',
+  ]))

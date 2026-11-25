@@ -10,7 +10,7 @@ type Files = Record<string, string>
 export type ReleasePlanInput = { prds: Files; backlog: Files; plans: Files }
 
 type Story = { must: boolean; acs: string[] }
-type Prd = { approved: boolean; stories: Map<string, Story> }
+type Prd = { approved: boolean; stories: Map<string, Story>; acs: Set<string> }
 type Entry = { rel: string; story: string; acs: string[] | undefined }
 
 const BACKLOG_DIR = 'docs/backlog/'
@@ -18,7 +18,9 @@ const SIZES = ['S', 'M', 'L', 'XL']
 const REL_ID = /^PRD\d+-REL-\d+$/
 const STORY_ENTRY = /^(PRD\d+-US-\d+)(?:\s*\(([^)]+)\))?$/
 const SPRINT_NAME = /SPR-\d{4}-\d{2}-S[12]/
-const PLAN_ID = /PRD\d+-(US|FR|AC|REL)-\d+/
+const PLAN_ID = /PRD\d+-(US|FR|AC|REL)-\d+/g
+// A short `US-01` or `AC-01` belongs to the release plan's own PRD.
+const STORY_OR_AC_ID = /(?<![\w-])(?:(PRD\d+)-)?((?:US|AC)-\d+)/g
 const PLAN_LINE_KEY = '**Release plan:**'
 const FENCE = /^\s*(`{3,}|~{3,})(.*)$/
 
@@ -49,7 +51,7 @@ function parsePrd(markdown: string, code: string): Prd {
       { must: c[c.length - 1].startsWith('Must'), acs: acStories.filter((a) => a.stories.includes(c[0])).map((a) => a.ac) },
     ]),
   )
-  return { approved: status(markdown) === 'Approved', stories }
+  return { approved: status(markdown) === 'Approved', stories, acs: new Set(of('AC').map((c) => c[0])) }
 }
 
 function findPrd(prds: Files, code: string): Prd | undefined {
@@ -122,9 +124,18 @@ function checkCoverage(prd: Prd, entries: Entry[]): string[] {
   return findings
 }
 
+// Ids already named by another finding are not reported twice.
+function checkUnknownIds(markdown: string, code: string, prd: Prd, findings: string[]): string[] {
+  const named = [...markdown.matchAll(STORY_OR_AC_ID)].map(([, own = code, id]) => `${own}-${id}`)
+  return [...new Set(named)]
+    .filter((id) => !prd.stories.has(id) && !prd.acs.has(id))
+    .filter((id) => !findings.some((f) => new RegExp(`${id}(?!\\d)`).test(f)))
+    .map((id) => `${id} is not in ${code}`)
+}
+
 function checkBacklogFile(markdown: string, prds: Files): string[] {
   const approved = status(markdown) === 'Approved'
-  const findings = approved ? checkPrdApproval(markdown) : []
+  const findings = checkPrdApproval(markdown)
   const code = prdCode(headerValue(markdown, 'PRD'))
   const prd = code && findPrd(prds, code)
   if (!code || !prd) return [...findings, `PRD ${code ?? '(none in the header PRD row)'} not found`]
@@ -132,12 +143,12 @@ function checkBacklogFile(markdown: string, prds: Files): string[] {
   const table = rows(markdown).filter((c) => REL_ID.test(c[0]))
   const entries = parseEntries(table, code, prd, findings)
   findings.push(...checkOverlaps(entries))
+  findings.push(...checkUnknownIds(markdown, code, prd, findings))
   if (approved && prd.approved) findings.push(...checkCoverage(prd, entries))
   return findings
 }
 
-// Drops fenced blocks and inline code spans, so ids quoted as examples do not make a file a sprint plan.
-function prose(markdown: string): string {
+function unfenced(markdown: string): string {
   let fence: string | undefined
   const kept: string[] = []
   for (const line of markdown.split('\n')) {
@@ -145,40 +156,75 @@ function prose(markdown: string): string {
     if (fence) {
       if (marker?.startsWith(fence) && rest.trim() === '') fence = undefined
     } else if (marker && !(marker.startsWith('`') && rest.includes('`'))) fence = marker
-    else kept.push(line.replace(/(`+).*?\1/g, ''))
+    else kept.push(line)
   }
   return kept.join('\n')
 }
 
+const withoutCodeSpans = (markdown: string) => markdown.replace(/(`+).*?\1/g, '')
+
+const backlogCode = (markdown: string) => prdCode(headerValue(markdown, 'PRD'))
+
 function checkPlanFile(name: string, markdown: string, { prds, backlog }: ReleasePlanInput): string[] {
-  const line = markdown.split('\n').find((l) => l.startsWith(PLAN_LINE_KEY))
+  const text = unfenced(markdown)
+  const line = text.split('\n').find((l) => l.startsWith(PLAN_LINE_KEY))
   const path = line?.slice(PLAN_LINE_KEY.length).match(/^\s*`?([^`\s]+)/)?.[1]
-  const mentionsIds = PLAN_ID.test(prose(markdown))
 
   if (path === undefined) {
-    if (mentionsIds) return [`mentions PRD ids but has no ${PLAN_LINE_KEY} line`]
+    // Without the line, an id quoted as inline code does not make a file a sprint plan.
+    if (withoutCodeSpans(text).match(PLAN_ID)) return [`mentions PRD ids but has no ${PLAN_LINE_KEY} line`]
     const isSprint = SPRINT_NAME.test(name) || line !== undefined
     return isSprint ? [`sprint plan has no ${PLAN_LINE_KEY} line`] : []
   }
 
-  const file = path.startsWith(BACKLOG_DIR) ? path.slice(BACKLOG_DIR.length) : ''
-  if (!isDoc(file) || !Object.hasOwn(backlog, file)) return [`release plan ${path} not found`]
+  const linked = path.startsWith(BACKLOG_DIR) ? path.slice(BACKLOG_DIR.length) : ''
+  if (!isDoc(linked) || !Object.hasOwn(backlog, linked)) return [`release plan ${path} not found`]
 
-  const releasePlan = backlog[file]
+  const planIds: string[] = text.match(PLAN_ID) ?? []
+  const linkedCode = backlogCode(backlog[linked])
+  const codes = new Set([linkedCode, ...planIds.map(prdCode)])
   const findings: string[] = []
-  if (status(releasePlan) !== 'Approved') findings.push(`release plan ${path} is not Approved`)
-  const code = prdCode(headerValue(releasePlan, 'PRD'))
-  if (code && !findPrd(prds, code)?.approved) findings.push(`PRD ${code} is not Approved`)
+  const knownRels = new Set<string>()
+  for (const code of codes) {
+    const file =
+      code === linkedCode
+        ? linked
+        : Object.keys(backlog).find((n) => isDoc(n) && backlogCode(backlog[n]) === code)
+    if (file === undefined) {
+      findings.push(`no release plan for ${code}`)
+      continue
+    }
+    if (status(backlog[file]) !== 'Approved') findings.push(`release plan ${BACKLOG_DIR}${file} is not Approved`)
+    if (code && !findPrd(prds, code)?.approved) findings.push(`PRD ${code} is not Approved`)
+    for (const cell of rows(backlog[file])) knownRels.add(cell[0])
+  }
 
-  const known = new Set(rows(releasePlan).map((c) => c[0]))
-  const named = new Set(markdown.match(/PRD\d+-REL-\d+/g))
-  for (const rel of [...named].filter((r) => !known.has(r))) findings.push(`unknown ${rel}`)
+  // A module with no release plan is one finding, not one more per REL.
+  const unknown = planIds.filter(
+    (id) => id.includes('-REL-') && !knownRels.has(id) && !findings.includes(`no release plan for ${prdCode(id)}`),
+  )
+  return [...findings, ...[...new Set(unknown)].map((rel) => `unknown ${rel}`)]
+}
+
+function checkDuplicates(backlog: Files): string[] {
+  const findings: string[] = []
+  const owners = new Map<string, string>()
+  for (const [name, markdown] of Object.entries(backlog).filter(([n]) => isDoc(n))) {
+    const code = backlogCode(markdown)
+    if (!code) continue
+    const prefix = name.match(/^(PRD\d+)-/)?.[1]
+    if (prefix && prefix !== code) findings.push(`${name}: file name prefix ${prefix} differs from header PRD ${code}`)
+    const owner = owners.get(code)
+    if (owner) findings.push(`${name}: ${code} already has a release plan: ${owner}`)
+    else owners.set(code, name)
+  }
   return findings
 }
 
 export function checkReleasePlans(input: ReleasePlanInput): string[] {
   const prefixed = (name: string, findings: string[]) => findings.map((f) => `${name}: ${f}`)
   return [
+    ...checkDuplicates(input.backlog),
     ...Object.entries(input.backlog)
       .filter(([name]) => isDoc(name))
       .flatMap(([name, markdown]) => prefixed(name, checkBacklogFile(markdown, input.prds))),
