@@ -25,8 +25,12 @@ jobs:
       (github.event.action == 'closed' ||
       (github.event.pull_request.state == 'open' && !github.event.pull_request.draft))
     runs-on: ubuntu-latest
+    # Job level, so a run skipped by the condition above cannot displace a pending sync.
+    concurrency:
+      group: plane-sync-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         continue-on-error: true
         with:
           ref: ${{ github.event.pull_request.base.sha }}
@@ -41,7 +45,7 @@ jobs:
             echo "No scripts/plane-sync.ts or .claude/plane.json on the base commit: nothing to sync."
           fi
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         if: steps.configured.outputs.run == 'true'
         continue-on-error: true
         with:
