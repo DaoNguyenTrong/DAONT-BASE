@@ -7,9 +7,16 @@ Trạng thái chi tiết của PRD nằm ở `docs/prd/README.md` và của tài
 | Module | PRD | Kế hoạch phát hành | Nền kiến trúc | UI/Tech theo REL | appsec | REL xong | Merged |
 |---|---|---|---|---|---|---|---|
 
+## Story
+
+Chỉ dùng khi dự án không có `.claude/plane.json`; cách ghi ở `lifecycle.md` § Tiến độ module.
+
+| Story (hoặc phần theo tập AC) | REL | Điểm | Trạng thái | Cycle |
+|---|---|---|---|---|
+
 ## Sprint
 
-Mỗi sprint một dòng, ghi ở sprint retro (`lifecycle.md` § Vòng sprint).
+Mỗi sprint một dòng, ghi ở sprint retro (`lifecycle.md` § Vòng sprint, § Tiến độ module).
 
 | Cycle | Mục tiêu | Điểm cam kết | Điểm Done | Story dời | Story bị từ chối |
 |---|---|---|---|---|---|
