@@ -38,7 +38,9 @@ export function parseIds(texts: string[], identifier: string): string[] {
 export function planItem(event: SyncEvent, state: string, states: States): { link: boolean; moveTo?: string } {
   const { state: target, link } = EVENTS[event]
   const settled = [states.done, states.cancelled, states.pending].includes(state)
-  return { link, moveTo: settled || state === states[target] ? undefined : states[target] }
+  // Closing unmerged only undoes `opened`: an item already further on, like Testing, stays.
+  const stays = settled || state === states[target] || (event === 'closed' && state !== states.readyForTesting)
+  return { link, moveTo: stays ? undefined : states[target] }
 }
 
 function parseUrl(value: unknown): URL | undefined {
@@ -117,6 +119,7 @@ export async function runSync(input: SyncInput): Promise<void> {
 
   const addLink = async (id: string, item: string, url: string) => {
     try {
+      // Only the first page of links is read, so a link beyond it can be added twice.
       const { results } = await call('GET', `${item}links/`)
       if (!Array.isArray(results)) throw new HttpError('unexpected link list')
       if (!results.some((l) => l?.url === url)) await call('POST', `${item}links/`, { url, title: 'Pull request' })

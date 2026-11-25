@@ -1,8 +1,11 @@
 # Links each PR into dev to its Plane work items and moves their state (docs/process/lifecycle.md § Plane).
 # Never a required check, and it never fails a PR. .gitlab-ci.yml's plane:sync is the GitLab twin.
 #
-# pull_request, not pull_request_target, and the checkout is the base commit: the script that holds
-# the token comes from dev, never from the PR. Forks get no secret, so they are skipped.
+# SECURITY: anyone who can push a branch can read PLANE_API_KEY, so it belongs to a low-privilege bot.
+# With pull_request this file is read from the PR's own ref (on GitLab the MR job likewise runs the
+# source branch's script and plane.json). Checking out the base commit only fixes which script runs
+# while this file is unedited. pull_request_target is not adopted yet; hardening is not decided.
+# Forks get no secret, so they are skipped.
 name: Plane sync
 
 on:
@@ -16,10 +19,11 @@ permissions:
 
 jobs:
   plane-sync:
-    # Editing a closed or merged PR must not move its items back to Ready For Testing.
+    # Neither a draft nor an edit to a closed or merged PR may set Ready For Testing.
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
-      (github.event.action == 'closed' || github.event.pull_request.state == 'open')
+      (github.event.action == 'closed' ||
+      (github.event.pull_request.state == 'open' && !github.event.pull_request.draft))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,9 +62,16 @@ jobs:
           PLANE_API_KEY: ${{ secrets.PLANE_API_KEY }}
           PLANE_PR_BODY: ${{ github.event.pull_request.body }}
           PLANE_PR_URL: ${{ github.event.pull_request.html_url }}
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
           EVENT: >-
             ${{ github.event.action != 'closed' && 'opened' ||
             (github.event.pull_request.merged && 'merged' || 'closed') }}
-        run: git log --format=%B "$PR_BASE..$PR_HEAD" | bun scripts/plane-sync.ts "$EVENT"
+        # base.sha can be stale. Once merged, dev holds the head, so the range starts at the merge's
+        # first parent instead.
+        run: |
+          if [ "$EVENT" = merged ]; then
+            git log --format=%B "$MERGE_SHA^1..$PR_HEAD"
+          else
+            git log --format=%B "$PR_HEAD" --not origin/dev
+          fi | bun scripts/plane-sync.ts "$EVENT"

@@ -29,6 +29,7 @@ test.each<[string, Tier]>([
   ['frontend/src/router/index.ts', 2],
   ['.github/workflows/ci.yml', 2],
   ['lefthook.yml', 2],
+  ['.gitlab-ci.yml', 2],
   ['scripts/risk-tier.ts', 2],
   ['scripts/plane-sync.ts', 2],
   ['scripts/plane-sync.test.ts', 1],

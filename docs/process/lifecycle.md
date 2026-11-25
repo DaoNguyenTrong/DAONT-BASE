@@ -131,7 +131,7 @@ Repo là nguồn sự thật của nội dung; Plane là nơi team xem tiến đ
 
 **Cấu hình.** Mỗi sản phẩm dùng DAONT-BASE chép `.claude/plane.example.json` thành `.claude/plane.json` và điền: `baseUrl` (địa chỉ `https` của Plane), `workspaceSlug`, id và identifier của project, id của từng trạng thái, id của label tầng (`BE`, `FE`, `Mobile`) và label `bug`. Label bản giao `PRDxx-REL-n` được tạo khi cần, không liệt kê trong tệp. Không có `.claude/plane.json` thì bỏ qua mọi bước Plane; khi đó điểm và trạng thái story ghi ở bảng *Story* của `progress.md` (§ Tiến độ module). Bản thân DAONT-BASE không có tệp này.
 
-**Cấu hình CI.** Đặt secret `PLANE_API_KEY` trên GitHub, hoặc biến CI/CD cùng tên trên GitLab; token phải là của một tài khoản bot quyền thấp. Trên GitLab biến phải *masked* và, vì pipeline MR của nhánh không được bảo vệ cần nó, không được đặt *protected*: ai push được một nhánh đều đọc được token.
+**Cấu hình CI.** Đặt secret `PLANE_API_KEY` trên GitHub, hoặc biến CI/CD cùng tên trên GitLab; token phải là của một tài khoản bot quyền thấp, vì **trên cả GitHub lẫn GitLab, ai push được một nhánh đều đọc được `PLANE_API_KEY`**: GitHub chạy tệp workflow lấy từ chính ref của PR, còn job MR của GitLab chạy script và `plane.json` của nhánh nguồn. Việc GitHub checkout commit base chỉ cố định script nào chạy khi workflow không bị sửa. Trên GitLab biến phải *masked* và, vì pipeline MR của nhánh không được bảo vệ cần nó, không được đặt *protected*.
 
 **Ánh xạ:**
 
@@ -165,11 +165,17 @@ Commit phục vụ một story hoặc một `bug` kết thúc bằng trailer `Pl
 | Story bị bỏ khỏi kế hoạch phát hành | *Cancelled* |
 
 **CI đồng bộ.** `scripts/plane-sync.ts` lấy id từ các dòng `Plane:` của mô tả PR và của commit message, với PR vào `dev`:
-- PR được mở hoặc cập nhật: gắn link PR, chuyển *Ready For Testing*;
+- PR được mở hoặc cập nhật, không phải draft: gắn link PR, chuyển *Ready For Testing*;
 - PR merge: chuyển *Testing*;
-- PR đóng mà không merge: chuyển *In Progress*. GitLab không chạy pipeline cho trường hợp này, nên phiên chính làm tay.
+- PR đóng mà không merge: item đang *Ready For Testing* chuyển về *In Progress*, item ở trạng thái khác giữ nguyên. GitLab không chạy pipeline cho trường hợp này, nên phiên chính làm tay.
 
-CI không đổi trạng thái của item đang *Done*, *Cancelled* hoặc *Pending*, và lỗi Plane không làm hỏng PR. Trên GitLab, mô tả MR có thể bị cắt ngắn, và push vào `dev` chỉ đọc id từ commit message. Phiên chính làm các mốc còn lại, và làm tay các mốc trên khi CI bị bỏ qua (PR từ fork, thiếu cấu hình) hoặc in cảnh báo.
+CI không đổi trạng thái của item đang *Done*, *Cancelled* hoặc *Pending*, và lỗi Plane không làm hỏng PR. Phiên chính làm các mốc còn lại, và làm tay các mốc trên khi CI bị bỏ qua (PR từ fork, thiếu cấu hình) hoặc in cảnh báo.
+
+**Giới hạn trên GitLab:**
+- mô tả MR có thể bị cắt ngắn, và push vào `dev` chỉ đọc id từ commit message;
+- push merge `main` vào `dev` (sau phát hành hoặc hotfix) cũng là push vào `dev`: mọi id trên các dòng `Plane:` của commit trong khoảng được push đều chuyển *Testing*, trừ item đang *Done*, *Cancelled* hoặc *Pending*;
+- chỉ sửa mô tả MR thì không có pipeline nào chạy; id mới được đọc ở lần push kế tiếp;
+- bỏ draft cũng không tự chạy pipeline, nên cần push thêm hoặc chạy lại pipeline MR. Bản GitLab không có biến `CI_MERGE_REQUEST_DRAFT` vẫn đồng bộ cả MR draft.
 
 **Quyền ghi.** Ngoài job CI ở trên, chỉ phiên chính ghi lên Plane; subagent không gọi Plane.
 - Không cần hỏi lại, đúng tại các mốc trên: tạo work item, đổi trạng thái, label, điểm, gắn link, viết comment.

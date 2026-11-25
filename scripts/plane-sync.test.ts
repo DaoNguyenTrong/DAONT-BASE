@@ -88,13 +88,17 @@ describe('planItem', () => {
     ['merged', 'st-testing', true],
     ['closed', 'st-progress', false],
   ])('%s moves to %s, link %s', (event, moveTo, link) =>
-    expect(planItem(event, 'st-other', STATES)).toEqual({ link, moveTo }),
+    expect(planItem(event, event === 'closed' ? 'st-ready' : 'st-other', STATES)).toEqual({ link, moveTo }),
   )
 
   test.each(['st-done', 'st-cancelled', 'st-pending'])('never moves an item in %s', (state) => {
     for (const event of ['opened', 'merged', 'closed'] as const)
       expect(planItem(event, state, STATES).moveTo).toBeUndefined()
   })
+
+  test.each(['st-testing', 'st-progress', 'st-other'])('closed leaves an item in %s alone', (state) =>
+    expect(planItem('closed', state, STATES)).toEqual({ link: false, moveTo: undefined }),
+  )
 
   test('does not rewrite the state it already has', () =>
     expect(planItem('merged', 'st-testing', STATES).moveTo).toBeUndefined())
@@ -141,6 +145,11 @@ describe('runSync', () => {
   test('closed only sets In Progress', async () => {
     const r = await run({ event: 'closed' }, fakePlane({ state: 'st-ready' }))
     expect(r.writes.map((c) => c.body)).toEqual([{ state: 'st-progress' }])
+  })
+
+  test('closed does not pull a Testing item back', async () => {
+    const r = await run({ event: 'closed' }, fakePlane({ state: 'st-testing' }))
+    expect(r.writes).toEqual([])
   })
 
   test.each(['st-done', 'st-cancelled', 'st-pending'])('keeps %s, still adding the link', async (state) => {
@@ -251,7 +260,7 @@ describe('command line', () => {
   })
 })
 
-// Static guards on the CI wiring: the token must never meet code from a pull request head.
+// Guards on the CI wiring. They hold for the committed files only: a branch can edit its own copy.
 describe('GitHub workflow', () => {
   const text = () => readFileSync(join(import.meta.dir, '../.github/workflows/plane-sync.yml'), 'utf8')
   type Step = { uses?: string; run?: string; with?: Record<string, unknown>; env?: Record<string, string> }
@@ -276,10 +285,108 @@ describe('GitHub workflow', () => {
     for (const step of steps()) expect(step.run ?? '').not.toContain('${{')
   })
 
+  test('skips a draft pull request unless it is being closed', () => {
+    expect(workflow().jobs['plane-sync'].if.replace(/\s+/g, ' ')).toContain(
+      "(github.event.action == 'closed' || (github.event.pull_request.state == 'open' && !github.event.pull_request.draft))",
+    )
+  })
+
   test('skips forks and can never fail the pull request', () => {
     expect(workflow().jobs['plane-sync'].if).toContain(
       'github.event.pull_request.head.repo.full_name == github.repository',
     )
     for (const step of workflow().jobs['plane-sync'].steps) expect(step['continue-on-error']).toBe(true)
+  })
+})
+
+// Runs the Sync step's own shell against a real repository, with `bun` replaced by `cat`.
+describe('GitHub commit range', () => {
+  const roots: string[] = []
+  afterEach(() => {
+    for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
+  })
+
+  const workflow = () =>
+    Bun.YAML.parse(readFileSync(join(import.meta.dir, '../.github/workflows/plane-sync.yml'), 'utf8')) as any
+  const syncStep = () => workflow().jobs['plane-sync'].steps.find((s: { name?: string }) => s.name === 'Sync')
+
+  // dev: base -> earlier (another PR) -> merge of feature; feature forked from base and merged dev back in.
+  function repo() {
+    const root = mkdtempSync(join(tmpdir(), 'plane-range-'))
+    roots.push(root)
+    const env = {
+      PATH: process.env.PATH!,
+      GIT_CONFIG_GLOBAL: '/dev/null',
+      GIT_CONFIG_NOSYSTEM: '1',
+      GIT_AUTHOR_NAME: 't',
+      GIT_AUTHOR_EMAIL: 't@example.invalid',
+      GIT_COMMITTER_NAME: 't',
+      GIT_COMMITTER_EMAIL: 't@example.invalid',
+    }
+    const git = (...args: string[]) => {
+      const r = Bun.spawnSync(['git', ...args], { cwd: root, env })
+      if (r.exitCode !== 0) throw new Error(r.stderr.toString())
+      return r.stdout.toString().trim()
+    }
+    const commit = (message: string) => git('commit', '--allow-empty', '-qm', message)
+    git('init', '-qb', 'dev')
+    commit('base')
+    git('checkout', '-qb', 'feature')
+    commit('own-work')
+    git('checkout', '-q', 'dev')
+    commit('other-pr')
+    git('checkout', '-q', 'feature')
+    git('merge', '-q', '--no-ff', '-m', 'sync-dev', 'dev')
+    const head = git('rev-parse', 'HEAD')
+    git('update-ref', 'refs/remotes/origin/dev', 'dev')
+    const merge = () => {
+      git('checkout', '-q', 'dev')
+      git('merge', '-q', '--no-ff', '-m', 'merge-commit', 'feature')
+      git('update-ref', 'refs/remotes/origin/dev', 'dev')
+      return git('rev-parse', 'HEAD')
+    }
+    const subjects = (event: string, mergeSha: string) => {
+      const script = `bun() { cat; }\n${syncStep().run}`
+      const r = Bun.spawnSync(['bash', '-e', '-c', script], {
+        cwd: root,
+        env: { ...env, EVENT: event, PR_HEAD: head, MERGE_SHA: mergeSha },
+      })
+      return r.stdout.toString().split('\n').filter(Boolean).sort()
+    }
+    return { merge, subjects }
+  }
+
+  test('passes the head and merge commits through env, never the base sha', () => {
+    expect(syncStep().env.PR_HEAD).toBe('${{ github.event.pull_request.head.sha }}')
+    expect(syncStep().env.MERGE_SHA).toBe('${{ github.event.pull_request.merge_commit_sha }}')
+    expect(JSON.stringify(syncStep())).not.toContain('base.sha')
+  })
+
+  test.each(['opened', 'closed'])('%s reads the head commits that dev does not have', (event) =>
+    expect(repo().subjects(event, '')).toEqual(['own-work', 'sync-dev']),
+  )
+
+  test('merged reads what the merge commit brought into dev', () => {
+    const r = repo()
+    expect(r.subjects('merged', r.merge())).toEqual(['own-work', 'sync-dev'])
+  })
+})
+
+describe('GitLab job', () => {
+  type Rule = { if: string; when?: string }
+  const rules = (): Rule[] =>
+    (Bun.YAML.parse(readFileSync(join(import.meta.dir, '../.gitlab-ci.yml'), 'utf8')) as any)['plane:sync'].rules
+  const skipped = () => rules().filter((r) => r.when === 'never').map((r) => r.if)
+
+  test('skips forks by comparing the source with the target project, before any rule that runs it', () => {
+    expect(skipped()).toContain(
+      '$CI_MERGE_REQUEST_SOURCE_PROJECT_ID && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_MERGE_REQUEST_PROJECT_ID',
+    )
+    expect(rules()[0].when).toBe('never')
+  })
+
+  test('skips a draft merge request', () => {
+    expect(skipped()).toContain('$CI_MERGE_REQUEST_DRAFT == "true"')
+    expect(rules()[1].when).toBe('never')
   })
 })
