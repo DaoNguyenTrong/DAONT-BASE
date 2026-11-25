@@ -2,6 +2,14 @@
 
 Nhật ký của DAONT-BASE, mới nhất ở trên. Quy tắc đang áp dụng nằm trong `lifecycle.md`; các quyết định từ dự án nguồn được giữ riêng ở `reference/feedback-hub-decisions.md` để tra lý do, không phải lịch sử thực hiện của DAONT-BASE.
 
+### 2026-11-25 — Lập kế hoạch Agile sau PRD: kế hoạch phát hành, vòng sprint, Plane
+
+Người dùng chọn phương án B: PRD giữ ở mức module, thêm kế hoạch phát hành và nền kiến trúc, rồi thiết kế, tài liệu kỹ thuật, kế hoạch và triển khai đi theo bản giao và theo sprint, có DoR/DoD, demo, retro và Plane. Lý do: quy trình cũ chạy waterfall trong từng module, không có bước nào giao theo giá trị. Quy tắc nằm ở `lifecycle.md`; thiết kế và các đề xuất chưa được người dùng xác nhận riêng ở `docs/superpowers/specs/2026-11-25-agile-planning-design.md`. Áp dụng ngay, ngoài retro, vì chưa có module nào đang chạy (bảng trong `progress.md` trống).
+
+Phương án loại:
+- A, chỉ thêm release planning: UI và tech vẫn làm cho cả module từ đầu nên phản hồi chậm, không có nhịp sprint hay demo.
+- C, Scrum đầy đủ: bỏ cổng theo module, phá cổng duyệt PRD, `check-prd-approval.ts` và chuỗi truy vết.
+
 ### 2026-11-12 — Bỏ PR reconcile: merge `main` vào `dev` trực tiếp
 
 Theo lệnh của người dùng, `devWrites` đổi từ `"pr"` sang `"push"`. Sau phát hành hoặc hotfix, người dùng tự merge `main` vào `dev` bằng merge commit rồi push; `git-release` chỉ nhắc. CHANGELOG của `quick` được commit thẳng vào `dev`. Lý do: PR reconcile có diff rỗng (v1.6.5, PR #79), chỉ mang merge commit và tag về `dev`, mà vẫn tốn một lượt merge. Thay thế quyết định 2026-10-22 ở phần ghi vào `dev`; `devMergeCommand` và quy trình `/git-accept` cho PR thường không đổi. Không được squash merge này, vì lần phát hành sau sẽ dừng ở bước kiểm tra `main` là tổ tiên của `dev`.

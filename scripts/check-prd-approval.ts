@@ -21,7 +21,7 @@ export const cells = (line: string) =>
 
 export const plain = (cell: string) => cell.replace(/\*/g, '').trim()
 
-function headerValue(markdown: string, key: string): string | undefined {
+export function headerValue(markdown: string, key: string): string | undefined {
   for (const line of markdown.split('\n')) {
     if (!line.startsWith('|') || DATE_ROW.test(line)) continue
     const c = cells(line)

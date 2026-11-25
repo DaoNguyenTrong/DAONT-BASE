@@ -41,6 +41,9 @@ jobs:
       - name: Check personas (docs/process/lifecycle.md § Persona)
         run: bun scripts/check-personas.ts
 
+      - name: Check release plans (docs/process/lifecycle.md § Kế hoạch phát hành)
+        run: bun scripts/check-release-plan.ts
+
   backend:
     if: inputs.backend
     runs-on: ubuntu-latest

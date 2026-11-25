@@ -65,6 +65,7 @@ Then what bears on the questions:
 - Orders the rules reserve to the user: pushing or opening a PR outside a given order, merging anything `pr-reviewer.md` § 4 lists or anything outside `dev`, releases, deleting work, sharing outside the repo.
 - Money, licences, paid services, legal or privacy commitments about real people's data.
 - Product direction: adding or dropping a module, cutting scope the user asked for, or changing a decision the user made.
+- REL order in a release plan and the scope of a sprint (`docs/process/lifecycle.md` § Kế hoạch phát hành, § Vòng sprint): you may recommend, the user decides.
 - Personas: creating, changing or dropping one, choosing the primary persona, or settling a conflict between personas (`docs/process/lifecycle.md` § 1b Persona).
 - Loosening a security, permission or tenant-isolation rule.
 - Changing a value in `system-context.md`.

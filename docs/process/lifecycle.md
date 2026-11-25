@@ -6,15 +6,22 @@ Tài liệu này mô tả đường đi từ ý tưởng đến phát hành, ai 
 
 | # | Giai đoạn | Sản phẩm đầu ra | Người làm | Cổng duyệt | Xong khi |
 |---|---|---|---|---|---|
-| 0 | Ý tưởng và tầm nhìn | Persona (`docs/prd/00-personas.md`), tầm nhìn, danh sách module, thứ tự ưu tiên | Phiên chính (`superpowers:brainstorming`) cùng người dùng; persona do `product-manager` viết, `business-analyst` review (§1b) | Người dùng | Persona ở trạng thái *Approved*, danh mục module trong `docs/prd/README.md` được chốt |
-| 1 | Yêu cầu | PRD trong `docs/prd/` | `product-manager`, review bởi `business-analyst` | Người dùng | PRD ở trạng thái *Approved* |
-| 2 | Thiết kế giao diện | Bảng thiết kế trên canvas, gắn mã yêu cầu | `ui-designer` | Người dùng | Mọi FR có màn hình mới hoặc mẫu tương tác mới đều có bảng; màn hình theo mẫu có sẵn chỉ ghi tên mẫu; bảng tối chỉ cho mẫu mới (`ui-designer.md` quy tắc 1); người dùng duyệt |
-| 3 | Thiết kế kỹ thuật | Tài liệu trong `docs/tech/` | `tech-lead` (`appsec` trước với module nhạy cảm) | Người dùng | Tài liệu *Approved*, mọi FR/AC có mục thiết kế |
-| 4 | Kế hoạch | Kế hoạch trong `docs/superpowers/plans/` | Phiên chính (`superpowers:writing-plans`) | Người dùng | Người dùng duyệt kế hoạch; đồng thời quyết định có cấp quyền push và PR không |
-| 5 | Triển khai | Code, test, mục `docs/feature-map.md` | `implementer`, mỗi lần một task | Theo hạng (§2 Hạng kiểm tra) | Mọi task của phase xong, `scripts/test-gate.sh` đạt |
-| 6 | Review và merge | PR được merge vào `dev` | `pr-reviewer` (PR chỉ có tài liệu: `/git-accept`) | Tự động, trừ vùng cần người dùng | PR vào `dev`; sau PR cuối của module, phiên chính chạy retro (§8) |
-| 7 | Phát hành | Bản phát hành, changelog | Skill `release-kit:git-release` | Người dùng | Tag và merge vào `main` |
-| 8 | Vận hành và phản hồi | Phản hồi từ sản phẩm dùng DAONT-BASE | Người dùng | — | Quay lại giai đoạn 0, 1 hoặc 5 theo cỡ việc |
+| 0 | Ý tưởng và tầm nhìn | Persona (`docs/prd/00-personas.md`), tầm nhìn, danh sách module, thứ tự ưu tiên | Phiên chính (`superpowers:brainstorming`) cùng người dùng; persona do `product-manager` viết, `business-analyst` review (§ Persona) | Người dùng | Persona ở trạng thái *Approved*, danh mục module trong `docs/prd/README.md` được chốt |
+| 1 | Yêu cầu | PRD của module trong `docs/prd/` | `product-manager`, review bởi `business-analyst` | Người dùng | PRD ở trạng thái *Approved* |
+| 1b | Backlog và kế hoạch phát hành | `docs/backlog/PRDxx-<tên>.md`: bản giao `REL-n`, cỡ áo, phụ thuộc; work item trên Plane | `product-manager` cắt bản giao, `tech-lead` ghi cỡ áo, `business-analyst` review | Người dùng (PO) | Kế hoạch phát hành *Approved* (§ Kế hoạch phát hành) |
+| 1c-UI | Thiết kế giao diện của `REL-1` | Bảng thiết kế của các story trong `REL-1`, gắn mã yêu cầu | `ui-designer` | Người dùng | Mọi FR của các story đó có màn hình mới hoặc mẫu tương tác mới đều có bảng; màn hình theo mẫu có sẵn chỉ ghi tên mẫu; bảng tối chỉ cho mẫu mới (`ui-designer.md` quy tắc 1); người dùng duyệt |
+| 1c | Nền kiến trúc | Tài liệu tech v1.0 trong `docs/tech/`: phần chung, phần của `REL-1`; điểm các story của `REL-1` | `tech-lead` (`appsec` nếu có hạng 2) | Người dùng | Phần chung và `REL-1` *Approved* (§ Nền kiến trúc) |
+| 2 | Refinement: thiết kế giao diện cho bản giao kế tiếp | Bảng thiết kế của các story trong `REL-n` | `ui-designer` | Người dùng | Như 1c-UI, cho `REL-n` |
+| 3 | Refinement: tech cho bản giao kế tiếp | Tài liệu tech tăng phiên bản phụ, thêm mục của `REL-n` | `tech-lead` (`appsec` nếu chạm hạng 2) | Người dùng | `REL-n` *Approved*, mọi FR/AC của nó có mục thiết kế, story có điểm |
+| 4 | Sprint planning | Mục tiêu sprint, story được cam kết, kế hoạch sprint trong `docs/superpowers/plans/` | Phiên chính (`superpowers:writing-plans`) | Người dùng | Người dùng duyệt kế hoạch: sprint được cam kết; đồng thời quyết định có cấp quyền push và PR không |
+| 5 | Triển khai | Code, test, mục `docs/feature-map.md` | `implementer`, mỗi lần một task | Theo hạng (§ Hạng kiểm tra) | Mọi task của phase xong, `scripts/test-gate.sh` đạt |
+| 6 | Review và merge | PR được merge vào `dev` | `pr-reviewer` (PR chỉ có tài liệu: `/git-accept`) | Tự động, trừ vùng cần người dùng | PR vào `dev`; sau PR cuối của module, phiên chính chạy retro module (§ Lỗi lặp và retro cuối module) |
+| 6b | Sprint review | Demo từng story theo AC | Phiên chính chuẩn bị | Người dùng nghiệm thu | Mỗi story của sprint được đạt hoặc ghi lý do chưa đạt |
+| 6c | Sprint retro | Số đo sprint, ý cải tiến | Phiên chính | — | Bảng *Sprint* trong `progress.md` có dòng của sprint |
+| 7 | Phát hành | Bản phát hành, changelog; thường sau một hoặc vài bản giao | Skill `release-kit:git-release` | Người dùng | Tag và merge vào `main` |
+| 8 | Vận hành và phản hồi | Phản hồi từ sản phẩm dùng DAONT-BASE | Người dùng | — | Phản hồi vào backlog theo cỡ việc (§ Cỡ công việc) |
+
+Thứ tự khởi động module: 1 → 1b → 1c-UI → 1c → sprint đầu tiên. Các giai đoạn 2–6c lặp lại theo sprint (§ Vòng sprint).
 
 Phiên chính là người điều phối: gửi mọi câu hỏi cho `solution-architect` trả lời thay người dùng, chỉ hỏi người dùng những câu agent đó chuyển lên, chuyển câu trả lời cho agent, gọi agent theo thứ tự, và không tự làm thay công việc của agent. Subagent không hỏi được người dùng và không gọi được agent khác.
 
@@ -39,7 +46,122 @@ Persona là chân dung một nhóm người dùng thật, dựng theo mục tiê
 - **Test e2e:** đặt tên kịch bản theo persona.
 - **`solution-architect`:** dùng persona làm căn cứ khi trả lời thay người dùng.
 
-**Thay đổi.** Sửa persona đã duyệt thì tăng phiên bản và đưa tài liệu về *In review* (§3); các PRD có story của persona bị sửa được xem lại. Phản hồi ở giai đoạn 8 là nguồn chính để cập nhật persona. Retro cuối module (§8) kiểm tra có persona nào không còn story nào phục vụ.
+**Thay đổi.** Sửa persona đã duyệt thì tăng phiên bản và đưa tài liệu về *In review* (§3); các PRD có story của persona bị sửa được xem lại. Phản hồi ở giai đoạn 8 là nguồn chính để cập nhật persona. Retro cuối module (§ Lỗi lặp và retro cuối module) kiểm tra có persona nào không còn story nào phục vụ.
+
+## 1c. Kế hoạch phát hành
+
+Sau khi PRD *Approved*, module có một tệp `docs/backlog/PRDxx-<tên>.md`, viết từ `docs/backlog/_template.md`: story map, bảng bản giao (`PRDxx-REL-n`), phần *Chưa xếp* và lịch sử thay đổi. `product-manager` viết story map và cắt bản giao, `tech-lead` ghi cỡ áo, `business-analyst` review, người dùng (PO) duyệt. Thứ tự review và duyệt trong lịch sử thay đổi theo cùng quy tắc với PRD (`docs/prd/README.md` § Quy trình, bước 4).
+
+**Quy tắc bản giao:**
+- `REL-1` là bộ khung đi xuyên suốt (walking skeleton): luồng chính của persona chính chạy hết từ đầu đến cuối, dù còn mỏng.
+- Mỗi bản giao demo được cho người dùng thấy; không có bản giao chỉ gồm việc backend.
+- Mỗi story Must nằm trong một bản giao. Nằm ở nhiều bản giao thì mỗi lần ghi tập AC giao lần đó, và các tập AC không trùng nhau.
+- **Giao một phần story:** một story được chia qua nhiều bản giao hoặc nhiều sprint theo tập AC của nó, ghi dạng `PRDxx-US-03 (AC-07, AC-08)`. PRD không đổi. Story chỉ *Done* khi mọi AC của nó *Done*.
+- Sửa kế hoạch phát hành (đổi thứ tự, dời story) tăng phiên bản của chính nó và người dùng duyệt lại; PRD **không** về *In review*. Thêm hay đổi hành vi thì vẫn phải sửa PRD (cỡ M).
+- Thứ tự bản giao là quyết định nghiệp vụ: `solution-architect` đề xuất được nhưng phải chuyển lên người dùng.
+- Khi kế hoạch phát hành đã *Approved*, mã `REL` không bao giờ được đánh số lại hay dùng lại: các kế hoạch sprint cũ còn tham chiếu nó, và bộ kiểm tra báo lỗi khi gặp mã `REL` không có.
+
+**Ước lượng hai mức**, mỗi mức nằm đúng một nơi, không chép sang nơi kia:
+- **Cỡ áo (S/M/L/XL) theo bản giao**, trong kế hoạch phát hành. `tech-lead` ghi ở giai đoạn 1b, khi chưa có kiến trúc, chỉ để dự báo thô. Cỡ áo không đổi trừ khi kế hoạch được sửa vì lý do khác; không có PR tài liệu nào chỉ để đổi cỡ áo.
+- **Story point theo story hoặc phần story** (Fibonacci 1, 2, 3, 5, 8, 13). `tech-lead` đặt ở refinement, khi đã có mục tech (với `REL-1` là ở giai đoạn 1c); người dùng chốt ở sprint planning.
+  - Nguồn sự thật là Plane; dự án không có Plane thì là bảng story của kế hoạch sprint.
+  - Kế hoạch sprint ghi ảnh chụp số điểm lúc cam kết để tính velocity; ảnh chụp không được cập nhật về sau.
+  - Đổi điểm trước khi story vào sprint không cần duyệt.
+  - Story trên 8 điểm phải chia theo tập AC trước khi vào sprint.
+
+**Kiểm tra tự động.** `scripts/check-release-plan.ts` chạy trong `scripts/test-gate.sh` và CI. Nó đối chiếu mỗi kế hoạch phát hành với PRD, và chặn kế hoạch sprint khi kế hoạch phát hành hoặc PRD chưa *Approved*, hoặc khi kế hoạch sprint nhắc một mã `REL` không có. Độ phủ story Must chỉ được kiểm khi cả kế hoạch phát hành lẫn PRD đã *Approved*. PRD được duyệt mà chưa có kế hoạch phát hành thì không lỗi: cổng nằm ở chỗ code bắt đầu.
+
+## 1d. Nền kiến trúc
+
+Tài liệu tech v1.0 của module gồm:
+- **Phần chung cho cả module:** §2 Kiến trúc, §3 Mô hình dữ liệu, §5 Phân quyền, §7 Bảo mật, §12 Quyết định, để bản giao sau không phải đập đi làm lại mô hình dữ liệu hay quyền.
+- **Phần của `REL-1`:** §4 API, §6 Luồng, §8 Giao diện, §11 Kiểm thử, chỉ cho các story của `REL-1`.
+
+(Số mục theo `docs/tech/_template.md`.) Thiết kế giao diện của `REL-1` đi trước, vì `tech-lead` lấy nó làm đầu vào. Cột `REL` ở bảng truy vết của tài liệu ghi mục nào phục vụ bản giao nào. Tài liệu dạng ngắn (§ Độ dài tài liệu) vẫn chia theo cách này.
+
+**Trạng thái tính theo bản giao, không theo cả tài liệu.** Bảng *Trạng thái theo bản giao* ở đầu tài liệu có một dòng cho phần *Chung* và một dòng cho mỗi bản giao (trạng thái, duyệt ở phiên bản nào):
+- Mỗi bản giao sau thêm mục cho §4, §6, §8, §11 và tăng phiên bản phụ (1.1, 1.2…). Chỉ dòng của bản giao đó về *In review*; các phần đã duyệt giữ trạng thái, nên refinement cho `REL-n+1` không chặn story của `REL-n`.
+- Sửa một mục đã duyệt của một bản giao đưa dòng của bản giao đó về *In review*.
+- Sửa phần chung là thay đổi lớn: tăng phiên bản chính, **mọi** dòng về *In review*, các story đang làm dừng (§ Lệch thiết kế khi triển khai), và `appsec` review lại nếu chạm hạng 2.
+- DoR và `pr-reviewer` đối chiếu story với phiên bản duyệt của phần chung và của đúng bản giao chứa story đó.
+- `docs/tech/README.md` ghi trạng thái theo bản giao (ví dụ `Chung ✓, REL-1 ✓, REL-2 review`).
+
+Module có hạng 2: `appsec` review phần chung trước khi vào sprint đầu tiên.
+
+## 1e. Vòng sprint
+
+Một sprint là một Cycle trên Plane, nửa tháng: `SPR-YYYY-MM-S1` từ ngày 1 đến 15, `SPR-YYYY-MM-S2` từ ngày 16 đến cuối tháng. Một sprint được chứa story của nhiều module, mỗi module một tệp kế hoạch sprint. Với `REL-1`, refinement chính là giai đoạn 1c-UI và 1c; từ `REL-2`, refinement cho sprint N+1 chạy trong sprint N, tức là chuẩn bị trước đúng một sprint.
+
+1. **Refinement.** Cho các story dự kiến làm ở sprint sau, phiên chính gọi `ui-designer` rồi `tech-lead`, đúng cho các story đó. Story đạt DoR (§ Definition of Ready và Definition of Done) thì chuyển *Todo*.
+2. **Sprint planning**, ngày đầu sprint.
+   - Phiên chính đề xuất danh sách: các story *Todo* theo thứ tự backlog, cho đến khi tổng điểm chạm velocity, tức trung bình điểm *Done* của 3 sprint gần nhất. Chưa đủ 3 sprint thì người dùng tự đặt năng lực.
+   - Người dùng chốt mục tiêu sprint (một câu) và danh sách. Phiên chính đưa story vào Cycle, ghi mục tiêu vào mô tả Cycle, và viết kế hoạch sprint bằng `superpowers:writing-plans` (§ Quyền push và mở PR).
+   - Người dùng duyệt kế hoạch là sprint được cam kết.
+3. **Triển khai và merge** như giai đoạn 5–6. Trạng thái Plane đi theo các mốc ở § Plane.
+4. **Sprint review**, ngày cuối sprint.
+   - Phiên chính lập kịch bản demo cho từng story từ AC của nó, kèm bằng chứng: e2e của `qa-frontend`, ảnh chụp từ skill `run` trên `dev`.
+   - Người dùng nghiệm thu từng story: đạt thì *Done*; chưa đạt thì giữ lại và ghi lý do trong comment; yêu cầu mới phát sinh quay về PRD (cỡ M), không sửa ngay trong sprint.
+5. **Sprint retro**, ngay sau review (§ Lỗi lặp và retro cuối module). Kết thúc sprint trên Plane: `complete` Cycle và dời story dở dang sang Cycle kế tiếp (`transfer_workitems`), theo quyền ghi ở § Plane.
+
+## 1f. Definition of Ready và Definition of Done
+
+Brief giao `implementer` và checklist của `pr-reviewer` dẫn chiếu mục này, không chép lại.
+
+**DoR**, cho một story hoặc một phần story theo tập AC:
+- thuộc PRD *Approved* và nằm trong một bản giao của kế hoạch phát hành *Approved*;
+- có persona và AC;
+- có bảng thiết kế đã duyệt, hoặc ghi rõ dùng mẫu có sẵn;
+- có mục trong tài liệu tech đã duyệt (§ Nền kiến trúc);
+- có story point, không quá 8;
+- không có phụ thuộc nào đang chặn;
+- không còn câu hỏi nghiệp vụ mở.
+
+**DoD:**
+- code đã merge vào `dev` qua cổng của hạng;
+- `scripts/test-gate.sh` đạt;
+- mỗi AC có test;
+- có mục `docs/feature-map.md`;
+- không còn lệch lớn so với thiết kế chưa xử lý;
+- PO đã nghiệm thu ở sprint review.
+
+## 1g. Plane
+
+Repo là nguồn sự thật của nội dung; Plane là nơi team xem tiến độ.
+
+**Cấu hình.** Mỗi sản phẩm dùng DAONT-BASE chép `.claude/plane.example.json` thành `.claude/plane.json` và điền: id và identifier của project, id của từng trạng thái, id của label tầng (`BE`, `FE`, `Mobile`) và label `bug`. Label bản giao `PRDxx-REL-n` được tạo khi cần, không liệt kê trong tệp. Không có `.claude/plane.json` thì bỏ qua mọi bước Plane; khi đó trạng thái story ghi ở bảng *Sprint* của `progress.md`. Bản thân DAONT-BASE không có tệp này.
+
+**Ánh xạ:**
+
+| Repo | Plane |
+|---|---|
+| Module (PRD) | Module `[PRDxx] <tên tính năng>` (chia theo tính năng, không theo tầng) |
+| Story `PRDxx-US-nn`, hoặc một phần theo tập AC | Work item `PRDxx-US-nn — <tiêu đề>`, `external_source = daont-base`, `external_id = PRDxx-US-nn` (giao một phần thì thêm `#AC-07,AC-08`) |
+| Bản giao `REL-n` | Label `PRDxx-REL-n` |
+| Tầng kỹ thuật | Label `BE` / `FE` / `Mobile` |
+| Sprint | Cycle `SPR-YYYY-MM-Sn` |
+| Điểm | Estimate point |
+| Lỗi (cỡ S) | Work item gắn label `bug` |
+
+Nếu bản Plane đang dùng không cho ghi điểm estimate qua MCP (spec `docs/superpowers/specs/2026-11-25-agile-planning-design.md` § 10), điểm được ghi bằng label `pt-1`, `pt-2`, `pt-3`, `pt-5`, `pt-8`, `pt-13`.
+
+Mô tả work item chỉ có link tới mục PRD, bảng thiết kế và mục tech; AC không chép sang Plane. Link PR gắn vào work item bằng `workitem_link`. Mục `## Requirements` của mô tả PR có dòng `Plane: KNX-12, KNX-15`, liệt kê các work item mà PR phục vụ.
+
+**Mốc cập nhật trạng thái:**
+
+| Mốc trong repo | Trạng thái Plane |
+|---|---|
+| PRD và kế hoạch phát hành *Approved* | Tạo work item ở *Backlog*, gắn Module và label (điểm gắn sau, ở refinement) |
+| Story đạt DoR | *Todo* |
+| `implementer` bắt đầu task của story | *In Progress* |
+| PR của story được mở | *Ready For Testing* |
+| PR merge vào `dev` | *Testing* |
+| PO nghiệm thu ở sprint review và story đạt DoD | *Done* |
+| Bị chặn bởi câu hỏi nghiệp vụ hoặc lệch lớn | *Pending*, kèm comment trỏ tới câu hỏi |
+| Story bị bỏ khỏi kế hoạch phát hành | *Cancelled* |
+
+**Quyền ghi.** Chỉ phiên chính ghi lên Plane; subagent không gọi Plane.
+- Không cần hỏi lại, đúng tại các mốc trên: tạo work item, đổi trạng thái, label, điểm, gắn link, viết comment.
+- Cần người dùng xác nhận mỗi lần: tạo, `complete` hoặc sửa Cycle; đưa story vào hay rút khỏi Cycle (đó là cam kết sprint); xoá bất cứ thứ gì; sửa Module.
 
 ## 2. Cỡ công việc
 
@@ -47,11 +169,13 @@ Phiên chính chốt cỡ ở đầu mỗi việc và nói rõ cho người dùn
 
 | Cỡ | Khi nào | Đường đi |
 |---|---|---|
-| **S** | Sửa lỗi, việc vặt, đổi nhỏ không thay đổi hành vi hay hợp đồng | Bỏ giai đoạn 0–4. Lỗi: test thất bại trước. `implementer`, rồi review theo hạng |
-| **M** | Đổi hoặc thêm hành vi trong module đã có | Sửa PRD (tăng phiên bản, về *In review* rồi duyệt lại), thiết kế và tài liệu kỹ thuật chỉ phần bị ảnh hưởng, kế hoạch ngắn, rồi giai đoạn 5–6 |
-| **L** | Module mới, hoặc thay đổi chạm quyền, phiên, định danh | Đủ giai đoạn 0–6, `appsec` nếu nhạy cảm |
+| **S** | Sửa lỗi, việc vặt, đổi nhỏ không thay đổi hành vi hay hợp đồng | Work item `bug` ở *Backlog* (§ Plane); vào sprint hiện tại nếu người dùng đồng ý, không thì sprint sau. Đường đi kỹ thuật: bỏ giai đoạn 0–4; lỗi thì test thất bại trước; `implementer`, rồi review theo hạng |
+| **M** | Đổi hoặc thêm hành vi trong module đã có | Sửa PRD (tăng phiên bản, về *In review* rồi duyệt lại), cập nhật kế hoạch phát hành, refinement (thiết kế và tài liệu kỹ thuật chỉ phần bị ảnh hưởng), rồi vào backlog như story mới |
+| **L** | Module mới, hoặc thay đổi chạm quyền, phiên, định danh | Đủ giai đoạn 0 → 1c, rồi vòng sprint; `appsec` nếu nhạy cảm |
 
 Cỡ S không được thêm hành vi người dùng nhìn thấy hay đổi API. Nếu việc S hóa ra cần đổi hành vi, dừng và nâng lên M.
+
+Lỗi phát hiện ở sprint review trên story của chính sprint đó không phải work item mới: story đó chưa *Done*.
 
 ### Hạng kiểm tra
 
@@ -73,9 +197,9 @@ Danh sách đường dẫn và dấu hiệu của từng hạng chỉ nằm tron
 
 ## 3. Cổng giữa các giai đoạn
 
-- **Không vào giai đoạn sau khi giai đoạn trước chưa duyệt.** Ngoại lệ: module nhạy cảm có thể viết tài liệu kỹ thuật song song với thiết kế giao diện khi người dùng cho phép và phạm vi ngoại lệ được ghi trong tài liệu module.
+- **Không vào giai đoạn sau khi giai đoạn trước chưa duyệt, tính theo story:** story chỉ vào sprint khi đạt DoR (§ Definition of Ready và Definition of Done). PRD, kế hoạch phát hành và nền kiến trúc vẫn là cổng của cả module. Ngoại lệ: module nhạy cảm có thể viết tài liệu kỹ thuật song song với thiết kế giao diện khi người dùng cho phép và phạm vi ngoại lệ được ghi trong tài liệu module.
 - **Câu hỏi nghiệp vụ phát sinh ở giai đoạn sau quay về PRD**, do `product-manager` sửa, không quyết ở nơi phát hiện. Câu hỏi kỹ thuật thuộc `tech-lead`.
-- **Thay đổi sau khi đã duyệt:** sửa PRD đưa nó về *In review*, kéo theo xét lại thiết kế, tài liệu kỹ thuật và kế hoạch bị ảnh hưởng. Tài liệu bị ảnh hưởng cũng về *In review* và tăng phiên bản. Ngoại lệ: điền hay sửa dòng liên kết và metadata (*Thiết kế*, *Kế hoạch*, *Cập nhật*) không tính là thay đổi.
+- **Thay đổi sau khi đã duyệt:** sửa PRD đưa nó về *In review*, kéo theo xét lại thiết kế, tài liệu kỹ thuật và kế hoạch bị ảnh hưởng. Tài liệu bị ảnh hưởng cũng về *In review* và tăng phiên bản; riêng tài liệu kỹ thuật theo trạng thái từng bản giao (§ Nền kiến trúc). Ngoại lệ: điền hay sửa dòng liên kết và metadata (*Thiết kế*, *Kế hoạch*, *Cập nhật*) không tính là thay đổi.
 - **Sau 3 lượt sửa PR vẫn chưa đạt:** `pr-reviewer` trả `ESCALATE`, chỉ ra tài liệu cần nghĩ lại (PRD, thiết kế hay kế hoạch). Không có lượt sửa thứ 4.
 - **Vùng cần người dùng:** xác thực, token, cookie, phiên, quyền, đổi tổ chức, khoá API, định danh widget, `.claude/`, `.github/`, `AGENTS.md`, cấu hình CI và Lefthook, EF migration, cấu hình triển khai lưu trữ/Redis/SignalR, và thay đổi `.claude/decisions.md` sửa hay xoá mục cũ hoặc có dòng `Supersedes:`. `pr-reviewer` không tự merge các PR này.
 
@@ -86,17 +210,21 @@ Khi code không thể làm đúng tài liệu kỹ thuật đã duyệt:
 | Mức | Khi nào | Xử lý |
 |---|---|---|
 | **Nhỏ** | Không đổi hợp đồng API, quyền, mô hình dữ liệu lưu trữ hay hành vi người dùng thấy (ví dụ tên class nội bộ, thêm index, tách service) | `implementer` làm tiếp, ghi vào mục *Lệch nhỏ so với thiết kế* của báo cáo và mô tả PR kèm lý do. `pr-reviewer` chặn nếu chỗ lệch không thật sự nhỏ hoặc không được ghi. Tài liệu kỹ thuật không sửa |
-| **Lớn** | Đổi bất kỳ điều nào ở trên | `implementer` dừng task, trả chỗ lệch kèm bằng chứng và đề xuất. Phiên chính gọi `tech-lead` sửa tài liệu trên nhánh đang làm (tăng phiên bản, về *In review*); câu hỏi nghiệp vụ đi qua `product-manager` trước. Người dùng duyệt lại, rồi `implementer` làm tiếp. Bản sửa đi chung PR với code |
+| **Lớn** | Đổi bất kỳ điều nào ở trên | `implementer` dừng task, trả chỗ lệch kèm bằng chứng và đề xuất. Phiên chính gọi `tech-lead` sửa tài liệu trên nhánh đang làm (tăng phiên bản, về *In review* theo § Nền kiến trúc); câu hỏi nghiệp vụ đi qua `product-manager` trước. Người dùng duyệt lại, rồi `implementer` làm tiếp. Bản sửa đi chung PR với code |
+
+Thay đổi phần chung của tài liệu kỹ thuật dừng mọi story đang làm của module cho đến khi người dùng duyệt lại.
 
 Không chắc thì coi là lớn. Để lệch lớn lộ ra sớm, kế hoạch đặt phần có rủi ro kỹ thuật cao thành task spike đầu tiên.
 
 ## 5. Commit tài liệu
 
-- **PRD và tài liệu kỹ thuật của một module** nằm chung một nhánh `chore/<module>-docs` cắt từ `dev` ngay từ bản nháp đầu, với **một PR nháp** cho cả module. Phiên chính commit mỗi phiên bản lên nhánh đó, để lịch sử các phiên bản và báo cáo review (comment trên PR) không mất giữa các phiên làm việc. Bắt đầu soạn PRD của module là lệnh push và mở PR nháp đó.
-  - Mỗi lần người dùng duyệt một tài liệu (PRD trước, tài liệu kỹ thuật sau), phiên chính commit bản duyệt lên nhánh. Link bảng thiết kế ghi ở dòng *Thiết kế* của PRD.
+- **Tài liệu khởi động của module** (PRD, kế hoạch phát hành, tài liệu tech v1.0 và link bảng thiết kế của `REL-1`) nằm chung một nhánh `chore/<module>-docs` cắt từ `dev` ngay từ bản nháp đầu, với **một PR nháp** cho cả module. Phiên chính commit mỗi phiên bản lên nhánh đó, để lịch sử các phiên bản và báo cáo review (comment trên PR) không mất giữa các phiên làm việc. Bắt đầu soạn PRD của module là lệnh push và mở PR nháp đó.
+  - Mỗi lần người dùng duyệt một tài liệu, phiên chính commit bản duyệt lên nhánh. Link bảng thiết kế ghi ở dòng *Thiết kế* của PRD.
   - Các agent ở giai đoạn sau (`ui-designer`, `tech-lead`, `writing-plans`) đọc tài liệu từ nhánh này.
-  - PR được merge **một lần** qua `/git-accept`, khi mọi tài liệu của module đã *Approved*. Nếu thiết kế hay tài liệu kỹ thuật bị chặn lâu, người dùng có thể cho merge riêng PRD đã duyệt.
-- **Kế hoạch** được phiên chính commit trên nhánh `feature/*` của nó, đi chung PR với code.
+  - PR được merge **một lần** qua `/git-accept`, khi cả bốn đã duyệt. Nếu thiết kế hay tài liệu kỹ thuật bị chặn lâu, người dùng có thể cho merge riêng PRD đã duyệt.
+- **Mỗi bản giao sau `REL-1`** có một nhánh `chore/<module>-rel-<n>-docs`: PR chỉ có tài liệu (tài liệu tech tăng phiên bản phụ, link thiết kế), merge qua `/git-accept`.
+- **Sửa kế hoạch phát hành giữa module** đi bằng một PR tài liệu nhỏ.
+- **Kế hoạch sprint** được phiên chính commit trên nhánh `feature/*` của nó, đi chung PR với code.
 - **Mọi PR**, kể cả PR chỉ có tài liệu, có mục `## Changelog` theo định dạng của `release-kit:git-mr` (`- Added: …`, `- Fixed: …`, hoặc chỉ `none` cho thay đổi nội bộ), và luôn có một mục `## ` khác theo sau: `git-release` đọc mục này tới heading `## ` kế tiếp, nên dòng chữ tự do ở cuối (dòng ghi nguồn) sẽ làm nó hỏng. `git-release` dựng CHANGELOG của bản phát hành từ các mục này; không sửa `CHANGELOG.md` bằng tay.
 - **Sửa tài liệu do lệch lớn** được phiên chính commit trên nhánh đang làm, đi chung PR với code; vì vậy `pr-reviewer` luôn đối chiếu code với đúng phiên bản tài liệu.
 - `implementer` không sửa và không commit PRD, tài liệu kỹ thuật hay kế hoạch.
@@ -110,6 +238,12 @@ Không chắc thì coi là lớn. Để lệch lớn lộ ra sớm, kế hoạch
 ## 6. Quyền push và mở PR
 
 Mặc định chỉ push hay mở PR khi người dùng ra lệnh. Ở giai đoạn 4, khi duyệt kế hoạch, người dùng có thể cấp **một lần cho cả kế hoạch**: mỗi khi một phase xong và `scripts/test-gate.sh` đạt, `implementer` được push nhánh của phase đó và mở một PR vào `dev`. Quyền này ghi trong đầu kế hoạch và trong brief giao cho `implementer`; không áp dụng cho `main`, và không thay cho cổng `pr-reviewer`.
+
+**Kế hoạch sprint.** Kế hoạch của giai đoạn 4 là kế hoạch sprint, mỗi module một tệp `docs/superpowers/plans/YYYY-MM-DD-<module>-<SPR-…>.md`; tên tệp phải chứa mã sprint `SPR-YYYY-MM-S1` hoặc `-S2`. Đầu kế hoạch ghi:
+- mục tiêu sprint và tên Cycle;
+- các story và AC được cam kết, kèm điểm;
+- các bản giao liên quan, ghi đủ mã `PRDxx-REL-n`;
+- một dòng bắt đầu ngay đầu dòng bằng `` **Release plan:** `docs/backlog/<tệp>.md` ``, trỏ tới kế hoạch phát hành của module (`scripts/check-release-plan.ts` đọc dòng này).
 
 **Mỗi phase một PR.** Mỗi phase của kế hoạch là một nhánh `feature/<module>-phase-<n>` và một PR vào `dev`. Một PR nhắm tối đa khoảng 1.500 dòng mã nguồn, không tính test và tệp sinh tự động (`shared/openapi/`, `frontend/src/api/generated/`); phase chạm vùng cần người dùng (§3) nên nhỏ hơn. Khi lập kế hoạch, phase ước lượng vượt mức này thì tách làm hai. Nếu vượt khi đang làm thì tách tại ranh giới task, không tách giữa task. Con số 1.500 được xem lại ở retro cuối module đầu tiên theo quy trình này.
 
@@ -136,18 +270,23 @@ Dùng skill `release-kit:git-release` (cấu hình ở `.claude/release-kit.json
 
 ## 7. Truy vết
 
-Mã yêu cầu đi suốt chuỗi: persona (`P-nn`) → user story (`PRDxx-US-nn`) → PRD (`PRDxx-FR-nn`) → tiêu đề bảng thiết kế → mục tài liệu kỹ thuật → task trong kế hoạch → test → dòng `PRD:` của feature-map → mô tả PR. Một mã không có hạ nguồn, hoặc một thành phần không có mã thượng nguồn, là một phát hiện ở bất kỳ khâu review nào.
+Mã yêu cầu đi suốt chuỗi: persona (`P-nn`) → user story (`PRDxx-US-nn`) → yêu cầu (`PRDxx-FR-nn`) → bản giao (`PRDxx-REL-n`) → tiêu đề bảng thiết kế → mục tài liệu kỹ thuật → kế hoạch sprint → task → test → dòng `PRD:` của feature-map → mô tả PR (có dòng `Plane:`, § Plane). Một mã không có hạ nguồn, hoặc một thành phần không có mã thượng nguồn, là một phát hiện ở bất kỳ khâu review nào. Story Must không nằm trong bản giao nào, và PR không có dòng `Plane:` khi dự án có `.claude/plane.json`, cũng là phát hiện.
 
 ## 8. Lỗi lặp và retro cuối module
 
 Cùng một góp ý xuất hiện hai lần thì không thêm quy tắc văn bản nữa: biến nó thành lint, kiểm thử kiến trúc hoặc generator (`AGENTS.md`).
+
+**Sprint retro.** Sau mỗi sprint review (§ Vòng sprint):
+- Phiên chính ghi: điểm cam kết so với điểm *Done*, số story dời sang sprint sau, số story bị từ chối khi review, thời gian story nằm ở *Pending*, và các commit `fix` của sprint.
+- Điều chỉnh ngay: năng lực và cách sắp xếp sprint kế tiếp.
+- Ý cải tiến quy trình không áp dụng ngay: ghi vào mục *Chờ retro* của `docs/agent-error-log.md` (đóng băng quy trình bên dưới).
 
 **Retro cuối module.** Khi PR cuối của một module đã merge vào `dev`, và trước khi đánh *Merged* trong `progress.md`, phiên chính chạy retro:
 1. Phân loại các commit `fix` của module theo nguyên nhân gốc (một agent Sonnet đọc `git log` và `git show` của các nhánh module).
 2. Ghi mỗi nhóm nguyên nhân vào `docs/agent-error-log.md`, và xử lý các ý trong mục *Chờ retro* của tệp đó.
 3. Nhóm gặp từ hai lần trở lên thì biến thành kiểm tra tự động (việc cỡ S cho `implementer`), hoặc ghi lý do không làm được vào mục đó. Mục đã tự động hoá ghi "Đã chuyển thành: …".
 4. Ghi số đo của module vào `progress.md` § Số đo, kèm bảng của `bun scripts/risk-tier.ts --fix-ratio <dải commit của module>` và tổng token agent cộng từ mục `## Verification` của các PR phase.
-5. Gom các thay đổi quy trình của module vào một PR quy trình, kèm danh sách persona không còn story nào phục vụ (§1b), nếu có.
+5. Gom các thay đổi quy trình của module vào một PR quy trình, kèm danh sách persona không còn story nào phục vụ (§ Persona), nếu có.
 6. Nếu tỉ lệ `fix` của hạng 1 cao hơn của hạng 2, đưa đường dẫn của các commit `fix` hạng 1 vào danh sách hạng 2 của `scripts/risk-tier.ts`, trong PR quy trình ở bước 5.
 
 **Đóng băng quy trình giữa module.** Thay đổi quy trình (tài liệu này, `AGENTS.md`, `.claude/agents/`, `.claude/rules/`) chỉ áp dụng ở retro. Giữa module chỉ sửa lỗi quy trình đang chặn việc, kèm lý do trong một mục của `docs/process/decisions.md`. Ý cải tiến phát sinh giữa module được ghi vào mục *Chờ retro* của `docs/agent-error-log.md`.
@@ -160,6 +299,9 @@ Nhật ký quyết định quy trình nằm ở `docs/process/decisions.md`, m�
 
 ## 10. Tiến độ module
 
-Bảng tiến độ nằm ở `docs/process/progress.md`: mỗi module một dòng, mỗi giai đoạn một cột. Phiên chính là người duy nhất cập nhật bảng này: trong PR tài liệu khi PRD hoặc tài liệu kỹ thuật được duyệt, trong PR tính năng cho các cột *Plan* và *Code*, và đánh *Merged* ở PR tài liệu tiếp theo của module, chỉ sau khi retro cuối module (§8) xong. Bảng *Số đo* trong cùng tệp ghi sáu số mỗi module: số ngày lịch (từ bản nháp PRD đầu tiên tới khi PR cuối merge), số PR, tỉ lệ commit `fix` (`git log`), tỉ lệ `fix` theo hạng (`bun scripts/risk-tier.ts --fix-ratio`), số câu hỏi tới người dùng, và token agent.
+Bảng tiến độ nằm ở `docs/process/progress.md`; phiên chính là người duy nhất cập nhật nó.
+- **Bảng module**, mỗi module một dòng: PRD, Kế hoạch phát hành, Nền kiến trúc, UI/Tech theo REL (bản giao mới nhất đã duyệt cả hai trên tổng số, ví dụ `REL-2/4`), appsec, REL xong (ví dụ `1/4`), Merged. Cập nhật trong PR tài liệu khi một tài liệu được duyệt, trong PR tính năng cho *REL xong*, và đánh *Merged* ở PR tài liệu tiếp theo của module, chỉ sau khi retro cuối module (§ Lỗi lặp và retro cuối module) xong.
+- **Bảng *Sprint***, mỗi sprint một dòng: Cycle, mục tiêu, điểm cam kết, điểm *Done*, số story dời, số story bị từ chối ở review. Khi có Plane, số liệu lấy từ Cycle.
+- **Bảng *Số đo***, mỗi module tám số: số ngày lịch (từ bản nháp PRD đầu tiên tới khi PR cuối merge), số PR, tỉ lệ commit `fix` (`git log`), tỉ lệ `fix` theo hạng (`bun scripts/risk-tier.ts --fix-ratio`), số câu hỏi tới người dùng, token agent, số sprint, và velocity trung bình.
 
 **Token agent.** Báo cáo hoàn thành của mỗi agent có số token của agent đó. Cuối mỗi phase, phiên chính ghi tổng theo loại agent và theo hạng vào mục `## Verification` của PR phase, ví dụ `implementer h1: 210k; pr-reviewer h1: 45k`. Token của chính phiên chính không đo được nên không ghi.
