@@ -24,7 +24,7 @@ Backbone là các hoạt động của persona chính, xếp theo thứ tự tr�
 - Bản giao nào cũng demo được cho người dùng thấy; không có bản giao chỉ gồm việc backend.
 - Mỗi story Must nằm trong đúng một bản giao, hoặc được chia qua nhiều bản giao theo các tập AC không trùng nhau.
 - Thứ tự bản giao là quyết định của người dùng.
-- Cột *Story*: các mục cách nhau bằng `;`, mỗi mục là cả story (`PRDXX-US-01`) hoặc một phần theo tập AC (`PRDXX-US-02 (AC-03, AC-04)`). Cột *Cỡ áo*: `S`, `M`, `L` hoặc `XL`.
+- Cột *Story*: các mục cách nhau bằng `;`, mỗi mục là cả story (`PRDXX-US-01`) hoặc một phần theo tập AC (`PRDXX-US-02 (AC-nn, AC-mm)`). Cột *Cỡ áo*: `S`, `M`, `L` hoặc `XL`.
 
 | REL | Mục tiêu | Story | Persona | Phụ thuộc | Cỡ áo |
 |---|---|---|---|---|---|
