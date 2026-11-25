@@ -117,6 +117,38 @@ test:comments:
     - bun scripts/check-personas.ts
     - bun scripts/check-release-plan.ts
 
+# The twin of .github/workflows/plane-sync.yml (docs/process/lifecycle.md § Plane): an MR into dev is
+# `opened`, a push to dev is `merged`. GitLab starts no pipeline for an MR closed unmerged, so that
+# item is moved back by hand. Fork MRs are skipped; PLANE_API_KEY is a masked CI/CD variable.
+plane:sync:
+  extends: .bun
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  allow_failure: true
+  timeout: 10m
+  variables:
+    GIT_DEPTH: "0" # the commit range below must exist
+  rules:
+    - if: $CI_MERGE_REQUEST_SOURCE_PROJECT_ID && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_PROJECT_ID
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"
+      exists: [.claude/plane.json]
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
+      exists: [.claude/plane.json]
+  script:
+    - |
+      if [ "$CI_PIPELINE_SOURCE" = merge_request_event ]; then
+        export PLANE_PR_URL="$CI_PROJECT_URL/-/merge_requests/$CI_MERGE_REQUEST_IID"
+        # SOURCE_BRANCH_SHA is set in merged-results pipelines, where CI_COMMIT_SHA is the merge ref.
+        git log --format=%B "$CI_MERGE_REQUEST_DIFF_BASE_SHA..${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}" |
+          bun scripts/plane-sync.ts opened
+      elif echo "$CI_COMMIT_BEFORE_SHA" | grep -qE '^0+$'; then
+        # A new dev branch: its whole history is not one merge.
+        echo "warning: plane-sync: no previous commit on dev, nothing synced"
+      else
+        git log --format=%B "$CI_COMMIT_BEFORE_SHA..$CI_COMMIT_SHA" | bun scripts/plane-sync.ts merged
+      fi
+
 # $CI_REGISTRY_IMAGE/<service>:X.Y.Z, plus :latest for a stable (non-pre-release) tag.
 images:
   extends: .docker

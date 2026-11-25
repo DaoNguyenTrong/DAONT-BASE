@@ -30,6 +30,11 @@ test.each<[string, Tier]>([
   ['.github/workflows/ci.yml', 2],
   ['lefthook.yml', 2],
   ['scripts/risk-tier.ts', 2],
+  ['scripts/plane-sync.ts', 2],
+  ['scripts/plane-sync.test.ts', 1],
+  ['.github/workflows/plane-sync.yml', 2],
+  ['.claude/plane.json', 2],
+  ['.claude/plane.example.json', 2],
 ])('tierOf(%s) = %d', (path, tier) => expect(tierOf(path)).toBe(tier))
 
 test('tierOf_authDirectoryWithoutKeywordInName_isTier2', () =>

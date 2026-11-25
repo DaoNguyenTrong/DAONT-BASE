@@ -21,6 +21,9 @@ export const TIER2_PATHS: RegExp[] = [
   /^lefthook\.ya?ml$/i,
   /^scripts\/(risk-tier(\.test)?\.ts|test-gate\.sh|claude-bash-guard\.ts)$/i,
   /^\.claude\/settings(\.local)?\.json$/i,
+  // Where the CI sync sends its token: the script and the config that names the server.
+  /^scripts\/plane-sync(\.test)?\.ts$/i,
+  /^\.claude\/plane[^/]*\.json$/i,
   /^\.codex\/(hooks\.json|config\.toml)$/i,
   /(^|\/)(docker-compose[^/]*\.ya?ml|Dockerfile[^/]*|\.env[^/]*|appsettings[^/]*\.json|launchSettings\.json)$/i,
   /(^|\/)(package\.json|bun\.lockb?|Directory\.(Build|Packages)\.props)$|\.csproj$/i,
