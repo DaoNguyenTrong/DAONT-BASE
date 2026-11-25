@@ -1,0 +1,80 @@
+# Links each PR into dev to its Plane work items and moves their state (docs/process/lifecycle.md § Plane).
+# Never a required check, and it never fails a PR. .gitlab-ci.yml's plane:sync is the GitLab twin.
+#
+# SECURITY: anyone who can push a branch can read PLANE_API_KEY, through any workflow on that branch,
+# so pull_request_target alone would not close it (not adopted; hardening is not decided). Checking
+# out the base commit only fixes which script runs while this file is unedited. Fork PRs are skipped.
+# Token rules and the repo setting for fork secrets: docs/process/lifecycle.md § Plane.
+name: Plane sync
+
+on:
+  pull_request:
+    branches:
+      - dev
+    types: [opened, reopened, edited, synchronize, ready_for_review, closed]
+
+permissions:
+  contents: read
+
+jobs:
+  plane-sync:
+    # Neither a draft nor an edit to a closed or merged PR may set Ready For Testing.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action == 'closed' ||
+      (github.event.pull_request.state == 'open' && !github.event.pull_request.draft))
+    runs-on: ubuntu-latest
+    # Job level, so a run skipped by the condition above cannot displace a pending sync.
+    concurrency:
+      group: plane-sync-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        continue-on-error: true
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+
+      - id: configured
+        continue-on-error: true
+        run: |
+          if [ -f scripts/plane-sync.ts ] && [ -f .claude/plane.json ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No scripts/plane-sync.ts or .claude/plane.json on the base commit: nothing to sync."
+          fi
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        if: steps.configured.outputs.run == 'true'
+        continue-on-error: true
+        with:
+          bun-version: "1.3.14"
+
+      # Only the commit objects, for their messages — the head is never checked out.
+      - if: steps.configured.outputs.run == 'true'
+        continue-on-error: true
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: git fetch --no-tags origin "pull/$PR_NUMBER/head"
+
+      - name: Sync
+        if: steps.configured.outputs.run == 'true'
+        continue-on-error: true
+        timeout-minutes: 5
+        env:
+          PLANE_API_KEY: ${{ secrets.PLANE_API_KEY }}
+          PLANE_PR_BODY: ${{ github.event.pull_request.body }}
+          PLANE_PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          EVENT: >-
+            ${{ github.event.action != 'closed' && 'opened' ||
+            (github.event.pull_request.merged && 'merged' || 'closed') }}
+        # base.sha can be stale. Once merged, dev holds the head, so the range starts at the merge's
+        # first parent instead.
+        run: |
+          if [ "$EVENT" = merged ]; then
+            git log --format=%B "$MERGE_SHA^1..$PR_HEAD"
+          else
+            git log --format=%B "$PR_HEAD" --not origin/dev
+          fi | bun scripts/plane-sync.ts "$EVENT"

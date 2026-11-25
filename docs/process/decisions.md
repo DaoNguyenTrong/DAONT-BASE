@@ -2,6 +2,17 @@
 
 Nhật ký của DAONT-BASE, mới nhất ở trên. Quy tắc đang áp dụng nằm trong `lifecycle.md`; các quyết định từ dự án nguồn được giữ riêng ở `reference/feedback-hub-decisions.md` để tra lý do, không phải lịch sử thực hiện của DAONT-BASE.
 
+### 2026-11-25 — CI đồng bộ Plane và trailer `Plane:` trong commit
+
+Theo lệnh của người dùng, bổ sung vào PR #82. CI gắn link và chuyển trạng thái theo PR, và commit phục vụ work item mang trailer `Plane:`. Lý do: cập nhật tay dễ sót, và push vào `dev` trên GitLab chỉ có commit message để lấy id. Quy tắc nằm ở `lifecycle.md` § Plane.
+
+### 2026-11-25 — Ba chỗ sửa sau review PR #81: bảng *Story*, PR sau sprint, `Plane: none`
+
+Theo lệnh của người dùng; áp dụng ngoài retro vì chưa có module nào đang chạy. Quy tắc nằm ở `lifecycle.md` § Tiến độ module và § Plane.
+- Không có Plane thì điểm và trạng thái story ghi ở bảng *Story* mới của `progress.md`. Lý do: bảng *Sprint* không chứa được, và kế hoạch sprint chưa có lúc DoR đã cần điểm.
+- *REL xong*, bảng *Sprint* và bảng *Story* sau sprint đi bằng một PR tài liệu nhỏ qua `/git-accept`. Lý do: story chỉ *Done* sau khi các PR tính năng đã merge.
+- PR không phục vụ work item nào ghi `Plane: none (<lý do>)`. Lý do: yêu cầu id chặn cả PR quy trình, tooling và tài liệu.
+
 ### 2026-11-25 — Lập kế hoạch Agile sau PRD: kế hoạch phát hành, vòng sprint, Plane
 
 Người dùng chọn phương án B: PRD giữ ở mức module, thêm kế hoạch phát hành và nền kiến trúc, rồi thiết kế, tài liệu kỹ thuật, kế hoạch và triển khai đi theo bản giao và theo sprint, có DoR/DoD, demo, retro và Plane. Lý do: quy trình cũ chạy waterfall trong từng module, không có bước nào giao theo giá trị. Quy tắc nằm ở `lifecycle.md`; thiết kế và các đề xuất chưa được người dùng xác nhận riêng ở `docs/superpowers/specs/2026-11-25-agile-planning-design.md`. Áp dụng ngay, ngoài retro, vì chưa có module nào đang chạy (bảng trong `progress.md` trống).

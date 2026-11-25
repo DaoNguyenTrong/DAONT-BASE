@@ -64,7 +64,7 @@ Sau khi PRD *Approved*, module có một tệp `docs/backlog/PRDxx-<tên>.md`, v
 **Ước lượng hai mức**, mỗi mức nằm đúng một nơi, không chép sang nơi kia:
 - **Cỡ áo (S/M/L/XL) theo bản giao**, trong kế hoạch phát hành. `tech-lead` ghi ở giai đoạn 1b, khi chưa có kiến trúc, chỉ để dự báo thô. Cỡ áo không đổi trừ khi kế hoạch được sửa vì lý do khác; không có PR tài liệu nào chỉ để đổi cỡ áo.
 - **Story point theo story hoặc phần story** (Fibonacci 1, 2, 3, 5, 8, 13). `tech-lead` đặt ở refinement, khi đã có mục tech (với `REL-1` là ở giai đoạn 1c); người dùng chốt ở sprint planning.
-  - Nguồn sự thật là Plane; dự án không có Plane thì là bảng story của kế hoạch sprint.
+  - Nguồn sự thật là Plane; dự án không có Plane thì là bảng *Story* của `progress.md` (§ Tiến độ module).
   - Kế hoạch sprint ghi ảnh chụp số điểm lúc cam kết để tính velocity; ảnh chụp không được cập nhật về sau.
   - Đổi điểm trước khi story vào sprint không cần duyệt.
   - Story trên 8 điểm phải chia theo tập AC trước khi vào sprint.
@@ -101,7 +101,8 @@ Một sprint là một Cycle trên Plane, nửa tháng: `SPR-YYYY-MM-S1` từ ng
 4. **Sprint review**, ngày cuối sprint.
    - Phiên chính lập kịch bản demo cho từng story từ AC của nó, kèm bằng chứng: e2e của `qa-frontend`, ảnh chụp từ skill `run` trên `dev`.
    - Người dùng nghiệm thu từng story: đạt thì *Done*; chưa đạt thì giữ lại và ghi lý do trong comment; yêu cầu mới phát sinh quay về PRD (cỡ M), không sửa ngay trong sprint.
-5. **Sprint retro**, ngay sau review (§ Lỗi lặp và retro cuối module). Kết thúc sprint trên Plane: `complete` Cycle và dời story dở dang sang Cycle kế tiếp (`transfer_workitems`), theo quyền ghi ở § Plane.
+   - Phiên chính hỏi quyền push và mở PR ghi kết quả sprint (§ Tiến độ module).
+5. **Sprint retro**, ngay sau review (§ Lỗi lặp và retro cuối module). Kết thúc sprint trên Plane: `complete` Cycle và dời story dở dang sang Cycle kế tiếp (`transfer_workitems`), theo quyền ghi ở § Plane. Kết quả sprint được ghi vào `progress.md` bằng PR sau sprint (§ Tiến độ module).
 
 ## 1f. Definition of Ready và Definition of Done
 
@@ -128,7 +129,17 @@ Brief giao `implementer` và checklist của `pr-reviewer` dẫn chiếu mục n
 
 Repo là nguồn sự thật của nội dung; Plane là nơi team xem tiến độ.
 
-**Cấu hình.** Mỗi sản phẩm dùng DAONT-BASE chép `.claude/plane.example.json` thành `.claude/plane.json` và điền: id và identifier của project, id của từng trạng thái, id của label tầng (`BE`, `FE`, `Mobile`) và label `bug`. Label bản giao `PRDxx-REL-n` được tạo khi cần, không liệt kê trong tệp. Không có `.claude/plane.json` thì bỏ qua mọi bước Plane; khi đó trạng thái story ghi ở bảng *Sprint* của `progress.md`. Bản thân DAONT-BASE không có tệp này.
+**Cấu hình.** Mỗi sản phẩm dùng DAONT-BASE chép `.claude/plane.example.json` thành `.claude/plane.json` và điền: `baseUrl` (địa chỉ `https` của Plane), `workspaceSlug`, id và identifier của project, id của từng trạng thái, id của label tầng (`BE`, `FE`, `Mobile`) và label `bug`. Label bản giao `PRDxx-REL-n` được tạo khi cần, không liệt kê trong tệp. Không có `.claude/plane.json` thì bỏ qua mọi bước Plane; khi đó điểm và trạng thái story ghi ở bảng *Story* của `progress.md` (§ Tiến độ module). Bản thân DAONT-BASE không có tệp này.
+
+**Cấu hình CI.** Đặt secret `PLANE_API_KEY` trên GitHub, hoặc biến CI/CD cùng tên trên GitLab. **Trên cả GitHub lẫn GitLab, ai push được một nhánh đều đọc được `PLANE_API_KEY`**:
+- GitHub: mọi workflow trên mọi nhánh được push (ví dụ một tệp mới chạy `on: push`) đều đọc được secret của repo, không chỉ qua PR. Vì vậy chuyển sang `pull_request_target` thôi thì không đóng được lỗ này, và việc checkout commit base chỉ cố định script nào chạy khi workflow không bị sửa.
+- GitLab: job MR chạy script và `plane.json` của nhánh nguồn. Biến phải *masked* và giới hạn *environment scope* là `plane` (job `plane:sync` khai báo environment đó), vì biến không giới hạn scope tới được mọi job. Biến không được đặt *protected*, vì pipeline MR của nhánh không được bảo vệ cần nó. Scope không chặn được người push được nhánh: họ vẫn viết được một job khai báo environment `plane` để đọc biến.
+
+Quy tắc bắt buộc:
+- Token là của một tài khoản bot quyền thấp, chỉ là thành viên của đúng project đó, và có ngày hết hạn nếu Plane cho phép.
+- **Không bao giờ chạy pipeline của MR từ fork trong project cha** (GitLab): pipeline đó chạy tệp CI của fork với biến của project cha. Luật bỏ qua fork trong `.gitlab-ci.yml` không bảo vệ được, vì fork sửa được nó.
+- Thay (rotate) `PLANE_API_KEY` khi một người mất quyền push (GitLab: quyền Developer trở lên), hoặc sau khi một pipeline của fork đã chạy trong project cha.
+- PR từ fork trên GitHub không nhận được secret chỉ khi cài đặt repo gửi secret cho workflow của PR từ fork đang tắt (cài đặt này chỉ có ở repo private).
 
 **Ánh xạ:**
 
@@ -144,7 +155,9 @@ Repo là nguồn sự thật của nội dung; Plane là nơi team xem tiến đ
 
 Nếu bản Plane đang dùng không cho ghi điểm estimate qua MCP (spec `docs/superpowers/specs/2026-11-25-agile-planning-design.md` § 10), điểm được ghi bằng label `pt-1`, `pt-2`, `pt-3`, `pt-5`, `pt-8`, `pt-13`.
 
-Mô tả work item chỉ có link tới mục PRD, bảng thiết kế và mục tech; AC không chép sang Plane. Link PR gắn vào work item bằng `workitem_link`. Mục `## Requirements` của mô tả PR có dòng `Plane: KNX-12, KNX-15`, liệt kê các work item mà PR phục vụ.
+Mô tả work item chỉ có link tới mục PRD, bảng thiết kế và mục tech; AC không chép sang Plane. Link PR gắn vào work item bằng `workitem_link`. Mục `## Requirements` của mô tả PR có dòng `Plane: KNX-12, KNX-15`, liệt kê các work item mà PR phục vụ. PR không phục vụ work item nào (ví dụ PR quy trình ở retro, tooling, tài liệu) ghi `Plane: none (<lý do>)`; PR triển khai một story hoặc một item `bug` bắt buộc liệt kê id.
+
+Commit phục vụ một story hoặc một `bug` kết thúc bằng trailer `Plane: KNX-12`; commit không phục vụ work item nào thì không cần. Tên nhánh không đổi.
 
 **Mốc cập nhật trạng thái:**
 
@@ -159,7 +172,20 @@ Mô tả work item chỉ có link tới mục PRD, bảng thiết kế và mục
 | Bị chặn bởi câu hỏi nghiệp vụ hoặc lệch lớn | *Pending*, kèm comment trỏ tới câu hỏi |
 | Story bị bỏ khỏi kế hoạch phát hành | *Cancelled* |
 
-**Quyền ghi.** Chỉ phiên chính ghi lên Plane; subagent không gọi Plane.
+**CI đồng bộ.** `scripts/plane-sync.ts` lấy id từ các dòng `Plane:` của mô tả PR và của commit message, với PR vào `dev`:
+- PR được mở hoặc cập nhật, không phải draft: gắn link PR, chuyển *Ready For Testing*;
+- PR merge: chuyển *Testing*;
+- PR đóng mà không merge: item đang *Ready For Testing* chuyển về *In Progress*, item ở trạng thái khác giữ nguyên. GitLab không chạy pipeline cho trường hợp này, nên phiên chính làm tay.
+
+CI không đổi trạng thái của item đang *Done*, *Cancelled* hoặc *Pending*, và lỗi Plane không làm hỏng PR. Phiên chính làm các mốc còn lại, và làm tay các mốc trên khi CI bị bỏ qua (PR từ fork, thiếu cấu hình) hoặc in cảnh báo.
+
+**Giới hạn trên GitLab:**
+- mô tả MR có thể bị cắt ngắn, và push vào `dev` chỉ đọc id từ commit message;
+- push merge `main` vào `dev` (sau phát hành hoặc hotfix) cũng là push vào `dev`: mọi id trên các dòng `Plane:` của commit trong khoảng được push đều chuyển *Testing*, trừ item đang *Done*, *Cancelled* hoặc *Pending*;
+- chỉ sửa mô tả MR thì không có pipeline nào chạy; id mới được đọc ở lần push kế tiếp;
+- bỏ draft cũng không tự chạy pipeline, nên cần push thêm hoặc chạy lại pipeline MR. Bản GitLab không có biến `CI_MERGE_REQUEST_DRAFT` vẫn đồng bộ cả MR draft.
+
+**Quyền ghi.** Ngoài job CI ở trên, chỉ phiên chính ghi lên Plane; subagent không gọi Plane.
 - Không cần hỏi lại, đúng tại các mốc trên: tạo work item, đổi trạng thái, label, điểm, gắn link, viết comment.
 - Cần người dùng xác nhận mỗi lần: tạo, `complete` hoặc sửa Cycle; đưa story vào hay rút khỏi Cycle (đó là cam kết sprint); xoá bất cứ thứ gì; sửa Module.
 
@@ -270,14 +296,14 @@ Dùng skill `release-kit:git-release` (cấu hình ở `.claude/release-kit.json
 
 ## 7. Truy vết
 
-Mã yêu cầu đi suốt chuỗi: persona (`P-nn`) → user story (`PRDxx-US-nn`) → yêu cầu (`PRDxx-FR-nn`) → bản giao (`PRDxx-REL-n`) → tiêu đề bảng thiết kế → mục tài liệu kỹ thuật → kế hoạch sprint → task → test → dòng `PRD:` của feature-map → mô tả PR (có dòng `Plane:`, § Plane). Một mã không có hạ nguồn, hoặc một thành phần không có mã thượng nguồn, là một phát hiện ở bất kỳ khâu review nào. Story Must không nằm trong bản giao nào, và PR không có dòng `Plane:` khi dự án có `.claude/plane.json`, cũng là phát hiện.
+Mã yêu cầu đi suốt chuỗi: persona (`P-nn`) → user story (`PRDxx-US-nn`) → yêu cầu (`PRDxx-FR-nn`) → bản giao (`PRDxx-REL-n`) → tiêu đề bảng thiết kế → mục tài liệu kỹ thuật → kế hoạch sprint → task → test → dòng `PRD:` của feature-map → mô tả PR (có dòng `Plane:`, § Plane). Một mã không có hạ nguồn, hoặc một thành phần không có mã thượng nguồn, là một phát hiện ở bất kỳ khâu review nào. Story Must không nằm trong bản giao nào, và PR thiếu dòng `Plane:` hoặc ghi dòng đó sai quy tắc (§ Plane) khi dự án có `.claude/plane.json`, cũng là phát hiện.
 
 ## 8. Lỗi lặp và retro cuối module
 
 Cùng một góp ý xuất hiện hai lần thì không thêm quy tắc văn bản nữa: biến nó thành lint, kiểm thử kiến trúc hoặc generator (`AGENTS.md`).
 
 **Sprint retro.** Sau mỗi sprint review (§ Vòng sprint):
-- Phiên chính ghi: điểm cam kết so với điểm *Done*, số story dời sang sprint sau, số story bị từ chối khi review, thời gian story nằm ở *Pending*, và các commit `fix` của sprint.
+- Phiên chính ghi: điểm cam kết so với điểm *Done*, số story dời sang sprint sau, số story bị từ chối khi review, thời gian story nằm ở *Pending*, và các commit `fix` của sprint. Phần đưa vào `progress.md` và PR mang nó: § Tiến độ module.
 - Điều chỉnh ngay: năng lực và cách sắp xếp sprint kế tiếp.
 - Ý cải tiến quy trình không áp dụng ngay: ghi vào mục *Chờ retro* của `docs/agent-error-log.md` (đóng băng quy trình bên dưới).
 
@@ -300,8 +326,16 @@ Nhật ký quyết định quy trình nằm ở `docs/process/decisions.md`, m�
 ## 10. Tiến độ module
 
 Bảng tiến độ nằm ở `docs/process/progress.md`; phiên chính là người duy nhất cập nhật nó.
-- **Bảng module**, mỗi module một dòng: PRD, Kế hoạch phát hành, Nền kiến trúc, UI/Tech theo REL (bản giao mới nhất đã duyệt cả hai trên tổng số, ví dụ `REL-2/4`), appsec, REL xong (ví dụ `1/4`), Merged. Cập nhật trong PR tài liệu khi một tài liệu được duyệt, trong PR tính năng cho *REL xong*, và đánh *Merged* ở PR tài liệu tiếp theo của module, chỉ sau khi retro cuối module (§ Lỗi lặp và retro cuối module) xong.
+- **Bảng module**, mỗi module một dòng: PRD, Kế hoạch phát hành, Nền kiến trúc, UI/Tech theo REL (bản giao mới nhất đã duyệt cả hai trên tổng số, ví dụ `REL-2/4`), appsec, REL xong (ví dụ `1/4`), Merged. Cập nhật trong PR tài liệu khi một tài liệu được duyệt, ghi *REL xong* ở PR sau sprint (bên dưới), và đánh *Merged* ở PR tài liệu tiếp theo của module, chỉ sau khi retro cuối module (§ Lỗi lặp và retro cuối module) xong.
+- **Bảng *Story***, chỉ dùng khi dự án không có `.claude/plane.json`; khi đó nó là nguồn sự thật của điểm và trạng thái story. Mỗi story, hoặc phần story theo tập AC, một dòng: Story, REL, Điểm, Trạng thái, Cycle. Chỉ ghi ở mốc có commit để mang theo:
+  - refinement: thêm dòng với điểm và *Todo*, trong PR tài liệu của bản giao đó (§ Commit tài liệu);
+  - sprint planning: Cycle, commit cùng kế hoạch sprint;
+  - sprint retro: *Done* nếu story đạt DoD, không thì giữ *Todo* (PR sau sprint bên dưới).
+
+  Trạng thái ở giữa không ghi: các PR đã cho thấy.
 - **Bảng *Sprint***, mỗi sprint một dòng: Cycle, mục tiêu, điểm cam kết, điểm *Done*, số story dời, số story bị từ chối ở review. Khi có Plane, số liệu lấy từ Cycle.
 - **Bảng *Số đo***, mỗi module tám số: số ngày lịch (từ bản nháp PRD đầu tiên tới khi PR cuối merge), số PR, tỉ lệ commit `fix` (`git log`), tỉ lệ `fix` theo hạng (`bun scripts/risk-tier.ts --fix-ratio`), số câu hỏi tới người dùng, token agent, số sprint, và velocity trung bình.
+
+**PR sau sprint.** Story chỉ *Done* sau khi PO nghiệm thu, lúc các PR tính năng đã merge. Vì vậy sau sprint review và retro, phiên chính ghi *REL xong*, dòng của bảng *Sprint* và bảng *Story* (khi dùng) trong một PR nhỏ chỉ có tài liệu, merge qua `/git-accept`. Quyền push và mở PR đó được hỏi người dùng ở sprint review.
 
 **Token agent.** Báo cáo hoàn thành của mỗi agent có số token của agent đó. Cuối mỗi phase, phiên chính ghi tổng theo loại agent và theo hạng vào mục `## Verification` của PR phase, ví dụ `implementer h1: 210k; pr-reviewer h1: 45k`. Token của chính phiên chính không đo được nên không ghi.
