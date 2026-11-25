@@ -71,13 +71,13 @@ Task Progress:
 
 **2.1 Interface Segregation:**
 
-Dùng Serena `find_symbol` với pattern `I*` trong `backend/src/StarterKit.Application` và `backend/src/StarterKit.Infrastructure`, `depth=1` để liệt kê method của từng interface. Interface có hơn 5 method → cân nhắc tách.
+Dùng Serena `s.lsp.find_symbol` (qua `serena_repl`, xem `.claude/rules/serena.md`) với pattern `I`, `substring_matching=True`, `include_kinds=[11]` (interface), `relative_path` lần lượt là `backend/src/StarterKit.Application` và `backend/src/StarterKit.Infrastructure`, `depth=1` để liệt kê method của từng interface. Interface có hơn 5 method → cân nhắc tách.
 
 **2.2 Single Responsibility:**
 
-Dùng Serena `find_symbol` với pattern `*Service` trong `backend/src/StarterKit.Application` và `backend/src/StarterKit.Infrastructure`, `include_body=true`. Class có hơn 5 tham số constructor, hoặc hơn 300 dòng, → ghi nhận.
+Dùng Serena `s.lsp.find_symbol` với pattern `Service`, `substring_matching=True`, `include_kinds=[5]` (class), `relative_path` lần lượt là `backend/src/StarterKit.Application` và `backend/src/StarterKit.Infrastructure`, `include_body=True`. Class có hơn 5 tham số constructor, hoặc hơn 300 dòng, → ghi nhận.
 
-**2.3 Vì sao không kiểm tra `using` ở phase này:** `get_symbols_overview` của Serena không trả về câu lệnh `using`. Vi phạm import đã được Phase 1.1 bắt đầy đủ hơn qua `ProjectReference`, nên không cần kiểm tra lại.
+**2.3 Vì sao không kiểm tra `using` ở phase này:** `s.lsp.get_symbols_overview` của Serena không trả về câu lệnh `using`. Vi phạm import đã được Phase 1.1 bắt đầy đủ hơn qua `ProjectReference`, nên không cần kiểm tra lại.
 
 ## Violation Categories
 

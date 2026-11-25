@@ -78,14 +78,14 @@ Orient with CodeGraph (`codegraph_explore`): how modules connect, what calls wha
 
 | When you already know which symbol to inspect… | Use                                           | Scope                                                  |
 | ---------------------------------------------- | --------------------------------------------- | ------------------------------------------------------ |
-| Read a class or method body                    | Serena `find_symbol` with `include_body=true` | backend + frontend                                     |
-| Confirm what a specific usage resolves to      | Serena `find_declaration`                     | backend + frontend                                     |
-| Scan a file's public surface                   | Serena `get_symbols_overview`                 | backend + frontend                                     |
-| Find every caller / usage of a symbol          | Serena `find_referencing_symbols`             | **backend C# only** — frontend: CodeGraph blast radius |
-| Rename a symbol across the codebase            | Serena `rename_symbol`                        | **backend C# only** — frontend: see `serena.md`        |
+| Read a class or method body                    | Serena `s.lsp.find_symbol(…, include_body=True)` | backend + frontend                                  |
+| Confirm what a specific usage resolves to      | Serena `s.lsp.find_declaration`               | backend + frontend                                     |
+| Scan a file's public surface                   | Serena `s.lsp.get_symbols_overview`           | backend + frontend                                     |
+| Find every caller / usage of a symbol          | Serena `s.lsp.find_referencing_symbols`       | **backend C# only** — frontend: CodeGraph blast radius |
+| Rename a symbol across the codebase            | Serena `s.lsp.rename_symbol`                  | **backend C# only** — frontend: see `serena.md`        |
 | Broad keyword / file search                    | `grep` (quick), Explore agent (broad)         | —                                                      |
 
-Why the frontend limits exist: `.claude/rules/serena.md`.
+Serena runs in REPL mode: each `s.lsp.*` call is Python code sent to `mcp__serena__serena_repl` after one `initial_instructions` call. How to call it, and why the frontend limits exist: `.claude/rules/serena.md`.
 
 ### Superpowers Integration
 
@@ -115,7 +115,7 @@ Tool names in the Claude agent files:
 | Skill | a skill, using the names below |
 | WebSearch, WebFetch | web search |
 | `mcp__codegraph__codegraph_explore` | `codegraph` MCP tool `codegraph_explore` |
-| `mcp__serena__<tool>` | `serena` MCP tool `<tool>` |
+| `mcp__serena__initial_instructions`, `mcp__serena__serena_repl` | `serena` MCP tools `initial_instructions`, `serena_repl` |
 | Artifact | none — stop and say the design canvas cannot be read |
 
 Skill names in the Claude prompts:

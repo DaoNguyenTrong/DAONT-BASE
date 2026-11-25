@@ -2,6 +2,14 @@
 
 Nhật ký của DAONT-BASE, mới nhất ở trên. Quy tắc đang áp dụng nằm trong `lifecycle.md`; các quyết định từ dự án nguồn được giữ riêng ở `reference/feedback-hub-decisions.md` để tra lý do, không phải lịch sử thực hiện của DAONT-BASE.
 
+### 2026-11-25 — Serena chạy ở chế độ REPL
+
+Serena 2.1 có `agent_interface: REPL`: chỉ còn `initial_instructions` và `serena_repl`, agent gọi thao tác bằng Python (`s.lsp.find_symbol(...)`), nên tên tool kiểu cũ trong frontmatter của `implementer` và `tech-lead` không còn tồn tại. Chốt REPL trong `.serena/project.yml` để mọi máy dùng cùng giao diện mà tài liệu mô tả. Lý do: gộp nhiều truy vấn trong một lượt gọi và lọc kết quả bằng code trước khi đưa vào ngữ cảnh. Facade `shell` bị loại để lệnh shell vẫn qua hook `claude-bash-guard.ts`.
+
+Cái giá: allowlist tool không còn giới hạn được từng thao tác, nên ràng buộc chỉ-đọc của `tech-lead` chỉ còn nằm trong prompt. Áp dụng ngoài retro vì là thay đổi tương thích công cụ, không đổi quy trình.
+
+Phương án loại: giữ `agent_interface: tools` (vẫn chạy, nhưng bỏ chế độ mới người dùng muốn dùng).
+
 ### 2026-11-25 — Mẫu title và mô tả work item trên Plane
 
 Người dùng yêu cầu item ngắn gọn, dễ hiểu và dùng tiếng Việt; quy tắc ở `lifecycle.md` § Plane. Mô tả story lặp lại một câu "Là…, tôi muốn…, để…" của PRD để đọc hiểu ngay trên Plane; AC vẫn không chép vì hay đổi và dễ lệch. Áp dụng ngoài retro vì chưa có module nào đang chạy.
