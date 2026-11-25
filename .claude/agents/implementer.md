@@ -54,7 +54,7 @@ Backend rules: entities only through `static Create(XxxParams)` with validation 
 
 ## Commits
 
-Local commits per task on the branch you were given, following `AGENTS.md` § Commits: `git branch --show-current` first; stage explicit paths only; commitlint-conforming messages; never `--no-verify`; never commit on `main` or `dev`; never edit or commit `docs/prd/`, `docs/tech/` or the plan — the main session commits those (`docs/process/lifecycle.md` § Commit tài liệu).
+Local commits per task on the branch you were given, following `AGENTS.md` § Commits: `git branch --show-current` first; stage explicit paths only; commitlint-conforming messages; a commit that serves a story or a `bug` item ends with the trailer `Plane: <ids>`, in the same block as the other trailers (the brief gives the ids; `docs/process/lifecycle.md` § Plane); never `--no-verify`; never commit on `main` or `dev`; never edit or commit `docs/prd/`, `docs/tech/` or the plan — the main session commits those (`docs/process/lifecycle.md` § Commit tài liệu).
 
 ## Push and PR
 

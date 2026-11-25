@@ -129,7 +129,9 @@ Brief giao `implementer` và checklist của `pr-reviewer` dẫn chiếu mục n
 
 Repo là nguồn sự thật của nội dung; Plane là nơi team xem tiến độ.
 
-**Cấu hình.** Mỗi sản phẩm dùng DAONT-BASE chép `.claude/plane.example.json` thành `.claude/plane.json` và điền: id và identifier của project, id của từng trạng thái, id của label tầng (`BE`, `FE`, `Mobile`) và label `bug`. Label bản giao `PRDxx-REL-n` được tạo khi cần, không liệt kê trong tệp. Không có `.claude/plane.json` thì bỏ qua mọi bước Plane; khi đó điểm và trạng thái story ghi ở bảng *Story* của `progress.md` (§ Tiến độ module). Bản thân DAONT-BASE không có tệp này.
+**Cấu hình.** Mỗi sản phẩm dùng DAONT-BASE chép `.claude/plane.example.json` thành `.claude/plane.json` và điền: `baseUrl` (địa chỉ `https` của Plane), `workspaceSlug`, id và identifier của project, id của từng trạng thái, id của label tầng (`BE`, `FE`, `Mobile`) và label `bug`. Label bản giao `PRDxx-REL-n` được tạo khi cần, không liệt kê trong tệp. Không có `.claude/plane.json` thì bỏ qua mọi bước Plane; khi đó điểm và trạng thái story ghi ở bảng *Story* của `progress.md` (§ Tiến độ module). Bản thân DAONT-BASE không có tệp này.
+
+**Cấu hình CI.** Đặt secret `PLANE_API_KEY` trên GitHub, hoặc biến CI/CD cùng tên trên GitLab; token phải là của một tài khoản bot quyền thấp. Trên GitLab biến phải *masked* và, vì pipeline MR của nhánh không được bảo vệ cần nó, không được đặt *protected*: ai push được một nhánh đều đọc được token.
 
 **Ánh xạ:**
 
@@ -147,6 +149,8 @@ Nếu bản Plane đang dùng không cho ghi điểm estimate qua MCP (spec `doc
 
 Mô tả work item chỉ có link tới mục PRD, bảng thiết kế và mục tech; AC không chép sang Plane. Link PR gắn vào work item bằng `workitem_link`. Mục `## Requirements` của mô tả PR có dòng `Plane: KNX-12, KNX-15`, liệt kê các work item mà PR phục vụ. PR không phục vụ work item nào (ví dụ PR quy trình ở retro, tooling, tài liệu) ghi `Plane: none (<lý do>)`; PR triển khai một story hoặc một item `bug` bắt buộc liệt kê id.
 
+Commit phục vụ một story hoặc một `bug` kết thúc bằng trailer `Plane: KNX-12`; commit không phục vụ work item nào thì không cần. Tên nhánh không đổi.
+
 **Mốc cập nhật trạng thái:**
 
 | Mốc trong repo | Trạng thái Plane |
@@ -160,7 +164,14 @@ Mô tả work item chỉ có link tới mục PRD, bảng thiết kế và mục
 | Bị chặn bởi câu hỏi nghiệp vụ hoặc lệch lớn | *Pending*, kèm comment trỏ tới câu hỏi |
 | Story bị bỏ khỏi kế hoạch phát hành | *Cancelled* |
 
-**Quyền ghi.** Chỉ phiên chính ghi lên Plane; subagent không gọi Plane.
+**CI đồng bộ.** `scripts/plane-sync.ts` lấy id từ các dòng `Plane:` của mô tả PR và của commit message, với PR vào `dev`:
+- PR được mở hoặc cập nhật: gắn link PR, chuyển *Ready For Testing*;
+- PR merge: chuyển *Testing*;
+- PR đóng mà không merge: chuyển *In Progress*. GitLab không chạy pipeline cho trường hợp này, nên phiên chính làm tay.
+
+CI không đổi trạng thái của item đang *Done*, *Cancelled* hoặc *Pending*, và lỗi Plane không làm hỏng PR. Trên GitLab, mô tả MR có thể bị cắt ngắn, và push vào `dev` chỉ đọc id từ commit message. Phiên chính làm các mốc còn lại, và làm tay các mốc trên khi CI bị bỏ qua (PR từ fork, thiếu cấu hình) hoặc in cảnh báo.
+
+**Quyền ghi.** Ngoài job CI ở trên, chỉ phiên chính ghi lên Plane; subagent không gọi Plane.
 - Không cần hỏi lại, đúng tại các mốc trên: tạo work item, đổi trạng thái, label, điểm, gắn link, viết comment.
 - Cần người dùng xác nhận mỗi lần: tạo, `complete` hoặc sửa Cycle; đưa story vào hay rút khỏi Cycle (đó là cam kết sprint); xoá bất cứ thứ gì; sửa Module.
 

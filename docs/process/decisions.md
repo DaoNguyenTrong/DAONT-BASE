@@ -2,6 +2,10 @@
 
 Nhật ký của DAONT-BASE, mới nhất ở trên. Quy tắc đang áp dụng nằm trong `lifecycle.md`; các quyết định từ dự án nguồn được giữ riêng ở `reference/feedback-hub-decisions.md` để tra lý do, không phải lịch sử thực hiện của DAONT-BASE.
 
+### 2026-11-25 — CI đồng bộ Plane và trailer `Plane:` trong commit
+
+Theo lệnh của người dùng, bổ sung vào PR #82. CI gắn link và chuyển trạng thái theo PR, và commit phục vụ work item mang trailer `Plane:`. Lý do: cập nhật tay dễ sót, và push vào `dev` trên GitLab chỉ có commit message để lấy id. Quy tắc nằm ở `lifecycle.md` § Plane.
+
 ### 2026-11-25 — Ba chỗ sửa sau review PR #81: bảng *Story*, PR sau sprint, `Plane: none`
 
 Theo lệnh của người dùng; áp dụng ngoài retro vì chưa có module nào đang chạy. Quy tắc nằm ở `lifecycle.md` § Tiến độ module và § Plane.

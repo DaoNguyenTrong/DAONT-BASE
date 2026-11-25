@@ -10,6 +10,10 @@ Write only the **why** — the reasoning and rejected alternative. Never "what w
 
 ---
 
+### 2026-11-25 — CI syncs work item state to Plane
+
+State updated only by hand from a session drifts when a PR is merged or closed elsewhere. CI runs the base commit's script, so a PR cannot change the code holding the token. Rejected: `pull_request_target`, a standing invitation to run head code with secrets; failing the build on Plane errors, which would let a tracking outage block merges. Cost: fork PRs are not synced, and a silent gap needs manual repair.
+
 ### 2026-11-25 — Release plan checker in the test gate
 
 Release plans and sprint plans reference PRD ids across files, so a stale story, a dropped Must story or an unapproved plan would go unnoticed unless a tool fails the build. It gets its own script in the same gate and CI jobs as the persona check. Rejected: extending `check-prd-approval.ts`, which checks one document's approval order per path; cross-document coverage would mix two contracts in one script.
