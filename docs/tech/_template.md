@@ -5,7 +5,6 @@
 | Mã | `TECHXX` |
 | PRD | `PRDXX` (phiên bản đã duyệt) |
 | Thiết kế giao diện | <link canvas và tên các bảng> |
-| Trạng thái | Draft / In review / Approved |
 | Trạng thái theo bản giao | Bảng ngay dưới |
 | Phiên bản | 0.1 |
 | Cần appsec review | Có / Không (module nhạy cảm: định danh, token, cookie, phiên, link riêng, khoá công khai) |

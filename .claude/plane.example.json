@@ -1,0 +1,6 @@
+{
+  "projectId": "",
+  "projectIdentifier": "",
+  "states": { "backlog": "", "todo": "", "inProgress": "", "readyForTesting": "", "testing": "", "done": "", "pending": "", "cancelled": "" },
+  "labels": { "BE": "", "FE": "", "Mobile": "", "bug": "" }
+}
